@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #1c1b19;
+  --ink-secondary: #57544e;
+  --ink-muted: #6b675f;
+  --canvas: #faf9f8;
+  --surface: #ffffff;
+  --surface-accent: #f5e9e7;
+  --hairline: #e3e2e1;
+  --border: #c1c0c2;
+  --accent: #4a5e70;
+  --accent-fill: #8a9db1;
+  --positive: #57523f;
+  --positive-fill: #837d68;
+  --attention: #8c3f42;
+  --attention-fill: #ecc5c6;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-accent: var(--surface-accent);
+  --color-hairline: var(--hairline);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-fill: var(--accent-fill);
+  --color-positive: var(--positive);
+  --color-positive-fill: var(--positive-fill);
+  --color-attention: var(--attention);
+  --color-attention-fill: var(--attention-fill);
+
+  --font-sans: var(--font-inter);
+
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 28px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-size: var(--text-sm);
+}
