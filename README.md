@@ -32,7 +32,16 @@ _To be filled in as phases land — see the Phases section of `CLAUDE.md`._
 
 ## Schema
 
-_Schema diagram added in Phase 2 (Database)._
+Five Postgres tables (`branch`, `academic_year`, `student`, `fee_account`, `payment`) plus a derived `fee_account_balance` view. See [`CLAUDE.md`](./CLAUDE.md) for the full column list and non-negotiable rules. Migrations live in `supabase/migrations/`; a labelled ER diagram is added in Phase 7.
+
+To run against local Supabase:
+
+```bash
+npm run db:start   # supabase start (requires Docker)
+npm run db:reset   # apply all migrations from empty
+npm run db:seed    # generate ~60 fake students, fee accounts, and payments
+npm run test:integration
+```
 
 ## Screenshots
 
