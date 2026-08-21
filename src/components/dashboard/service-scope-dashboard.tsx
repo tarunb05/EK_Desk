@@ -11,7 +11,6 @@ import type { ServiceType } from "@/lib/records/types";
 import { StatCards } from "@/components/dashboard/stat-cards";
 import { BranchSplitTable } from "@/components/dashboard/branch-split-table";
 import { MonthFilter } from "@/components/dashboard/month-filter";
-import { ExportPdfButton } from "@/components/records/export-pdf-button";
 import { ScopeSelectors } from "@/components/shell/scope-selectors";
 
 interface ServiceScopeDashboardProps {
@@ -39,12 +38,12 @@ function generateTwelveMonths(startsOn: string): string[] {
 // service_type — the money and aggregation logic exists exactly once. The
 // per-student record listing lives on /students now (across both services,
 // with search/filter/sort) rather than duplicated here — this page stays
-// figures, the by-branch split, "Add student", and the PDF export. There
-// are no charts on this page any more (ageing/by-class/by-route/
-// collection-by-month were all removed) — the underlying SQL functions and
-// their integration tests are left in place since nothing about the
-// schema itself changed, and collection-by-month's data now drives the
-// month filter below instead of a chart.
+// figures, the by-branch split, and "Add student". There are no charts on
+// this page any more (ageing/by-class/by-route/collection-by-month were
+// all removed) — the underlying SQL functions and their integration tests
+// are left in place since nothing about the schema itself changed, and
+// collection-by-month's data now drives the month filter instead of a
+// chart.
 export async function ServiceScopeDashboard({
   serviceType,
   title,
@@ -75,9 +74,6 @@ export async function ServiceScopeDashboard({
   // in the phase plan).
   const activeBranches = branches.filter((b) => b.isActive);
   const isAllBranches = branch === "all";
-  const branchLabel = isAllBranches
-    ? "All branches"
-    : (branches.find((b) => b.code === branch)?.name ?? branch);
 
   const branchSplit = isAllBranches
     ? await Promise.all(
@@ -134,29 +130,14 @@ export async function ServiceScopeDashboard({
         <div className="flex flex-wrap items-center gap-4">
           <h1 className="text-xl font-medium text-ink">{title}</h1>
           <ScopeSelectors years={years} branches={branches} />
+          <MonthFilter availableMonths={allTwelveMonths} />
         </div>
-        <div className="flex gap-2">
-          <ExportPdfButton
-            serviceType={serviceType}
-            academicYearId={year.id}
-            branch={branch}
-            yearLabel={year.label}
-            branchLabel={branchLabel}
-          />
-          <Link
-            href={`/${serviceType}/new`}
-            className="h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-colors duration-150"
-          >
-            Add student
-          </Link>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <span className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
-          Collected &amp; rate below scope to the selected months
-        </span>
-        <MonthFilter availableMonths={allTwelveMonths} />
+        <Link
+          href={`/${serviceType}/new`}
+          className="h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-colors duration-150"
+        >
+          Add student
+        </Link>
       </div>
 
       <StatCards
