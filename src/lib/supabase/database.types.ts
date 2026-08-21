@@ -209,6 +209,13 @@ export type Database = {
             referencedRelation: "fee_account_balance";
             referencedColumns: ["fee_account_id"];
           },
+          {
+            foreignKeyName: "payment_fee_account_id_fkey";
+            columns: ["fee_account_id"];
+            isOneToOne: false;
+            referencedRelation: "fee_account_record";
+            referencedColumns: ["fee_account_id"];
+          },
         ];
       };
       student: {
@@ -259,6 +266,13 @@ export type Database = {
             referencedRelation: "branch";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "student_branch_id_fkey";
+            columns: ["branch_id"];
+            isOneToOne: false;
+            referencedRelation: "fee_account_record";
+            referencedColumns: ["branch_id"];
+          },
         ];
       };
     };
@@ -298,8 +312,116 @@ export type Database = {
           },
         ];
       };
+      fee_account_record: {
+        Row: {
+          academic_year_id: string | null;
+          branch_code: string | null;
+          branch_id: string | null;
+          branch_name: string | null;
+          class_section: string | null;
+          collected_paise: number | null;
+          due_date: string | null;
+          ends_on: string | null;
+          fee_account_id: string | null;
+          last_paid_on: string | null;
+          pending_paise: number | null;
+          pickup_point: string | null;
+          route_name: string | null;
+          service_type: string | null;
+          slot: string | null;
+          starts_on: string | null;
+          status: string | null;
+          student_admission_no: string | null;
+          student_full_name: string | null;
+          student_guardian_name: string | null;
+          student_id: string | null;
+          student_phone: string | null;
+          total_receivable_paise: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "fee_account_academic_year_id_fkey";
+            columns: ["academic_year_id"];
+            isOneToOne: false;
+            referencedRelation: "academic_year";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "fee_account_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "student";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Functions: {
+      dashboard_ageing_buckets: {
+        Args: {
+          p_academic_year_id: string;
+          p_branch_code?: string;
+          p_service_type: string;
+        };
+        Returns: {
+          account_count: number;
+          bucket: string;
+          pending_paise: number;
+        }[];
+      };
+      dashboard_breakdown_by_class: {
+        Args: {
+          p_academic_year_id: string;
+          p_branch_code?: string;
+          p_service_type: string;
+        };
+        Returns: {
+          class_section: string;
+          collected_paise: number;
+          pending_paise: number;
+          receivable_paise: number;
+          student_count: number;
+        }[];
+      };
+      dashboard_breakdown_by_group: {
+        Args: {
+          p_academic_year_id: string;
+          p_branch_code?: string;
+          p_service_type: string;
+        };
+        Returns: {
+          collected_paise: number;
+          group_label: string;
+          pending_paise: number;
+          receivable_paise: number;
+          student_count: number;
+        }[];
+      };
+      dashboard_collection_by_month: {
+        Args: {
+          p_academic_year_id: string;
+          p_branch_code?: string;
+          p_service_type: string;
+        };
+        Returns: {
+          collected_paise: number;
+          month: string;
+        }[];
+      };
+      dashboard_summary: {
+        Args: {
+          p_academic_year_id: string;
+          p_branch_code?: string;
+          p_service_type: string;
+        };
+        Returns: {
+          student_count: number;
+          total_collected_paise: number;
+          total_overdue_paise: number;
+          total_pending_paise: number;
+          total_receivable_paise: number;
+        }[];
+      };
       show_limit: { Args: never; Returns: number };
       show_trgm: { Args: { "": string }; Returns: string[] };
     };

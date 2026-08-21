@@ -7,8 +7,8 @@ const years = [
 ];
 
 const branches = [
-  { code: "BR-A", name: "Branch A", isActive: true },
-  { code: "BR-B", name: "Branch B", isActive: true },
+  { id: "b1", code: "BR-A", name: "Branch A", isActive: true },
+  { id: "b2", code: "BR-B", name: "Branch B", isActive: true },
 ];
 
 describe("resolveYearAndBranch", () => {

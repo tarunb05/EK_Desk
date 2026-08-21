@@ -1,0 +1,29 @@
+import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getFeeAccountRecordById } from "@/lib/records/queries";
+import { formatPaise } from "@/lib/domain/money";
+import { RecordPaymentForm } from "./record-payment-form";
+
+export default async function RecordPaymentPage({
+  params,
+}: {
+  params: Promise<{ feeAccountId: string }>;
+}) {
+  const { feeAccountId } = await params;
+  const supabase = await createClient();
+  const record = await getFeeAccountRecordById(supabase, feeAccountId);
+
+  if (!record) {
+    notFound();
+  }
+
+  return (
+    <div className="max-w-xl">
+      <h1 className="mb-1 text-xl font-medium text-ink">Record payment</h1>
+      <p className="mb-4 text-sm text-ink-secondary">
+        {record.studentFullName} — pending {formatPaise(record.pendingPaise)}
+      </p>
+      <RecordPaymentForm feeAccountId={record.feeAccountId} />
+    </div>
+  );
+}

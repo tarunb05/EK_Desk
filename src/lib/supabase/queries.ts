@@ -29,7 +29,7 @@ export async function getBranches(
 ): Promise<BranchOption[]> {
   const { data, error } = await supabase
     .from("branch")
-    .select("code, name, is_active")
+    .select("id, code, name, is_active")
     .order("code", { ascending: true });
 
   if (error) {
@@ -37,6 +37,7 @@ export async function getBranches(
   }
 
   return data.map((row) => ({
+    id: row.id,
     code: row.code,
     name: row.name,
     isActive: row.is_active,
