@@ -43,7 +43,7 @@ test.describe("daycare spine", () => {
       .fill("Playwright Daycare Student");
     await form.getByLabel("Guardian name").fill("Playwright Guardian");
     await form.getByLabel("Phone").fill("9000000456");
-    await form.getByLabel("Class and section").fill("UKG-A");
+    await form.getByLabel("Class").selectOption({ label: "Euro Senior" });
     await form.getByLabel("Slot").fill("Morning (8-1)");
     await form.getByLabel("Total receivable (₹)").fill("12000");
     await form.getByLabel("Due date").fill("2026-06-01");
@@ -60,8 +60,9 @@ test.describe("daycare spine", () => {
       baselineReceivable + 12_000,
     );
 
-    // Record a part payment.
-    await page.goto("/daycare?branch=BR-B&q=Playwright+Daycare");
+    // Record a part payment — found via the Students directory now that
+    // the per-service dashboards no longer list students, just figures.
+    await page.goto("/students?q=Playwright+Daycare");
     await page.getByRole("link", { name: "Record payment" }).click();
     await page.getByLabel("Amount (₹)").fill("5000");
     await page.getByLabel("Paid on").fill("2026-05-01");
@@ -73,8 +74,10 @@ test.describe("daycare spine", () => {
     const afterPaymentCollected = await readStat(page, "total-collected");
     const afterPaymentPending = await readStat(page, "total-pending");
 
-    // Void via the drawer; the void link must stay within /daycare.
-    await page.goto("/daycare?branch=BR-B&q=Playwright+Daycare");
+    // Void via the student's detail page; the void link must stay within
+    // /daycare (driven by the fee account's own service_type, regardless of
+    // which prefix was used to view the page).
+    await page.goto("/students?q=Playwright+Daycare");
     await page
       .getByRole("link", { name: "Playwright Daycare Student" })
       .click();

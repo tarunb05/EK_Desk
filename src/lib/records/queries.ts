@@ -4,7 +4,6 @@ import type {
   RecordTableSearchParams,
   SortKey,
 } from "@/lib/shell/table-params";
-import { resolvePagination, type Pagination } from "@/lib/shell/pagination";
 import type { FeeAccountRecordRow, ServiceType } from "@/lib/records/types";
 
 type FeeAccountRecordDbRow =
@@ -56,16 +55,6 @@ export interface RecordScopeParams {
   table: RecordTableSearchParams;
 }
 
-export interface GetFeeAccountRecordsParams extends RecordScopeParams {
-  page: number;
-  pageSize: number;
-}
-
-export interface FeeAccountRecordsResult {
-  rows: FeeAccountRecordRow[];
-  pagination: Pagination;
-}
-
 function applyFilters(
   supabase: SupabaseClient<Database>,
   { serviceType, academicYearId, branch, table }: RecordScopeParams,
@@ -98,40 +87,8 @@ function applyFilters(
   return query;
 }
 
-export async function getFeeAccountRecords(
-  supabase: SupabaseClient<Database>,
-  params: GetFeeAccountRecordsParams,
-): Promise<FeeAccountRecordsResult> {
-  const { serviceType, table, page, pageSize } = params;
-
-  const { count: totalCount, error: countError } = await applyFilters(
-    supabase,
-    params,
-    { head: true },
-  );
-
-  if (countError) {
-    throw new Error("Could not load records.");
-  }
-
-  const pagination = resolvePagination(page, pageSize, totalCount ?? 0);
-
-  const { data, error } = await applyFilters(supabase, params, { head: false })
-    .order(SORT_COLUMN[table.sort], { ascending: table.dir === "asc" })
-    .range(pagination.offset, pagination.offset + pagination.limit - 1);
-
-  if (error) {
-    throw new Error("Could not load records.");
-  }
-
-  return {
-    rows: data.map((row) => mapFeeAccountRecordRow(row, serviceType)),
-    pagination,
-  };
-}
-
-// Same filters as getFeeAccountRecords, but every matching row — used for
-// CSV export, where "any filtered view" means the whole result, not a page.
+// Every matching row for the given scope — used by the PDF export, where
+// "the report" means the whole result, not a page of it.
 export async function getAllFeeAccountRecords(
   supabase: SupabaseClient<Database>,
   params: RecordScopeParams,
@@ -164,30 +121,4 @@ export async function getFeeAccountRecordById(
   }
 
   return mapFeeAccountRecordRow(data, "transport");
-}
-
-export async function getDistinctClassSections(
-  supabase: SupabaseClient<Database>,
-  {
-    serviceType,
-    academicYearId,
-  }: { serviceType: ServiceType; academicYearId: string },
-): Promise<string[]> {
-  const { data, error } = await supabase
-    .from("fee_account_record")
-    .select("class_section")
-    .eq("service_type", serviceType)
-    .eq("academic_year_id", academicYearId)
-    .eq("student_status", "active");
-
-  if (error) {
-    throw new Error("Could not load class sections.");
-  }
-
-  const unique = new Set(
-    data
-      .map((row) => row.class_section)
-      .filter((value): value is string => !!value),
-  );
-  return [...unique].sort();
 }

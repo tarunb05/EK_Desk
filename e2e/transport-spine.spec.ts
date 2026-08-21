@@ -54,7 +54,7 @@ test.describe("transport spine", () => {
       .getByLabel("Guardian name")
       .fill("Playwright Guardian");
     await addStudentForm.getByLabel("Phone").fill("9000000123");
-    await addStudentForm.getByLabel("Class and section").fill("Nursery-A");
+    await addStudentForm.getByLabel("Class").selectOption({ label: "Nursery" });
     await addStudentForm.getByLabel("Route").fill("Route 1 - MG Road");
     await addStudentForm.getByLabel("Pickup point").fill("Main Gate");
     await addStudentForm.getByLabel("Total receivable (₹)").fill("10000");
@@ -73,8 +73,9 @@ test.describe("transport spine", () => {
       baselineReceivable + 10_000,
     );
 
-    // Record a part payment.
-    await page.goto("/transport?branch=BR-A&q=Playwright+Spine");
+    // Record a part payment — found via the Students directory now that
+    // the per-service dashboards no longer list students, just figures.
+    await page.goto("/students?q=Playwright+Spine");
     await page.getByRole("link", { name: "Record payment" }).click();
     await page.getByLabel("Amount (₹)").fill("4000");
     await page.getByLabel("Paid on").fill("2026-05-01");
@@ -86,8 +87,8 @@ test.describe("transport spine", () => {
     const afterPaymentCollected = await readStat(page, "total-collected");
     const afterPaymentPending = await readStat(page, "total-pending");
 
-    // Void the payment via the student drawer.
-    await page.goto("/transport?branch=BR-A&q=Playwright+Spine");
+    // Void the payment via the student's detail page.
+    await page.goto("/students?q=Playwright+Spine");
     await page.getByRole("link", { name: "Playwright Spine Student" }).click();
     await page.getByRole("link", { name: "Void" }).click();
     await page.getByLabel("Reason for voiding").fill("E2E spine test cleanup");

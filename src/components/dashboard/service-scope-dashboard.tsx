@@ -4,14 +4,6 @@ import { getBranches } from "@/lib/supabase/queries";
 import { getCurrentScope } from "@/lib/shell/get-current-scope";
 import { shellSearchParamsSchema } from "@/lib/shell/search-params";
 import {
-  recordTableSearchParamsSchema,
-  type SortKey,
-} from "@/lib/shell/table-params";
-import {
-  getDistinctClassSections,
-  getFeeAccountRecords,
-} from "@/lib/records/queries";
-import {
   getAgeingBuckets,
   getBreakdownByClass,
   getBreakdownByGroup,
@@ -27,11 +19,7 @@ import {
   BreakdownBarChart,
   type ChartSeries,
 } from "@/components/dashboard/charts/breakdown-bar-chart";
-import { TableFilters } from "@/components/records/table-filters";
-import { RecordTable } from "@/components/records/record-table";
-import { ExportCsvButton } from "@/components/records/export-csv-button";
-
-const PAGE_SIZE = 20;
+import { ExportPdfButton } from "@/components/records/export-pdf-button";
 
 const BUCKET_ORDER = ["not_yet_due", "1-30", "31-60", "60+"] as const;
 const BUCKET_LABELS: Record<(typeof BUCKET_ORDER)[number], string> = {
@@ -59,7 +47,10 @@ interface ServiceScopeDashboardProps {
 }
 
 // One dashboard, reused by /transport and /daycare with a different
-// service_type — the money and aggregation logic exists exactly once.
+// service_type — the money and aggregation logic exists exactly once. The
+// per-student record listing lives on /students now (across both services,
+// with search/filter/sort) rather than duplicated here — this page stays
+// figures and charts, plus "Add student" and the PDF export.
 export async function ServiceScopeDashboard({
   serviceType,
   title,
@@ -68,7 +59,6 @@ export async function ServiceScopeDashboard({
 }: ServiceScopeDashboardProps) {
   const rawParams = await searchParams;
   const scopeParams = shellSearchParamsSchema.parse(rawParams);
-  const tableParams = recordTableSearchParamsSchema.parse(rawParams);
 
   const supabase = await createClient();
   const { year, branch } = await getCurrentScope(scopeParams);
@@ -79,7 +69,6 @@ export async function ServiceScopeDashboard({
     collectionByMonth,
     byClass,
     byGroup,
-    classSections,
     branches,
   ] = await Promise.all([
     getDashboardSummary(supabase, {
@@ -107,28 +96,17 @@ export async function ServiceScopeDashboard({
       academicYearId: year.id,
       branch,
     }),
-    getDistinctClassSections(supabase, {
-      serviceType,
-      academicYearId: year.id,
-    }),
     getBranches(supabase),
   ]);
-
-  const records = await getFeeAccountRecords(supabase, {
-    serviceType,
-    academicYearId: year.id,
-    branch,
-    table: tableParams,
-    page: tableParams.page,
-    pageSize: PAGE_SIZE,
-  });
-  const pagination = records.pagination;
 
   // branch=all gets a per-branch split of the figures and the ageing chart
   // (called out by name in the phase plan); the other breakdown charts stay
   // combined totals rather than growing another series per branch.
   const activeBranches = branches.filter((b) => b.isActive);
   const isAllBranches = branch === "all";
+  const branchLabel = isAllBranches
+    ? "All branches"
+    : (branches.find((b) => b.code === branch)?.name ?? branch);
 
   const branchSplit = isAllBranches
     ? await Promise.all(
@@ -189,22 +167,17 @@ export async function ServiceScopeDashboard({
       }))
     : [{ key: "pending", label: "Pending", color: "var(--attention-fill)" }];
 
-  const flatSearchParams = Object.fromEntries(
-    Object.entries(rawParams).map(([key, value]) => [
-      key,
-      Array.isArray(value) ? value[0] : value,
-    ]),
-  );
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-medium text-ink">{title}</h1>
         <div className="flex gap-2">
-          <ExportCsvButton
+          <ExportPdfButton
             serviceType={serviceType}
             academicYearId={year.id}
             branch={branch}
+            yearLabel={year.label}
+            branchLabel={branchLabel}
           />
           <Link
             href={`/${serviceType}/new`}
@@ -327,19 +300,6 @@ export async function ServiceScopeDashboard({
             />
           )}
         </div>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        <TableFilters classSections={classSections} />
-        <RecordTable
-          rows={records.rows}
-          serviceType={serviceType}
-          sort={tableParams.sort as SortKey}
-          dir={tableParams.dir}
-          page={pagination.page}
-          totalPages={pagination.totalPages}
-          searchParams={flatSearchParams}
-        />
       </div>
     </div>
   );
