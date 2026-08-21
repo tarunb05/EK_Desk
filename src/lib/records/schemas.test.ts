@@ -12,7 +12,7 @@ const validTransportStudent = {
   fullName: "Aarav Sharma",
   guardianName: "Priya Sharma",
   phone: "9876543210",
-  classSection: "Nursery-A",
+  classSection: "Nursery",
   academicYearId: "22222222-2222-4222-8222-222222222222",
   serviceType: "transport" as const,
   totalReceivable: "12000",

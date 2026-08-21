@@ -8,6 +8,7 @@ import {
 } from "@/lib/records/actions";
 import type { ServiceType } from "@/lib/records/types";
 import type { BranchOption } from "@/lib/shell/resolve-year-branch";
+import { CLASS_SECTIONS } from "@/lib/records/class-sections";
 
 const initialState: ActionState = { error: null };
 
@@ -58,13 +59,15 @@ export function AddStudentForm({
         <input name="phone" required className={inputClassName} />
       </Field>
 
-      <Field label="Class and section">
-        <input
-          name="classSection"
-          required
-          placeholder="Nursery-A"
-          className={inputClassName}
-        />
+      <Field label="Class">
+        <select name="classSection" required className={inputClassName}>
+          <option value="">Choose a class</option>
+          {CLASS_SECTIONS.map((classSection) => (
+            <option key={classSection} value={classSection}>
+              {classSection}
+            </option>
+          ))}
+        </select>
       </Field>
 
       {serviceType === "transport" ? (

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { rupeesToPaise } from "@/lib/domain/money";
+import { CLASS_SECTIONS } from "@/lib/records/class-sections";
 
 const rupeesAmount = z
   .string()
@@ -19,7 +20,7 @@ export const createStudentWithFeeAccountSchema = z
     fullName: z.string().trim().min(1, "Enter the student's name."),
     guardianName: z.string().trim().min(1, "Enter the guardian's name."),
     phone: z.string().trim().min(1, "Enter a phone number."),
-    classSection: z.string().trim().min(1, "Enter a class and section."),
+    classSection: z.enum(CLASS_SECTIONS, "Choose a class."),
     academicYearId: z.string().uuid(),
     serviceType: z.enum(["transport", "daycare"]),
     totalReceivable: rupeesAmount,
