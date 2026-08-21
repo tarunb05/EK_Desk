@@ -41,31 +41,35 @@ const SERVICE_LABEL: Record<string, string> = {
   daycare: "Daycare",
 };
 
+const actionButtonClassName =
+  "h-6 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink";
+
 function RowActions({ row }: { row: StudentDirectoryRow }) {
   if (row.feeAccounts.length === 0) {
     return <span className="text-2xs text-ink-muted">—</span>;
   }
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col gap-1">
       {row.feeAccounts.map((account) => (
-        <div key={account.feeAccountId} className="text-2xs whitespace-nowrap">
-          <span className="text-ink-muted">
+        <div
+          key={account.feeAccountId}
+          className="flex flex-wrap items-center gap-1.5 whitespace-nowrap"
+        >
+          <span className="text-2xs text-ink-muted">
             {SERVICE_LABEL[account.serviceType] ?? account.serviceType}
             {row.feeAccounts.length > 1
               ? ` (${account.academicYearLabel})`
               : ""}
-            {": "}
           </span>
           <Link
             href={`/${account.serviceType}/${account.feeAccountId}/edit`}
-            className="text-accent hover:underline"
+            className={actionButtonClassName}
           >
             Edit
           </Link>
-          {" · "}
           <Link
             href={`/${account.serviceType}/${account.feeAccountId}/payment`}
-            className="text-accent hover:underline"
+            className={actionButtonClassName}
           >
             Record payment
           </Link>

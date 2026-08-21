@@ -76,3 +76,11 @@ export function MenuIcon() {
     </IconBase>
   );
 }
+
+export function ArrowLeftIcon() {
+  return (
+    <IconBase>
+      <path d="M16 10H4M9 4.5 3.5 10 9 15.5" />
+    </IconBase>
+  );
+}
