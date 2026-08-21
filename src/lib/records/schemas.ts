@@ -20,7 +20,7 @@ export const createStudentWithFeeAccountSchema = z
     fullName: z.string().trim().min(1, "Enter the student's name."),
     guardianName: z.string().trim().min(1, "Enter the guardian's name."),
     phone: z.string().trim().min(1, "Enter a phone number."),
-    classSection: z.enum(CLASS_SECTIONS, "Choose a class."),
+    classSection: z.enum(CLASS_SECTIONS, "Choose a grade."),
     academicYearId: z.string().uuid(),
     serviceType: z.enum(["transport", "daycare"]),
     totalReceivable: rupeesAmount,

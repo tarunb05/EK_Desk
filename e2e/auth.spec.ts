@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
-  TEST_ADMIN_EMAIL,
+  TEST_ADMIN_USERNAME,
   TEST_ADMIN_PASSWORD,
 } from "../scripts/test-credentials";
 
@@ -12,17 +12,19 @@ test.describe("auth", () => {
 
   test("shows an error on invalid credentials", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill(TEST_ADMIN_EMAIL);
+    await page.getByLabel("Username").fill(TEST_ADMIN_USERNAME);
     await page.getByLabel("Password").fill("wrong-password");
     await page.getByRole("button", { name: "Sign in" }).click();
 
-    await expect(page.getByText("Incorrect email or password.")).toBeVisible();
+    await expect(
+      page.getByText("Incorrect username or password."),
+    ).toBeVisible();
     await expect(page).toHaveURL(/\/login$/);
   });
 
   test("logs in, shows the shell, and signs out", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill(TEST_ADMIN_EMAIL);
+    await page.getByLabel("Username").fill(TEST_ADMIN_USERNAME);
     await page.getByLabel("Password").fill(TEST_ADMIN_PASSWORD);
     await page.getByRole("button", { name: "Sign in" }).click();
 
@@ -30,7 +32,6 @@ test.describe("auth", () => {
     await expect(page.getByRole("link", { name: "Transport" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Daycare" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Students" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
 
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/login$/);

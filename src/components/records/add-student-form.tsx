@@ -59,9 +59,9 @@ export function AddStudentForm({
         <input name="phone" required className={inputClassName} />
       </Field>
 
-      <Field label="Class">
+      <Field label="Grade">
         <select name="classSection" required className={inputClassName}>
-          <option value="">Choose a class</option>
+          <option value="">Choose a grade</option>
           {CLASS_SECTIONS.map((classSection) => (
             <option key={classSection} value={classSection}>
               {classSection}

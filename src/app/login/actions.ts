@@ -3,12 +3,10 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { usernameToInternalEmail } from "@/lib/auth/username";
 
 const credentialsSchema = z.object({
-  email: z
-    .string()
-    .min(1, "Enter your email.")
-    .email("Enter a valid email address."),
+  username: z.string().trim().min(1, "Enter your username."),
   password: z.string().min(1, "Enter your password."),
 });
 
@@ -21,7 +19,7 @@ export async function signIn(
   formData: FormData,
 ): Promise<SignInState> {
   const parsed = credentialsSchema.safeParse({
-    email: formData.get("email"),
+    username: formData.get("username"),
     password: formData.get("password"),
   });
 
@@ -33,10 +31,13 @@ export async function signIn(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { error } = await supabase.auth.signInWithPassword({
+    email: usernameToInternalEmail(parsed.data.username),
+    password: parsed.data.password,
+  });
 
   if (error) {
-    return { error: "Incorrect email or password." };
+    return { error: "Incorrect username or password." };
   }
 
   redirect("/transport");

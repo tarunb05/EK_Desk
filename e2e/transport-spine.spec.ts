@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
-  TEST_ADMIN_EMAIL,
+  TEST_ADMIN_USERNAME,
   TEST_ADMIN_PASSWORD,
 } from "../scripts/test-credentials";
 
@@ -17,7 +17,7 @@ test.describe("transport spine", () => {
     page,
   }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill(TEST_ADMIN_EMAIL);
+    await page.getByLabel("Username").fill(TEST_ADMIN_USERNAME);
     await page.getByLabel("Password").fill(TEST_ADMIN_PASSWORD);
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/transport$/);
@@ -54,7 +54,7 @@ test.describe("transport spine", () => {
       .getByLabel("Guardian name")
       .fill("Playwright Guardian");
     await addStudentForm.getByLabel("Phone").fill("9000000123");
-    await addStudentForm.getByLabel("Class").selectOption({ label: "Nursery" });
+    await addStudentForm.getByLabel("Grade").selectOption({ label: "Nursery" });
     await addStudentForm.getByLabel("Route").fill("Route 1 - MG Road");
     await addStudentForm.getByLabel("Pickup point").fill("Main Gate");
     await addStudentForm.getByLabel("Total receivable (₹)").fill("10000");

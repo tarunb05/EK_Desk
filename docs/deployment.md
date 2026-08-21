@@ -19,8 +19,13 @@ automated, and nothing here should be run against the local dev stack.
    student data is PII and must never be seeded, faked, or otherwise
    fabricated in a way that mixes with production rows.
 4. Create the one shared admin login by hand: Authentication → Users → Add
-   user, with a real email and a strong password (not the
-   `local-dev-only-password` used by tests). This mirrors how the local
+   user. The app treats this as a plain username, not a real email
+   address — Supabase Auth itself has no username concept, so the sign-in
+   form takes a username and derives a fixed internal address from it (see
+   `src/lib/auth/username.ts`) before calling `signInWithPassword`. Use the
+   same scheme here: for a chosen username like `frontoffice`, create the
+   user with email `frontoffice@login.internal` and a strong password (not
+   the `deetha` used by local tests). This mirrors how the local
    `auth:seed` script creates the dev admin, except done once, manually, in
    the dashboard — there is no script that touches the production auth
    store.

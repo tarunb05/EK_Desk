@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD } from "./test-credentials";
+import { TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD } from "./test-credentials";
+import { usernameToInternalEmail } from "../src/lib/auth/username";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -10,6 +11,8 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   );
 }
 
+const email = usernameToInternalEmail(TEST_ADMIN_USERNAME);
+
 async function main(supabaseUrl: string, serviceRoleKey: string) {
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
@@ -19,13 +22,13 @@ async function main(supabaseUrl: string, serviceRoleKey: string) {
     throw listError;
   }
 
-  if (existing.users.some((user) => user.email === TEST_ADMIN_EMAIL)) {
-    console.log(`Admin user ${TEST_ADMIN_EMAIL} already exists.`);
+  if (existing.users.some((user) => user.email === email)) {
+    console.log(`Admin user ${TEST_ADMIN_USERNAME} already exists.`);
     return;
   }
 
   const { error: createError } = await supabase.auth.admin.createUser({
-    email: TEST_ADMIN_EMAIL,
+    email,
     password: TEST_ADMIN_PASSWORD,
     email_confirm: true,
   });
@@ -34,7 +37,7 @@ async function main(supabaseUrl: string, serviceRoleKey: string) {
     throw createError;
   }
 
-  console.log(`Created admin user ${TEST_ADMIN_EMAIL}.`);
+  console.log(`Created admin user ${TEST_ADMIN_USERNAME}.`);
 }
 
 main(SUPABASE_URL, SERVICE_ROLE_KEY).catch((error: unknown) => {

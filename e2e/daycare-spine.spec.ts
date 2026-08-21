@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
-  TEST_ADMIN_EMAIL,
+  TEST_ADMIN_USERNAME,
   TEST_ADMIN_PASSWORD,
 } from "../scripts/test-credentials";
 
@@ -17,7 +17,7 @@ test.describe("daycare spine", () => {
     page,
   }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill(TEST_ADMIN_EMAIL);
+    await page.getByLabel("Username").fill(TEST_ADMIN_USERNAME);
     await page.getByLabel("Password").fill(TEST_ADMIN_PASSWORD);
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/transport$/);
@@ -43,7 +43,7 @@ test.describe("daycare spine", () => {
       .fill("Playwright Daycare Student");
     await form.getByLabel("Guardian name").fill("Playwright Guardian");
     await form.getByLabel("Phone").fill("9000000456");
-    await form.getByLabel("Class").selectOption({ label: "Euro Senior" });
+    await form.getByLabel("Grade").selectOption({ label: "Euro Senior" });
     await form.getByLabel("Slot").fill("Morning (8-1)");
     await form.getByLabel("Total receivable (₹)").fill("12000");
     await form.getByLabel("Due date").fill("2026-06-01");

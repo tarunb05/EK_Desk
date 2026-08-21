@@ -53,15 +53,6 @@ export function StudentsIcon() {
   );
 }
 
-export function SettingsIcon() {
-  return (
-    <IconBase>
-      <circle cx="10" cy="10" r="2.5" />
-      <path d="M10 3.5v1.6M10 14.9v1.6M16.5 10h-1.6M5.1 10H3.5M14.6 5.4l-1.1 1.1M6.5 13.5l-1.1 1.1M14.6 14.6l-1.1-1.1M6.5 6.5 5.4 5.4" />
-    </IconBase>
-  );
-}
-
 export function CollapseIcon({ direction }: { direction: "left" | "right" }) {
   return (
     <IconBase>
