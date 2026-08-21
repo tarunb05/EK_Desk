@@ -134,7 +134,7 @@ export async function ServiceScopeDashboard({
         </div>
         <Link
           href={`/${serviceType}/new`}
-          className="h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-colors duration-150"
+          className="inline-block h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
         >
           Add student
         </Link>

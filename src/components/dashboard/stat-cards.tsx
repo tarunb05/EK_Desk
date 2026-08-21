@@ -1,6 +1,15 @@
 import { formatPaise } from "@/lib/domain/money";
 import { collectionRate } from "@/lib/domain/collection-rate";
 import type { DashboardSummary } from "@/lib/records/dashboard-queries";
+import {
+  AlertIcon,
+  ClockIcon,
+  StatusIcon,
+  StudentsIcon,
+  TrendIcon,
+  WalletIcon,
+} from "@/components/shell/nav-icons";
+import type { ComponentType } from "react";
 
 interface StatCardsProps {
   summary: DashboardSummary;
@@ -26,16 +35,19 @@ export function StatCards({
     label: string;
     value: string;
     tone?: "positive" | "attention";
+    Icon: ComponentType<{ size?: number }>;
   }[] = [
     {
       testId: "students-enrolled",
       label: "Students enrolled",
       value: String(summary.studentCount),
+      Icon: StudentsIcon,
     },
     {
       testId: "total-receivable",
       label: "Total receivable",
       value: formatPaise(summary.totalReceivablePaise),
+      Icon: WalletIcon,
     },
     {
       testId: "total-collected",
@@ -44,18 +56,21 @@ export function StatCards({
         ? "No results found."
         : formatPaise(summary.totalCollectedPaise),
       tone: "positive",
+      Icon: StatusIcon,
     },
     {
       testId: "total-pending",
       label: "Total pending",
       value: formatPaise(summary.totalPendingPaise),
       tone: "attention",
+      Icon: ClockIcon,
     },
     {
       testId: "total-overdue",
       label: "Total overdue",
       value: formatPaise(summary.totalOverduePaise),
       tone: "attention",
+      Icon: AlertIcon,
     },
     {
       testId: "collection-rate",
@@ -63,6 +78,7 @@ export function StatCards({
       value: collectedFiguresUnavailable
         ? "No results found."
         : `${rate.toFixed(1)}%`,
+      Icon: TrendIcon,
     },
   ];
 
@@ -71,17 +87,30 @@ export function StatCards({
       {cards.map((card) => (
         <div
           key={card.label}
-          className="rounded-md border border-hairline bg-surface p-4"
+          className="rounded-md border border-hairline bg-surface p-4 transition-colors hover:border-border"
         >
-          <div className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
-            {card.label}
+          <div className="flex items-center justify-between">
+            <span className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
+              {card.label}
+            </span>
+            <span
+              className={
+                card.tone === "positive"
+                  ? "text-positive-fill"
+                  : card.tone === "attention"
+                    ? "text-attention"
+                    : "text-ink-muted"
+              }
+            >
+              <card.Icon size={15} />
+            </span>
           </div>
           <div
             data-testid={card.testId}
             className={
               card.value === "No results found."
-                ? "mt-1 text-sm text-ink-muted"
-                : `mt-1 text-xl tabular-nums ${
+                ? "mt-2 text-sm text-ink-muted"
+                : `mt-2 text-xl font-medium tabular-nums ${
                     card.tone === "positive"
                       ? "text-positive"
                       : card.tone === "attention"

@@ -1,7 +1,7 @@
 "use client";
 
 import { signOut } from "@/lib/auth/sign-out";
-import { MenuIcon } from "./nav-icons";
+import { MenuIcon, SignOutIcon, UserIcon } from "./nav-icons";
 import { useSidebarContext } from "./sidebar-context";
 
 interface TopBarProps {
@@ -26,20 +26,24 @@ export function TopBar({ username }: TopBarProps) {
         >
           <MenuIcon />
         </button>
-        <span className="text-sm font-medium text-ink">
+        <span className="font-serif text-sm font-medium text-ink">
           EuroKids Fee Tracker
         </span>
       </div>
 
       <div className="flex items-center gap-3">
         {username ? (
-          <span className="text-sm text-ink-secondary">{username}</span>
+          <span className="flex items-center gap-1.5 rounded-md bg-surface-accent px-2.5 py-1 text-sm text-ink-secondary">
+            <UserIcon size={14} />
+            {username}
+          </span>
         ) : null}
         <form action={signOut}>
           <button
             type="submit"
-            className="h-8 rounded-md border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+            className="flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
           >
+            <SignOutIcon size={14} />
             Sign out
           </button>
         </form>

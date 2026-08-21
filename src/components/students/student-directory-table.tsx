@@ -4,6 +4,7 @@ import type { StudentDirectoryRow } from "@/lib/records/student-directory";
 import type { StudentSortKey } from "@/lib/shell/student-table-params";
 import { SortableHeader } from "@/components/records/sortable-header";
 import { PaginationControls } from "@/components/records/pagination-controls";
+import { AlertIcon, ClockIcon, StatusIcon } from "@/components/shell/nav-icons";
 
 interface StudentDirectoryTableProps {
   rows: StudentDirectoryRow[];
@@ -21,19 +22,26 @@ function PaymentStatus({ row }: { row: StudentDirectoryRow }) {
   }
   if (row.hasOverdue) {
     return (
-      <span className="text-2xs text-attention">
+      <span className="flex items-center gap-1 text-2xs text-attention">
+        <AlertIcon size={13} />
         Overdue · {formatPaise(row.totalPendingPaise)}
       </span>
     );
   }
   if (row.totalPendingPaise > 0n) {
     return (
-      <span className="text-2xs text-attention">
+      <span className="flex items-center gap-1 text-2xs text-attention">
+        <ClockIcon size={13} />
         Pending · {formatPaise(row.totalPendingPaise)}
       </span>
     );
   }
-  return <span className="text-2xs text-positive">Paid</span>;
+  return (
+    <span className="flex items-center gap-1 text-2xs text-positive">
+      <StatusIcon size={13} />
+      Paid
+    </span>
+  );
 }
 
 const SERVICE_LABEL: Record<string, string> = {
@@ -166,10 +174,10 @@ export function StudentDirectoryTable({
             {rows.map((row, index) => (
               <tr
                 key={row.id}
-                className={`h-10 border-b border-hairline last:border-0 ${
+                className={`h-10 border-b border-hairline transition-colors last:border-0 ${
                   row.hasOverdue
                     ? "border-l-2 border-l-attention bg-attention-fill/20"
-                    : ""
+                    : "hover:bg-surface-accent"
                 }`}
               >
                 <td className="px-3 text-ink-secondary tabular-nums">

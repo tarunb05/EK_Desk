@@ -28,14 +28,15 @@ export function Sidebar() {
 
   return (
     <>
-      {mobileOpen ? (
-        <button
-          type="button"
-          aria-label="Close menu"
-          onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 z-40 bg-ink/30 md:hidden"
-        />
-      ) : null}
+      <button
+        type="button"
+        aria-label="Close menu"
+        tabIndex={mobileOpen ? 0 : -1}
+        onClick={() => setMobileOpen(false)}
+        className={`fixed inset-0 z-40 bg-ink/30 transition-opacity duration-150 md:hidden ${
+          mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
 
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-hairline bg-surface px-3 py-6 transition-transform duration-150 md:relative md:z-0 md:translate-x-0 ${
@@ -44,7 +45,7 @@ export function Sidebar() {
       >
         <div className="mb-6 flex items-center justify-between px-3">
           <span
-            className={`text-sm font-medium text-ink ${collapsed ? "md:hidden" : ""}`}
+            className={`font-serif text-sm font-medium text-ink ${collapsed ? "md:hidden" : ""}`}
           >
             EuroKids Fee Tracker
           </span>

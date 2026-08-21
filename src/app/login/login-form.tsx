@@ -2,6 +2,10 @@
 
 import { useActionState } from "react";
 import { signIn, type SignInState } from "./actions";
+import {
+  inputClassName,
+  primaryButtonClassName,
+} from "@/components/forms/field";
 
 const initialState: SignInState = { error: null };
 
@@ -20,7 +24,7 @@ export function LoginForm() {
           type="text"
           autoComplete="username"
           required
-          className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent"
+          className={`h-10 ${inputClassName}`}
         />
       </div>
 
@@ -34,7 +38,7 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent"
+          className={`h-10 ${inputClassName}`}
         />
       </div>
 
@@ -47,7 +51,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="h-10 rounded-md bg-accent text-sm font-medium text-surface transition-colors duration-150 disabled:opacity-60"
+        className={primaryButtonClassName}
       >
         {isPending ? "Signing in…" : "Sign in"}
       </button>

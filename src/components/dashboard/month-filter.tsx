@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { FilterIcon } from "@/components/shell/nav-icons";
 
 interface MonthFilterProps {
   availableMonths: string[];
@@ -86,13 +87,14 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
         onClick={() => setOpen((wasOpen) => !wasOpen)}
         aria-expanded={open}
         aria-label="Filter collected figures by month"
-        className="h-8 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent"
+        className="flex h-8 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none transition-colors focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent"
       >
+        <FilterIcon size={14} />
         Months: {label}
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-10 mt-1 w-48 rounded-md border border-border bg-surface p-2">
+        <div className="animate-pop-in absolute right-0 z-10 mt-1 w-48 origin-top-right rounded-md border border-border bg-surface p-2 shadow-[0_1px_2px_rgba(0,0,0,.05)]">
           <div className="mb-1 flex justify-between border-b border-hairline pb-1 text-2xs">
             <button
               type="button"
