@@ -75,7 +75,8 @@ function applyFilters(
     .from("fee_account_record")
     .select("*", { count: "exact", head })
     .eq("service_type", serviceType)
-    .eq("academic_year_id", academicYearId);
+    .eq("academic_year_id", academicYearId)
+    .eq("student_status", "active");
 
   if (branch !== "all") {
     query = query.eq("branch_code", branch);
@@ -176,7 +177,8 @@ export async function getDistinctClassSections(
     .from("fee_account_record")
     .select("class_section")
     .eq("service_type", serviceType)
-    .eq("academic_year_id", academicYearId);
+    .eq("academic_year_id", academicYearId)
+    .eq("student_status", "active");
 
   if (error) {
     throw new Error("Could not load class sections.");

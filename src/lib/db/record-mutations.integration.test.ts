@@ -163,4 +163,118 @@ describe("record mutations (as authenticated)", () => {
       expect(BigInt(balance.rows[0]!.total_receivable_paise)).toBe(newTotal);
     });
   });
+
+  it("archiving a student (soft delete) excludes them from fee_account_record but keeps their fee account and payment history intact", async () => {
+    await withRollback(client, async () => {
+      await client.query("set role authenticated");
+
+      const student = await client.query<{ id: string }>(
+        `insert into student
+           (branch_id, admission_no, full_name, guardian_name, phone, class_section)
+         values ($1, 'BR-A-9002', 'Archived Student', 'Test Guardian', '9000000002', 'Nursery-A')
+         returning id`,
+        [branchId],
+      );
+      const studentId = student.rows[0]!.id;
+
+      const feeAccount = await client.query<{ id: string }>(
+        `insert into fee_account
+           (student_id, academic_year_id, service_type, total_receivable_paise,
+            due_date, starts_on, ends_on, route_name, pickup_point)
+         values ($1, $2, 'transport', 500000, '2026-06-01', '2026-04-01', '2027-03-31', 'Route 1', 'Main Gate')
+         returning id`,
+        [studentId, academicYearId],
+      );
+      const feeAccountId = feeAccount.rows[0]!.id;
+
+      await client.query(
+        `insert into payment (fee_account_id, amount_paise, paid_on, method, recorded_by)
+         values ($1, 100000, '2026-06-01', 'upi', 'front_office')`,
+        [feeAccountId],
+      );
+
+      const beforeArchive = await client.query(
+        "select fee_account_id, student_status from fee_account_record where fee_account_id = $1 and student_status = 'active'",
+        [feeAccountId],
+      );
+      expect(beforeArchive.rows).toHaveLength(1);
+
+      await client.query(
+        "update student set status = 'inactive' where id = $1",
+        [studentId],
+      );
+
+      // Listings/dashboards filter on student_status = 'active' at the query
+      // layer, so that's what "excluded" means here...
+      const afterArchive = await client.query(
+        "select fee_account_id from fee_account_record where fee_account_id = $1 and student_status = 'active'",
+        [feeAccountId],
+      );
+      expect(afterArchive.rows).toHaveLength(0);
+
+      // ...but the view itself still resolves the row unfiltered, so a
+      // direct by-id lookup (the student's own detail page) still works.
+      const byId = await client.query(
+        "select student_status from fee_account_record where fee_account_id = $1",
+        [feeAccountId],
+      );
+      expect(byId.rows).toHaveLength(1);
+      expect(byId.rows[0]!.student_status).toBe("inactive");
+
+      // The row itself, and its payment history, are untouched.
+      const feeAccountRow = await client.query(
+        "select id from fee_account where id = $1",
+        [feeAccountId],
+      );
+      expect(feeAccountRow.rows).toHaveLength(1);
+      const paymentRows = await client.query(
+        "select amount_paise from payment where fee_account_id = $1",
+        [feeAccountId],
+      );
+      expect(paymentRows.rows).toHaveLength(1);
+    });
+  });
+
+  it("archiving a student removes their receivable from dashboard_summary", async () => {
+    await withRollback(client, async () => {
+      await client.query("set role authenticated");
+
+      const student = await client.query<{ id: string }>(
+        `insert into student
+           (branch_id, admission_no, full_name, guardian_name, phone, class_section)
+         values ($1, 'BR-A-9003', 'Archived Student Two', 'Test Guardian', '9000000003', 'Nursery-A')
+         returning id`,
+        [branchId],
+      );
+      const studentId = student.rows[0]!.id;
+
+      await client.query(
+        `insert into fee_account
+           (student_id, academic_year_id, service_type, total_receivable_paise,
+            due_date, starts_on, ends_on, route_name, pickup_point)
+         values ($1, $2, 'transport', 750000, '2026-06-01', '2026-04-01', '2027-03-31', 'Route 1', 'Main Gate')`,
+        [studentId, academicYearId],
+      );
+
+      const before = await client.query<{ total_receivable_paise: string }>(
+        "select * from dashboard_summary($1, $2, null)",
+        ["transport", academicYearId],
+      );
+
+      await client.query(
+        "update student set status = 'inactive' where id = $1",
+        [studentId],
+      );
+
+      const after = await client.query<{ total_receivable_paise: string }>(
+        "select * from dashboard_summary($1, $2, null)",
+        ["transport", academicYearId],
+      );
+
+      expect(
+        BigInt(before.rows[0]!.total_receivable_paise) -
+          BigInt(after.rows[0]!.total_receivable_paise),
+      ).toBe(750000n);
+    });
+  });
 });

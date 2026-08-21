@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatPaise } from "@/lib/domain/money";
 import { VoidPaymentForm } from "@/components/records/void-payment-form";
+import { BackLink } from "@/components/shell/back-link";
 
 export default async function VoidPaymentPage({
   params,
@@ -22,6 +23,7 @@ export default async function VoidPaymentPage({
 
   return (
     <div className="max-w-xl">
+      <BackLink href="/transport" />
       <h1 className="mb-1 text-xl font-medium text-ink">Void payment</h1>
       <p className="mb-4 text-sm text-ink-secondary">
         {formatPaise(BigInt(payment.amount_paise))} paid on {payment.paid_on}

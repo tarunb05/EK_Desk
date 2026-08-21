@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStudentDetail } from "@/lib/records/student-detail";
 import { StudentDetailBody } from "@/components/records/student-detail-body";
+import { BackLink } from "@/components/shell/back-link";
 
 export default async function StudentDetailPage({
   params,
@@ -18,10 +19,11 @@ export default async function StudentDetailPage({
 
   return (
     <div className="max-w-lg">
+      <BackLink href="/transport" />
       <h1 className="mb-4 text-xl font-medium text-ink">
         {detail.student.fullName}
       </h1>
-      <StudentDetailBody detail={detail} />
+      <StudentDetailBody detail={detail} redirectTo="/transport" />
     </div>
   );
 }

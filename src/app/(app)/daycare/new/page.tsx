@@ -3,6 +3,7 @@ import { getBranches } from "@/lib/supabase/queries";
 import { getCurrentScope } from "@/lib/shell/get-current-scope";
 import { shellSearchParamsSchema } from "@/lib/shell/search-params";
 import { AddStudentForm } from "@/components/records/add-student-form";
+import { BackLink } from "@/components/shell/back-link";
 
 export default async function NewDaycareStudentPage({
   searchParams,
@@ -18,6 +19,7 @@ export default async function NewDaycareStudentPage({
 
   return (
     <div className="max-w-xl">
+      <BackLink href="/daycare" />
       <h1 className="mb-4 text-xl font-medium text-ink">Add daycare student</h1>
       <AddStudentForm
         serviceType="daycare"

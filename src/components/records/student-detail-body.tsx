@@ -1,10 +1,17 @@
 import { formatPaise } from "@/lib/domain/money";
 import type { StudentDetail } from "@/lib/records/student-detail";
+import { DeleteStudentButton } from "./delete-student-button";
 
-export function StudentDetailBody({ detail }: { detail: StudentDetail }) {
+export function StudentDetailBody({
+  detail,
+  redirectTo,
+}: {
+  detail: StudentDetail;
+  redirectTo: "/transport" | "/daycare";
+}) {
   return (
     <>
-      <dl className="mb-6 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+      <dl className="mb-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
         <dt className="text-ink-muted">Admission no.</dt>
         <dd className="text-ink">{detail.student.admissionNo}</dd>
         <dt className="text-ink-muted">Guardian</dt>
@@ -16,6 +23,21 @@ export function StudentDetailBody({ detail }: { detail: StudentDetail }) {
         <dt className="text-ink-muted">Branch</dt>
         <dd className="text-ink">{detail.student.branchName}</dd>
       </dl>
+
+      {detail.student.status === "inactive" ? (
+        <p className="mb-4 text-xs text-ink-muted">
+          This student has been deleted. Their history stays visible here but
+          they&rsquo;re excluded from dashboards and record tables.
+        </p>
+      ) : (
+        <div className="mb-6">
+          <DeleteStudentButton
+            studentId={detail.student.id}
+            studentName={detail.student.fullName}
+            redirectTo={redirectTo}
+          />
+        </div>
+      )}
 
       {detail.feeAccounts.length === 0 ? (
         <p className="text-sm text-ink-muted">

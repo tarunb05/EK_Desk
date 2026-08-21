@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getFeeAccountRecordById } from "@/lib/records/queries";
 import { formatPaise } from "@/lib/domain/money";
 import { RecordPaymentForm } from "@/components/records/record-payment-form";
+import { BackLink } from "@/components/shell/back-link";
 
 export default async function RecordPaymentPage({
   params,
@@ -19,6 +20,7 @@ export default async function RecordPaymentPage({
 
   return (
     <div className="max-w-xl">
+      <BackLink href="/daycare" />
       <h1 className="mb-1 text-xl font-medium text-ink">Record payment</h1>
       <p className="mb-4 text-sm text-ink-secondary">
         {record.studentFullName} — pending {formatPaise(record.pendingPaise)}

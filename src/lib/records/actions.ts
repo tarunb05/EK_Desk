@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
+  archiveStudentSchema,
   createStudentWithFeeAccountSchema,
   recordPaymentSchema,
   updateFeeAccountSchema,
@@ -215,4 +216,35 @@ export async function voidPayment(
   const serviceType = feeAccount?.service_type ?? "transport";
   revalidatePath(`/${serviceType}`);
   redirect(`/${serviceType}`);
+}
+
+// Soft delete: sets student.status = 'inactive' rather than removing the
+// row. fee_account and payment rows are untouched — fee_account_record
+// (what every listing/dashboard reads) excludes inactive students, but the
+// student's own history is still reachable by id, and nothing is lost.
+export async function archiveStudent(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = archiveStudentSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return {
+      error: parsed.error.issues[0]?.message ?? "Check the form and try again.",
+    };
+  }
+  const value = parsed.data;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("student")
+    .update({ status: "inactive" })
+    .eq("id", value.studentId);
+
+  if (error) {
+    return { error: "Could not delete this student." };
+  }
+
+  revalidatePath("/transport");
+  revalidatePath("/daycare");
+  redirect(value.redirectTo);
 }

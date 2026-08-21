@@ -8,7 +8,7 @@ export function StudentDrawer({
   closeHref,
 }: {
   detail: StudentDetail;
-  closeHref: string;
+  closeHref: "/transport" | "/daycare";
 }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -38,7 +38,7 @@ export function StudentDrawer({
             Close
           </CloseDrawerLink>
         </div>
-        <StudentDetailBody detail={detail} />
+        <StudentDetailBody detail={detail} redirectTo={closeHref} />
       </div>
     </div>
   );

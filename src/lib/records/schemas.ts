@@ -86,3 +86,8 @@ export const voidPaymentSchema = z.object({
     .trim()
     .min(1, "Enter a reason for voiding this payment."),
 });
+
+export const archiveStudentSchema = z.object({
+  studentId: z.string().uuid(),
+  redirectTo: z.enum(["/transport", "/daycare"]),
+});
