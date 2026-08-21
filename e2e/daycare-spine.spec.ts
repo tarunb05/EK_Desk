@@ -36,7 +36,7 @@ test.describe("daycare spine", () => {
     await page.goto("/daycare/new");
     const form = page.locator("main");
     await expect(form.getByLabel("Route")).toHaveCount(0);
-    await form.getByLabel("Branch").selectOption({ label: "Branch B" });
+    await form.getByLabel("Branch").selectOption({ label: "Kannuru" });
     await form.getByLabel("Admission number").fill("BR-B-E2E-001");
     await form
       .getByLabel("Student full name")

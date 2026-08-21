@@ -134,8 +134,8 @@ async function main() {
 
     const branchRows = await client.query<{ id: string; code: string }>(
       `insert into branch (code, name, is_active) values
-        ('BR-A', 'Branch A', true),
-        ('BR-B', 'Branch B', true)
+        ('BR-A', 'Kothanur', true),
+        ('BR-B', 'Kannuru', true)
       returning id, code`,
     );
     const branchByCode = Object.fromEntries(

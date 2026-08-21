@@ -22,7 +22,7 @@ test.describe("transport spine", () => {
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/transport$/);
 
-    // Baseline figures, scoped to Branch A.
+    // Baseline figures, scoped to Kothanur.
     await page.goto("/transport?branch=BR-A");
     const baselineStudents = await readStat(page, "students-enrolled");
     const baselineReceivable = await readStat(page, "total-receivable");
@@ -40,12 +40,12 @@ test.describe("transport spine", () => {
       return page.locator("main").innerText();
     })();
 
-    // Add a student with a transport fee account in Branch A.
+    // Add a student with a transport fee account in Kothanur.
     await page.goto("/transport/new");
     const addStudentForm = page.locator("main");
     await addStudentForm
       .getByLabel("Branch")
-      .selectOption({ label: "Branch A" });
+      .selectOption({ label: "Kothanur" });
     await addStudentForm.getByLabel("Admission number").fill("BR-A-E2E-001");
     await addStudentForm
       .getByLabel("Student full name")
@@ -64,7 +64,7 @@ test.describe("transport spine", () => {
     await addStudentForm.getByRole("button", { name: "Add student" }).click();
     await expect(page).toHaveURL(/\/transport$/);
 
-    // Dashboard figures for Branch A increase by exactly the new amounts.
+    // Dashboard figures for Kothanur increase by exactly the new amounts.
     await page.goto("/transport?branch=BR-A");
     expect(await readStat(page, "students-enrolled")).toBe(
       baselineStudents + 1,
@@ -102,7 +102,7 @@ test.describe("transport spine", () => {
       afterPaymentPending + 4_000,
     );
 
-    // Branch B is unaffected by everything that happened in Branch A.
+    // Kannuru is unaffected by everything that happened in Kothanur.
     await page.goto("/transport?branch=BR-B");
     expect(await readStat(page, "students-enrolled")).toBe(
       baselineBranchB.students,
