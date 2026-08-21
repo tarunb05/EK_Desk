@@ -5,6 +5,8 @@ import type {
   AcademicYearOption,
   BranchOption,
 } from "@/lib/shell/resolve-year-branch";
+import { BranchIcon, CalendarIcon } from "./nav-icons";
+import { Select } from "@/components/forms/select";
 
 interface ScopeSelectorsProps {
   // Omit years entirely on pages that aren't scoped to an academic year
@@ -13,9 +15,6 @@ interface ScopeSelectorsProps {
   years?: AcademicYearOption[];
   branches: BranchOption[];
 }
-
-const selectClassName =
-  "h-8 rounded-md border border-border bg-surface px-2 text-sm text-ink";
 
 export function ScopeSelectors({ years, branches }: ScopeSelectorsProps) {
   const router = useRouter();
@@ -38,37 +37,41 @@ export function ScopeSelectors({ years, branches }: ScopeSelectorsProps) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       {years ? (
-        <label className="flex items-center gap-2 text-sm text-ink-secondary">
+        <div className="flex items-center gap-1.5 text-sm text-ink-secondary">
+          <CalendarIcon size={14} />
           Year
-          <select
+          <Select
+            ariaLabel="Year"
             value={currentYearLabel}
-            onChange={(event) => updateParam("year", event.target.value)}
-            className={selectClassName}
-          >
-            {years.map((year) => (
-              <option key={year.id} value={year.label}>
-                {year.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={(next) => updateParam("year", next)}
+            options={years.map((year) => ({
+              value: year.label,
+              label: year.label,
+            }))}
+            className="w-28"
+            triggerClassName="h-8"
+          />
+        </div>
       ) : null}
 
-      <label className="flex items-center gap-2 text-sm text-ink-secondary">
+      <div className="flex items-center gap-1.5 text-sm text-ink-secondary">
+        <BranchIcon size={14} />
         Branch
-        <select
+        <Select
+          ariaLabel="Branch"
           value={currentBranch}
-          onChange={(event) => updateParam("branch", event.target.value)}
-          className={selectClassName}
-        >
-          <option value="all">All branches</option>
-          {branches.map((branch) => (
-            <option key={branch.code} value={branch.code}>
-              {branch.name}
-            </option>
-          ))}
-        </select>
-      </label>
+          onChange={(next) => updateParam("branch", next)}
+          options={[
+            { value: "all", label: "All branches" },
+            ...branches.map((branch) => ({
+              value: branch.code,
+              label: branch.name,
+            })),
+          ]}
+          className="w-36"
+          triggerClassName="h-8"
+        />
+      </div>
     </div>
   );
 }

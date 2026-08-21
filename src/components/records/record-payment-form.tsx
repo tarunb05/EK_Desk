@@ -1,16 +1,29 @@
 "use client";
 
-import { useActionState } from "react";
-import { Field, inputClassName } from "@/components/forms/field";
+import { useActionState, useState } from "react";
+import {
+  Field,
+  inputClassName,
+  primaryButtonClassName,
+} from "@/components/forms/field";
+import { Select } from "@/components/forms/select";
 import { type ActionState, recordPayment } from "@/lib/records/actions";
 
 const initialState: ActionState = { error: null };
+
+const METHOD_OPTIONS = [
+  { value: "cash", label: "Cash" },
+  { value: "upi", label: "UPI" },
+  { value: "cheque", label: "Cheque" },
+  { value: "bank_transfer", label: "Bank transfer" },
+];
 
 export function RecordPaymentForm({ feeAccountId }: { feeAccountId: string }) {
   const [state, formAction, isPending] = useActionState(
     recordPayment,
     initialState,
   );
+  const [method, setMethod] = useState("cash");
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -32,12 +45,13 @@ export function RecordPaymentForm({ feeAccountId }: { feeAccountId: string }) {
       </Field>
 
       <Field label="Method">
-        <select name="method" required className={inputClassName}>
-          <option value="cash">Cash</option>
-          <option value="upi">UPI</option>
-          <option value="cheque">Cheque</option>
-          <option value="bank_transfer">Bank transfer</option>
-        </select>
+        <Select
+          name="method"
+          ariaLabel="Method"
+          value={method}
+          onChange={setMethod}
+          options={METHOD_OPTIONS}
+        />
       </Field>
 
       <Field label="Reference (optional)">
@@ -61,7 +75,7 @@ export function RecordPaymentForm({ feeAccountId }: { feeAccountId: string }) {
       <button
         type="submit"
         disabled={isPending}
-        className="h-10 rounded-md bg-accent text-sm font-medium text-surface transition-colors duration-150 disabled:opacity-60"
+        className={primaryButtonClassName}
       >
         {isPending ? "Saving…" : "Record payment"}
       </button>

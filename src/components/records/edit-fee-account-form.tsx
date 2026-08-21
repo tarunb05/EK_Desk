@@ -1,7 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
-import { Field, inputClassName } from "@/components/forms/field";
+import { useActionState, useState } from "react";
+import {
+  Field,
+  inputClassName,
+  primaryButtonClassName,
+} from "@/components/forms/field";
+import { Select } from "@/components/forms/select";
 import { type ActionState, updateFeeAccount } from "@/lib/records/actions";
 import { paiseToRupees } from "@/lib/domain/money";
 import type { FeeAccountRecordRow } from "@/lib/records/types";
@@ -17,6 +22,7 @@ export function EditFeeAccountForm({
     updateFeeAccount,
     initialState,
   );
+  const [status, setStatus] = useState(record.status);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -65,15 +71,16 @@ export function EditFeeAccountForm({
       </Field>
 
       <Field label="Status">
-        <select
+        <Select
           name="status"
-          required
-          defaultValue={record.status}
-          className={inputClassName}
-        >
-          <option value="active">Active</option>
-          <option value="discontinued">Discontinued</option>
-        </select>
+          ariaLabel="Status"
+          value={status}
+          onChange={(next) => setStatus(next as typeof record.status)}
+          options={[
+            { value: "active", label: "Active" },
+            { value: "discontinued", label: "Discontinued" },
+          ]}
+        />
       </Field>
 
       {record.serviceType === "transport" ? (
@@ -112,7 +119,7 @@ export function EditFeeAccountForm({
       <button
         type="submit"
         disabled={isPending}
-        className="h-10 rounded-md bg-accent text-sm font-medium text-surface transition-colors duration-150 disabled:opacity-60"
+        className={primaryButtonClassName}
       >
         {isPending ? "Saving…" : "Save changes"}
       </button>

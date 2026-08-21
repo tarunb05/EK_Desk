@@ -5,6 +5,13 @@ import {
   STUDENT_SERVICE_FILTERS,
   STUDENT_STATUS_FILTERS,
 } from "@/lib/shell/student-table-params";
+import {
+  ClassIcon,
+  SearchIcon,
+  ServiceIcon,
+  StatusIcon,
+} from "@/components/shell/nav-icons";
+import { Select } from "@/components/forms/select";
 
 interface StudentDirectoryFiltersProps {
   classSections: string[];
@@ -27,7 +34,14 @@ const SERVICE_LABELS: Record<(typeof STUDENT_SERVICE_FILTERS)[number], string> =
   };
 
 const controlClassName =
-  "h-9 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent";
+  "h-9 rounded-md border border-border bg-surface pl-8 pr-3 text-sm text-ink outline-none transition-colors focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent";
+
+// Native <select>/<input> elements can't take a child node, so the leading
+// icon is an absolutely-positioned overlay in a relative wrapper instead —
+// aria-hidden, purely decorative; the accessible name still comes from
+// each control's own aria-label/placeholder.
+const iconWrapperClassName =
+  "pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-muted";
 
 export function StudentDirectoryFilters({
   classSections,
@@ -49,54 +63,58 @@ export function StudentDirectoryFilters({
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <input
-        type="search"
-        aria-label="Search by name or admission number"
-        placeholder="Search by name or admission number"
-        defaultValue={searchParams.get("q") ?? ""}
-        onChange={(event) => updateParam("q", event.target.value)}
-        className={`w-72 ${controlClassName}`}
+      <div className="relative w-72">
+        <span className={iconWrapperClassName}>
+          <SearchIcon size={14} />
+        </span>
+        <input
+          type="search"
+          aria-label="Search by name or admission number"
+          placeholder="Search by name or admission number"
+          defaultValue={searchParams.get("q") ?? ""}
+          onChange={(event) => updateParam("q", event.target.value)}
+          className={`w-full ${controlClassName}`}
+        />
+      </div>
+
+      <Select
+        ariaLabel="Filter by status"
+        icon={<StatusIcon size={14} />}
+        value={searchParams.get("status") ?? "active"}
+        onChange={(next) => updateParam("status", next)}
+        options={STUDENT_STATUS_FILTERS.map((status) => ({
+          value: status,
+          label: STATUS_LABELS[status],
+        }))}
+        className="w-44"
       />
 
-      <select
-        aria-label="Filter by status"
-        value={searchParams.get("status") ?? "active"}
-        onChange={(event) => updateParam("status", event.target.value)}
-        className={controlClassName}
-      >
-        {STUDENT_STATUS_FILTERS.map((status) => (
-          <option key={status} value={status}>
-            {STATUS_LABELS[status]}
-          </option>
-        ))}
-      </select>
-
-      <select
-        aria-label="Filter by service"
+      <Select
+        ariaLabel="Filter by service"
+        icon={<ServiceIcon size={14} />}
         value={searchParams.get("service") ?? "all"}
-        onChange={(event) => updateParam("service", event.target.value)}
-        className={controlClassName}
-      >
-        {STUDENT_SERVICE_FILTERS.map((service) => (
-          <option key={service} value={service}>
-            {SERVICE_LABELS[service]}
-          </option>
-        ))}
-      </select>
+        onChange={(next) => updateParam("service", next)}
+        options={STUDENT_SERVICE_FILTERS.map((service) => ({
+          value: service,
+          label: SERVICE_LABELS[service],
+        }))}
+        className="w-44"
+      />
 
-      <select
-        aria-label="Filter by class"
+      <Select
+        ariaLabel="Filter by class"
+        icon={<ClassIcon size={14} />}
         value={searchParams.get("classSection") ?? ""}
-        onChange={(event) => updateParam("classSection", event.target.value)}
-        className={controlClassName}
-      >
-        <option value="">All classes</option>
-        {classSections.map((classSection) => (
-          <option key={classSection} value={classSection}>
-            {classSection}
-          </option>
-        ))}
-      </select>
+        onChange={(next) => updateParam("classSection", next)}
+        options={[
+          { value: "", label: "All classes" },
+          ...classSections.map((classSection) => ({
+            value: classSection,
+            label: classSection,
+          })),
+        ]}
+        className="w-40"
+      />
     </div>
   );
 }

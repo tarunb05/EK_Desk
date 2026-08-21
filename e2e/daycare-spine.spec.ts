@@ -36,14 +36,16 @@ test.describe("daycare spine", () => {
     await page.goto("/daycare/new");
     const form = page.locator("main");
     await expect(form.getByLabel("Route")).toHaveCount(0);
-    await form.getByLabel("Branch").selectOption({ label: "Kannuru" });
+    await form.getByLabel("Branch").click();
+    await page.getByRole("option", { name: "Kannuru" }).click();
     await form.getByLabel("Admission number").fill("BR-B-E2E-001");
     await form
       .getByLabel("Student full name")
       .fill("Playwright Daycare Student");
     await form.getByLabel("Guardian name").fill("Playwright Guardian");
     await form.getByLabel("Phone").fill("9000000456");
-    await form.getByLabel("Grade").selectOption({ label: "Euro Senior" });
+    await form.getByLabel("Grade").click();
+    await page.getByRole("option", { name: "Euro Senior" }).click();
     await form.getByLabel("Slot").fill("Morning (8-1)");
     await form.getByLabel("Total receivable (₹)").fill("12000");
     await form.getByLabel("Due date").fill("2026-06-01");

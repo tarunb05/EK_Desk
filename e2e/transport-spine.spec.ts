@@ -43,9 +43,8 @@ test.describe("transport spine", () => {
     // Add a student with a transport fee account in Kothanur.
     await page.goto("/transport/new");
     const addStudentForm = page.locator("main");
-    await addStudentForm
-      .getByLabel("Branch")
-      .selectOption({ label: "Kothanur" });
+    await addStudentForm.getByLabel("Branch").click();
+    await page.getByRole("option", { name: "Kothanur" }).click();
     await addStudentForm.getByLabel("Admission number").fill("BR-A-E2E-001");
     await addStudentForm
       .getByLabel("Student full name")
@@ -54,7 +53,8 @@ test.describe("transport spine", () => {
       .getByLabel("Guardian name")
       .fill("Playwright Guardian");
     await addStudentForm.getByLabel("Phone").fill("9000000123");
-    await addStudentForm.getByLabel("Grade").selectOption({ label: "Nursery" });
+    await addStudentForm.getByLabel("Grade").click();
+    await page.getByRole("option", { name: "Nursery", exact: true }).click();
     await addStudentForm.getByLabel("Pickup point").fill("Main Gate");
     await addStudentForm.getByLabel("Total receivable (₹)").fill("10000");
     await addStudentForm.getByLabel("Due date").fill("2026-06-01");

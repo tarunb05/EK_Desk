@@ -1,7 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
-import { Field, inputClassName } from "@/components/forms/field";
+import { useActionState, useState } from "react";
+import {
+  Field,
+  inputClassName,
+  primaryButtonClassName,
+} from "@/components/forms/field";
+import { Select } from "@/components/forms/select";
 import {
   createStudentWithFeeAccount,
   type ActionState,
@@ -27,6 +32,8 @@ export function AddStudentForm({
     createStudentWithFeeAccount,
     initialState,
   );
+  const [branchId, setBranchId] = useState(branches[0]?.id ?? "");
+  const [classSection, setClassSection] = useState("");
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -34,13 +41,16 @@ export function AddStudentForm({
       <input type="hidden" name="academicYearId" value={academicYearId} />
 
       <Field label="Branch">
-        <select name="branchId" required className={inputClassName}>
-          {branches.map((branch) => (
-            <option key={branch.id} value={branch.id}>
-              {branch.name}
-            </option>
-          ))}
-        </select>
+        <Select
+          name="branchId"
+          ariaLabel="Branch"
+          value={branchId}
+          onChange={setBranchId}
+          options={branches.map((branch) => ({
+            value: branch.id,
+            label: branch.name,
+          }))}
+        />
       </Field>
 
       <Field label="Admission number">
@@ -60,14 +70,19 @@ export function AddStudentForm({
       </Field>
 
       <Field label="Grade">
-        <select name="classSection" required className={inputClassName}>
-          <option value="">Choose a grade</option>
-          {CLASS_SECTIONS.map((classSection) => (
-            <option key={classSection} value={classSection}>
-              {classSection}
-            </option>
-          ))}
-        </select>
+        <Select
+          name="classSection"
+          ariaLabel="Grade"
+          value={classSection}
+          onChange={setClassSection}
+          options={[
+            { value: "", label: "Choose a grade" },
+            ...CLASS_SECTIONS.map((section) => ({
+              value: section,
+              label: section,
+            })),
+          ]}
+        />
       </Field>
 
       {serviceType === "transport" ? (
@@ -117,7 +132,7 @@ export function AddStudentForm({
       <button
         type="submit"
         disabled={isPending}
-        className="h-10 rounded-md bg-accent text-sm font-medium text-surface transition-colors duration-150 disabled:opacity-60"
+        className={primaryButtonClassName}
       >
         {isPending ? "Saving…" : "Add student"}
       </button>
