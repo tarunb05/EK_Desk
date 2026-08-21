@@ -6,6 +6,8 @@ import type {
   AcademicYearOption,
   BranchOption,
 } from "@/lib/shell/resolve-year-branch";
+import { MenuIcon } from "./nav-icons";
+import { useSidebarContext } from "./sidebar-context";
 
 interface TopBarProps {
   years: AcademicYearOption[];
@@ -16,6 +18,7 @@ export function TopBar({ years, branches }: TopBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { setMobileOpen } = useSidebarContext();
 
   const currentYearLabel =
     searchParams.get("year") ??
@@ -31,8 +34,17 @@ export function TopBar({ years, branches }: TopBarProps) {
   }
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-hairline bg-surface px-6">
-      <div className="flex items-center gap-4">
+    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline bg-surface px-4 py-3 md:h-14 md:flex-nowrap md:px-6 md:py-0">
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent md:hidden"
+        >
+          <MenuIcon />
+        </button>
+
         <label className="flex items-center gap-2 text-sm text-ink-secondary">
           Year
           <select
