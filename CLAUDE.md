@@ -47,13 +47,13 @@ Tokens (all text colours contrast-checked against white at 4.5:1 or better):
 --ink:              #1C1B19   /* primary text          17.2:1 */
 --ink-secondary:    #57544E   /* secondary text         7.5:1 */
 --ink-muted:        #6B675F   /* labels, captions       5.6:1 */
---canvas:           #FAF9F8   /* app background */
+--canvas:           #F3EEE3   /* app background — beige */
 --surface:          #FFFFFF   /* cards, table body */
---surface-accent:   #F5E9E7   /* selected/hovered row, callout */
+--surface-accent:   #E8EEF7   /* selected/hovered row, callout */
 --hairline:         #E3E2E1   /* table rules, dividers */
 --border:           #C1C0C2   /* input borders, card edges */
---accent:           #4A5E70   /* links, active tab, primary button  6.7:1 */
---accent-fill:      #8A9DB1   /* chart series, non-text fills */
+--accent:           #2A3A5C   /* links, active tab, primary button 11.3:1 — dull dark navy */
+--accent-fill:      #5B729A   /* chart series, non-text fills */
 --positive:         #57523F   /* "collected" figures                7.8:1 */
 --positive-fill:    #837D68   /* chart series */
 --attention:        #8C3F42   /* overdue figures, errors            7.2:1 */
@@ -62,7 +62,7 @@ Tokens (all text colours contrast-checked against white at 4.5:1 or better):
 
 Chart series order: `--accent-fill` → `--positive-fill` → `--attention-fill` → `--border`. Never encode meaning by colour alone; overdue rows also get a left rule and a text label.
 
-Typography: Inter via `next/font`, scale 11/12/13/14/16/20/28px. Body 13–14px, not 16px. `font-variant-numeric: tabular-nums` on every element containing a number. Section labels 11px uppercase with `letter-spacing: 0.06em` in `--ink-muted`.
+Typography: Inter via `next/font` for body text, labels, and every numeral (tabular-nums support, legible at small sizes). Source Serif 4 via `next/font` for page titles (`<h1>`) and the app wordmark only — the "bank statement" character, never on data. Scale 11/12/13/14/16/20/28px. Body 13–14px, not 16px. `font-variant-numeric: tabular-nums` on every element containing a number. Section labels 11px uppercase with `letter-spacing: 0.06em` in `--ink-muted`.
 
 **Banned:** gradients, `backdrop-filter`/glassmorphism, purple or indigo, emoji, shadows larger than `0 1px 2px rgba(0,0,0,.05)`, border-radius above 6px, hero sections, decorative illustrations, animated counters, a second accent colour, centre-aligned body text, icon-only buttons without a label or `aria-label`.
 

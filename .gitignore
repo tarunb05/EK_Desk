@@ -45,3 +45,7 @@ next-env.d.ts
 # spreadsheet exports (PII risk)
 *.csv
 *.xlsx
+
+# locally-installed agent skills (not part of this app)
+/.agents/
+skills-lock.json

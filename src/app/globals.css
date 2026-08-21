@@ -4,17 +4,23 @@
   --ink: #1c1b19;
   --ink-secondary: #57544e;
   --ink-muted: #6b675f;
-  --canvas: #faf9f8;
+  --canvas: #f3eee3;
   --surface: #ffffff;
-  --surface-accent: #f5e9e7;
+  --surface-accent: #e8eef7;
   --hairline: #e3e2e1;
   --border: #c1c0c2;
-  --accent: #4a5e70;
-  --accent-fill: #8a9db1;
+  --accent: #2a3a5c;
+  --accent-fill: #5b729a;
   --positive: #57523f;
   --positive-fill: #837d68;
   --attention: #8c3f42;
   --attention-fill: #ecc5c6;
+
+  /* A soft ease-out with a touch of settle at the end — smoother/"flowier"
+     than a linear or plain ease-out curve without overshooting, so it stays
+     restrained rather than bouncy. Used as the default for every existing
+     `transition-*` utility in the app (state-change only, per CLAUDE.md). */
+  --ease-flowy: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
@@ -34,6 +40,7 @@
   --color-attention-fill: var(--attention-fill);
 
   --font-sans: var(--font-inter);
+  --font-serif: var(--font-serif);
 
   --text-2xs: 11px;
   --text-xs: 12px;
@@ -45,6 +52,11 @@
 
   --radius-sm: 4px;
   --radius-md: 6px;
+
+  /* Every existing `transition-*` utility (colors, transform, opacity)
+     already in use across the app picks up this curve automatically —
+     no per-component changes needed for the smoother feel. */
+  --default-transition-timing-function: var(--ease-flowy);
 }
 
 body {
@@ -52,4 +64,35 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   font-size: var(--text-sm);
+}
+
+/* Every page title in the app is an <h1>; data/numerals stay on Inter
+   everywhere else (tabular-nums, small-size legibility). A single rule here
+   covers all of them instead of touching each page. */
+h1 {
+  font-family: var(--font-serif), Georgia, serif;
+}
+
+/* Subtle entrance for popovers/dropdowns (e.g. the month filter) — a plain
+   mount with no motion reads as an abrupt snap; this keeps it quick (150ms,
+   well within the 120–150ms budget) and small (4px, not a slide-in). */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 150ms var(--ease-flowy);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pop-in {
+    animation: none;
+  }
 }
