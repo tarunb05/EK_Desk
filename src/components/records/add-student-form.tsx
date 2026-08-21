@@ -71,14 +71,9 @@ export function AddStudentForm({
       </Field>
 
       {serviceType === "transport" ? (
-        <>
-          <Field label="Route">
-            <input name="routeName" required className={inputClassName} />
-          </Field>
-          <Field label="Pickup point">
-            <input name="pickupPoint" required className={inputClassName} />
-          </Field>
-        </>
+        <Field label="Pickup point">
+          <input name="pickupPoint" required className={inputClassName} />
+        </Field>
       ) : (
         <Field label="Slot">
           <input name="slot" required className={inputClassName} />

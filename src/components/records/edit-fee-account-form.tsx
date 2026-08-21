@@ -78,14 +78,11 @@ export function EditFeeAccountForm({
 
       {record.serviceType === "transport" ? (
         <>
-          <Field label="Route">
-            <input
-              name="routeName"
-              required
-              defaultValue={record.routeName ?? ""}
-              className={inputClassName}
-            />
-          </Field>
+          <input
+            type="hidden"
+            name="routeName"
+            value={record.routeName ?? ""}
+          />
           <Field label="Pickup point">
             <input
               name="pickupPoint"

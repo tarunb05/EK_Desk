@@ -55,7 +55,6 @@ test.describe("transport spine", () => {
       .fill("Playwright Guardian");
     await addStudentForm.getByLabel("Phone").fill("9000000123");
     await addStudentForm.getByLabel("Grade").selectOption({ label: "Nursery" });
-    await addStudentForm.getByLabel("Route").fill("Route 1 - MG Road");
     await addStudentForm.getByLabel("Pickup point").fill("Main Gate");
     await addStudentForm.getByLabel("Total receivable (₹)").fill("10000");
     await addStudentForm.getByLabel("Due date").fill("2026-06-01");

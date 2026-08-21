@@ -42,12 +42,12 @@ describe("createStudentWithFeeAccountSchema", () => {
     expect(result.slot).toBe("Morning (8-1)");
   });
 
-  it("rejects a transport submission missing a route", () => {
+  it("accepts a transport submission with no route", () => {
     const result = createStudentWithFeeAccountSchema.safeParse({
       ...validTransportStudent,
       routeName: undefined,
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("rejects a daycare submission missing a slot", () => {

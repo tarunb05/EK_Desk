@@ -33,13 +33,6 @@ export const createStudentWithFeeAccountSchema = z
   })
   .superRefine((value, ctx) => {
     if (value.serviceType === "transport") {
-      if (!value.routeName) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["routeName"],
-          message: "Enter a route.",
-        });
-      }
       if (!value.pickupPoint) {
         ctx.addIssue({
           code: "custom",
