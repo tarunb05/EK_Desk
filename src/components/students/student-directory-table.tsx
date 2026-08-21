@@ -10,6 +10,7 @@ interface StudentDirectoryTableProps {
   sort: StudentSortKey;
   dir: "asc" | "desc";
   page: number;
+  pageSize: number;
   totalPages: number;
   searchParams: Record<string, string | undefined>;
 }
@@ -79,6 +80,7 @@ export function StudentDirectoryTable({
   sort,
   dir,
   page,
+  pageSize,
   totalPages,
   searchParams,
 }: StudentDirectoryTableProps) {
@@ -97,6 +99,9 @@ export function StudentDirectoryTable({
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="h-9 border-b border-hairline bg-canvas">
+              <th className="px-3 text-left text-2xs font-medium uppercase tracking-wide text-ink-muted">
+                S.No.
+              </th>
               <th className="px-3 text-left">
                 <SortableHeader
                   label="Student"
@@ -154,7 +159,7 @@ export function StudentDirectoryTable({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {rows.map((row, index) => (
               <tr
                 key={row.id}
                 className={`h-10 border-b border-hairline last:border-0 ${
@@ -163,6 +168,9 @@ export function StudentDirectoryTable({
                     : ""
                 }`}
               >
+                <td className="px-3 text-ink-secondary tabular-nums">
+                  {(page - 1) * pageSize + index + 1}
+                </td>
                 <td className="px-3">
                   <Link
                     href={`/transport/student/${row.id}`}

@@ -9,7 +9,6 @@ export default function TransportPage({
     <ServiceScopeDashboard
       serviceType="transport"
       title="Transport"
-      groupByLabel="Route"
       searchParams={searchParams}
     />
   );

@@ -2,7 +2,7 @@ import { Sidebar } from "@/components/shell/sidebar";
 import { TopBar } from "@/components/shell/top-bar";
 import { SidebarProvider } from "@/components/shell/sidebar-context";
 import { createClient } from "@/lib/supabase/server";
-import { getAcademicYears, getBranches } from "@/lib/supabase/queries";
+import { internalEmailToUsername } from "@/lib/auth/username";
 
 export default async function AppLayout({
   children,
@@ -10,10 +10,10 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const [years, branches] = await Promise.all([
-    getAcademicYears(supabase),
-    getBranches(supabase),
-  ]);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const username = user?.email ? internalEmailToUsername(user.email) : null;
 
   return (
     <SidebarProvider>
@@ -26,7 +26,7 @@ export default async function AppLayout({
         </a>
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar years={years} branches={branches} />
+          <TopBar username={username} />
           <main
             id="main-content"
             className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-4 md:px-6 md:py-6"

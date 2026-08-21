@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import type { AgeingBucket } from "@/lib/domain/types";
 import type { ServiceType } from "@/lib/records/types";
 
 export interface DashboardScope {
@@ -17,23 +16,9 @@ export interface DashboardSummary {
   totalOverduePaise: bigint;
 }
 
-export interface AgeingBucketSummary {
-  bucket: AgeingBucket;
-  accountCount: number;
-  pendingPaise: bigint;
-}
-
 export interface MonthCollection {
   month: string;
   collectedPaise: bigint;
-}
-
-export interface GroupBreakdown {
-  label: string;
-  studentCount: number;
-  receivablePaise: bigint;
-  collectedPaise: bigint;
-  pendingPaise: bigint;
 }
 
 function rpcArgs(scope: DashboardScope) {
@@ -65,24 +50,6 @@ export async function getDashboardSummary(
   };
 }
 
-export async function getAgeingBuckets(
-  supabase: SupabaseClient<Database>,
-  scope: DashboardScope,
-): Promise<AgeingBucketSummary[]> {
-  const { data, error } = await supabase.rpc(
-    "dashboard_ageing_buckets",
-    rpcArgs(scope),
-  );
-  if (error) {
-    throw new Error("Could not load ageing buckets.");
-  }
-  return data.map((row) => ({
-    bucket: row.bucket as AgeingBucket,
-    accountCount: Number(row.account_count),
-    pendingPaise: BigInt(row.pending_paise),
-  }));
-}
-
 export async function getCollectionByMonth(
   supabase: SupabaseClient<Database>,
   scope: DashboardScope,
@@ -97,45 +64,5 @@ export async function getCollectionByMonth(
   return data.map((row) => ({
     month: row.month ?? "",
     collectedPaise: BigInt(row.collected_paise),
-  }));
-}
-
-export async function getBreakdownByClass(
-  supabase: SupabaseClient<Database>,
-  scope: DashboardScope,
-): Promise<GroupBreakdown[]> {
-  const { data, error } = await supabase.rpc(
-    "dashboard_breakdown_by_class",
-    rpcArgs(scope),
-  );
-  if (error) {
-    throw new Error("Could not load the class breakdown.");
-  }
-  return data.map((row) => ({
-    label: row.class_section ?? "",
-    studentCount: Number(row.student_count),
-    receivablePaise: BigInt(row.receivable_paise),
-    collectedPaise: BigInt(row.collected_paise),
-    pendingPaise: BigInt(row.pending_paise),
-  }));
-}
-
-export async function getBreakdownByGroup(
-  supabase: SupabaseClient<Database>,
-  scope: DashboardScope,
-): Promise<GroupBreakdown[]> {
-  const { data, error } = await supabase.rpc(
-    "dashboard_breakdown_by_group",
-    rpcArgs(scope),
-  );
-  if (error) {
-    throw new Error("Could not load the route/slot breakdown.");
-  }
-  return data.map((row) => ({
-    label: row.group_label ?? "",
-    studentCount: Number(row.student_count),
-    receivablePaise: BigInt(row.receivable_paise),
-    collectedPaise: BigInt(row.collected_paise),
-    pendingPaise: BigInt(row.pending_paise),
   }));
 }

@@ -9,7 +9,6 @@ export default function DaycarePage({
     <ServiceScopeDashboard
       serviceType="daycare"
       title="Daycare"
-      groupByLabel="Slot"
       searchParams={searchParams}
     />
   );
