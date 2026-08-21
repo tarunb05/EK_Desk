@@ -1,7 +1,7 @@
 import type { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ageingBucket } from "../domain/overdue";
-import { connect } from "./test-helpers";
+import { connect, withRollback } from "./test-helpers";
 
 describe("dashboard RPC functions", () => {
   let client: Client;
@@ -147,6 +147,50 @@ describe("dashboard RPC functions", () => {
       0n,
     );
     expect(sum).toBe(BigInt(summary.rows[0]!.total_receivable_paise));
+  });
+
+  it("discontinuing a fee account removes it from dashboard_summary but keeps it in fee_account_record history", async () => {
+    await withRollback(client, async () => {
+      const target = await client.query<{
+        id: string;
+        total_receivable_paise: string;
+      }>(
+        `select id, total_receivable_paise
+         from fee_account
+         where service_type = 'transport'
+           and academic_year_id = $1
+           and status = 'active'
+         limit 1`,
+        [currentYearId],
+      );
+      const feeAccountId = target.rows[0]!.id;
+      const receivablePaise = BigInt(target.rows[0]!.total_receivable_paise);
+
+      const before = await client.query<{ total_receivable_paise: string }>(
+        "select * from dashboard_summary($1, $2, null)",
+        ["transport", currentYearId],
+      );
+
+      await client.query(
+        "update fee_account set status = 'discontinued' where id = $1",
+        [feeAccountId],
+      );
+
+      const after = await client.query<{ total_receivable_paise: string }>(
+        "select * from dashboard_summary($1, $2, null)",
+        ["transport", currentYearId],
+      );
+
+      expect(BigInt(before.rows[0]!.total_receivable_paise)).toBe(
+        BigInt(after.rows[0]!.total_receivable_paise) + receivablePaise,
+      );
+
+      const history = await client.query(
+        "select fee_account_id from fee_account_record where fee_account_id = $1",
+        [feeAccountId],
+      );
+      expect(history.rows).toHaveLength(1);
+    });
   });
 
   it("dashboard_breakdown_by_group sums to the same receivable as dashboard_summary", async () => {
