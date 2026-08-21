@@ -1,10 +1,9 @@
 import Link from "next/link";
-import type { SortKey } from "@/lib/shell/table-params";
 
 interface SortableHeaderProps {
   label: string;
-  sortKey: SortKey;
-  currentSort: SortKey;
+  sortKey: string;
+  currentSort: string;
   currentDir: "asc" | "desc";
   searchParams: Record<string, string | undefined>;
   align?: "left" | "right";

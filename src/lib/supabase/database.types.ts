@@ -155,6 +155,13 @@ export type Database = {
             referencedRelation: "student"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fee_account_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       payment: {
@@ -310,6 +317,13 @@ export type Database = {
             referencedRelation: "student"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fee_account_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fee_account_record: {
@@ -354,7 +368,35 @@ export type Database = {
             referencedRelation: "student"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fee_account_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_directory"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      student_directory: {
+        Row: {
+          admission_no: string | null
+          branch_code: string | null
+          branch_name: string | null
+          class_section: string | null
+          created_at: string | null
+          fee_account_count: number | null
+          fee_accounts: Json | null
+          full_name: string | null
+          guardian_name: string | null
+          has_daycare: boolean | null
+          has_overdue: boolean | null
+          has_transport: boolean | null
+          id: string | null
+          phone: string | null
+          status: string | null
+          total_pending_paise: number | null
+        }
+        Relationships: []
       }
     }
     Functions: {
