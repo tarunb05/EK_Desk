@@ -6,6 +6,11 @@ interface PaginationControlsProps {
   searchParams: Record<string, string | undefined>;
 }
 
+const disabledClassName =
+  "rounded-md border border-border px-3 py-1 text-ink-muted opacity-40";
+const enabledClassName =
+  "rounded-md border border-border px-3 py-1 transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent";
+
 export function PaginationControls({
   page,
   totalPages,
@@ -20,34 +25,33 @@ export function PaginationControls({
     return `?${params.toString()}`;
   }
 
+  const isFirstPage = page <= 1;
+  const isLastPage = page >= totalPages;
+
   return (
     <div className="flex items-center justify-between border-t border-hairline pt-3 text-sm text-ink-secondary">
       <span>
         Page {page} of {totalPages}
       </span>
       <div className="flex gap-2">
-        <Link
-          href={hrefForPage(Math.max(1, page - 1))}
-          aria-disabled={page <= 1}
-          className={`rounded-md border border-border px-3 py-1 ${
-            page <= 1
-              ? "pointer-events-none opacity-40"
-              : "hover:bg-surface-accent hover:text-ink"
-          }`}
-        >
-          Previous
-        </Link>
-        <Link
-          href={hrefForPage(Math.min(totalPages, page + 1))}
-          aria-disabled={page >= totalPages}
-          className={`rounded-md border border-border px-3 py-1 ${
-            page >= totalPages
-              ? "pointer-events-none opacity-40"
-              : "hover:bg-surface-accent hover:text-ink"
-          }`}
-        >
-          Next
-        </Link>
+        {isFirstPage ? (
+          <span aria-disabled="true" className={disabledClassName}>
+            Previous
+          </span>
+        ) : (
+          <Link href={hrefForPage(page - 1)} className={enabledClassName}>
+            Previous
+          </Link>
+        )}
+        {isLastPage ? (
+          <span aria-disabled="true" className={disabledClassName}>
+            Next
+          </span>
+        ) : (
+          <Link href={hrefForPage(page + 1)} className={enabledClassName}>
+            Next
+          </Link>
+        )}
       </div>
     </div>
   );

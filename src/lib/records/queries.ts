@@ -7,6 +7,9 @@ import type {
 import { resolvePagination, type Pagination } from "@/lib/shell/pagination";
 import type { FeeAccountRecordRow, ServiceType } from "@/lib/records/types";
 
+type FeeAccountRecordDbRow =
+  Database["public"]["Views"]["fee_account_record"]["Row"];
+
 const SORT_COLUMN: Record<SortKey, string> = {
   full_name: "student_full_name",
   pending_paise: "pending_paise",
@@ -19,11 +22,41 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export interface GetFeeAccountRecordsParams {
+function mapFeeAccountRecordRow(
+  row: FeeAccountRecordDbRow,
+  fallbackServiceType: ServiceType,
+): FeeAccountRecordRow {
+  return {
+    feeAccountId: row.fee_account_id ?? "",
+    studentId: row.student_id ?? "",
+    studentFullName: row.student_full_name ?? "",
+    studentAdmissionNo: row.student_admission_no ?? "",
+    classSection: row.class_section ?? "",
+    branchCode: row.branch_code ?? "",
+    branchName: row.branch_name ?? "",
+    serviceType: (row.service_type ?? fallbackServiceType) as ServiceType,
+    totalReceivablePaise: BigInt(row.total_receivable_paise ?? 0),
+    collectedPaise: BigInt(row.collected_paise ?? 0),
+    pendingPaise: BigInt(row.pending_paise ?? 0),
+    dueDate: row.due_date ?? "",
+    startsOn: row.starts_on ?? "",
+    endsOn: row.ends_on ?? "",
+    lastPaidOn: row.last_paid_on,
+    status: (row.status ?? "active") as "active" | "discontinued",
+    routeName: row.route_name,
+    pickupPoint: row.pickup_point,
+    slot: row.slot,
+  };
+}
+
+export interface RecordScopeParams {
   serviceType: ServiceType;
   academicYearId: string;
   branch: "all" | string;
   table: RecordTableSearchParams;
+}
+
+export interface GetFeeAccountRecordsParams extends RecordScopeParams {
   page: number;
   pageSize: number;
 }
@@ -35,12 +68,7 @@ export interface FeeAccountRecordsResult {
 
 function applyFilters(
   supabase: SupabaseClient<Database>,
-  {
-    serviceType,
-    academicYearId,
-    branch,
-    table,
-  }: Omit<GetFeeAccountRecordsParams, "page" | "pageSize">,
+  { serviceType, academicYearId, branch, table }: RecordScopeParams,
   { head }: { head: boolean },
 ) {
   let query = supabase
@@ -95,29 +123,29 @@ export async function getFeeAccountRecords(
     throw new Error("Could not load records.");
   }
 
-  const rows: FeeAccountRecordRow[] = data.map((row) => ({
-    feeAccountId: row.fee_account_id ?? "",
-    studentId: row.student_id ?? "",
-    studentFullName: row.student_full_name ?? "",
-    studentAdmissionNo: row.student_admission_no ?? "",
-    classSection: row.class_section ?? "",
-    branchCode: row.branch_code ?? "",
-    branchName: row.branch_name ?? "",
-    serviceType: (row.service_type ?? serviceType) as ServiceType,
-    totalReceivablePaise: BigInt(row.total_receivable_paise ?? 0),
-    collectedPaise: BigInt(row.collected_paise ?? 0),
-    pendingPaise: BigInt(row.pending_paise ?? 0),
-    dueDate: row.due_date ?? "",
-    startsOn: row.starts_on ?? "",
-    endsOn: row.ends_on ?? "",
-    lastPaidOn: row.last_paid_on,
-    status: (row.status ?? "active") as "active" | "discontinued",
-    routeName: row.route_name,
-    pickupPoint: row.pickup_point,
-    slot: row.slot,
-  }));
+  return {
+    rows: data.map((row) => mapFeeAccountRecordRow(row, serviceType)),
+    pagination,
+  };
+}
 
-  return { rows, pagination };
+// Same filters as getFeeAccountRecords, but every matching row — used for
+// CSV export, where "any filtered view" means the whole result, not a page.
+export async function getAllFeeAccountRecords(
+  supabase: SupabaseClient<Database>,
+  params: RecordScopeParams,
+): Promise<FeeAccountRecordRow[]> {
+  const { data, error } = await applyFilters(supabase, params, {
+    head: false,
+  }).order(SORT_COLUMN[params.table.sort], {
+    ascending: params.table.dir === "asc",
+  });
+
+  if (error) {
+    throw new Error("Could not load records.");
+  }
+
+  return data.map((row) => mapFeeAccountRecordRow(row, params.serviceType));
 }
 
 export async function getFeeAccountRecordById(
@@ -134,27 +162,7 @@ export async function getFeeAccountRecordById(
     return null;
   }
 
-  return {
-    feeAccountId: data.fee_account_id ?? "",
-    studentId: data.student_id ?? "",
-    studentFullName: data.student_full_name ?? "",
-    studentAdmissionNo: data.student_admission_no ?? "",
-    classSection: data.class_section ?? "",
-    branchCode: data.branch_code ?? "",
-    branchName: data.branch_name ?? "",
-    serviceType: (data.service_type ?? "transport") as ServiceType,
-    totalReceivablePaise: BigInt(data.total_receivable_paise ?? 0),
-    collectedPaise: BigInt(data.collected_paise ?? 0),
-    pendingPaise: BigInt(data.pending_paise ?? 0),
-    dueDate: data.due_date ?? "",
-    startsOn: data.starts_on ?? "",
-    endsOn: data.ends_on ?? "",
-    lastPaidOn: data.last_paid_on,
-    status: (data.status ?? "active") as "active" | "discontinued",
-    routeName: data.route_name,
-    pickupPoint: data.pickup_point,
-    slot: data.slot,
-  };
+  return mapFeeAccountRecordRow(data, "transport");
 }
 
 export async function getDistinctClassSections(

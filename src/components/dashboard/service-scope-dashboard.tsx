@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getBranches } from "@/lib/supabase/queries";
 import { getCurrentScope } from "@/lib/shell/get-current-scope";
 import { shellSearchParamsSchema } from "@/lib/shell/search-params";
 import {
@@ -16,13 +17,19 @@ import {
   getBreakdownByGroup,
   getCollectionByMonth,
   getDashboardSummary,
+  type AgeingBucketSummary,
 } from "@/lib/records/dashboard-queries";
 import type { ServiceType } from "@/lib/records/types";
 import { paiseToRupees } from "@/lib/domain/money";
 import { StatCards } from "@/components/dashboard/stat-cards";
-import { BreakdownBarChart } from "@/components/dashboard/charts/breakdown-bar-chart";
+import { BranchSplitTable } from "@/components/dashboard/branch-split-table";
+import {
+  BreakdownBarChart,
+  type ChartSeries,
+} from "@/components/dashboard/charts/breakdown-bar-chart";
 import { TableFilters } from "@/components/records/table-filters";
 import { RecordTable } from "@/components/records/record-table";
+import { ExportCsvButton } from "@/components/records/export-csv-button";
 
 const PAGE_SIZE = 20;
 
@@ -33,6 +40,16 @@ const BUCKET_LABELS: Record<(typeof BUCKET_ORDER)[number], string> = {
   "31-60": "31–60 days",
   "60+": "60+ days",
 };
+
+// Categorical series with no inherent positive/negative meaning (here: one
+// branch vs another) use the design system's chart series order, not the
+// collected=positive/pending=attention semantic colors used elsewhere.
+const CHART_SERIES_ORDER = [
+  "var(--accent-fill)",
+  "var(--positive-fill)",
+  "var(--attention-fill)",
+  "var(--border)",
+];
 
 interface ServiceScopeDashboardProps {
   serviceType: ServiceType;
@@ -63,6 +80,7 @@ export async function ServiceScopeDashboard({
     byClass,
     byGroup,
     classSections,
+    branches,
   ] = await Promise.all([
     getDashboardSummary(supabase, {
       serviceType,
@@ -93,6 +111,7 @@ export async function ServiceScopeDashboard({
       serviceType,
       academicYearId: year.id,
     }),
+    getBranches(supabase),
   ]);
 
   const records = await getFeeAccountRecords(supabase, {
@@ -105,11 +124,70 @@ export async function ServiceScopeDashboard({
   });
   const pagination = records.pagination;
 
+  // branch=all gets a per-branch split of the figures and the ageing chart
+  // (called out by name in the phase plan); the other breakdown charts stay
+  // combined totals rather than growing another series per branch.
+  const activeBranches = branches.filter((b) => b.isActive);
+  const isAllBranches = branch === "all";
+
+  const branchSplit = isAllBranches
+    ? await Promise.all(
+        activeBranches.map(async (b) => ({
+          branch: b,
+          summary: await getDashboardSummary(supabase, {
+            serviceType,
+            academicYearId: year.id,
+            branch: b.code,
+          }),
+        })),
+      )
+    : null;
+
+  const ageingByBranch = isAllBranches
+    ? new Map<string, AgeingBucketSummary[]>(
+        await Promise.all(
+          activeBranches.map(
+            async (b) =>
+              [
+                b.code,
+                await getAgeingBuckets(supabase, {
+                  serviceType,
+                  academicYearId: year.id,
+                  branch: b.code,
+                }),
+              ] as const,
+          ),
+        ),
+      )
+    : null;
+
   const ageingByBucket = new Map(ageingBuckets.map((row) => [row.bucket, row]));
-  const ageingChartData = BUCKET_ORDER.map((bucket) => ({
-    bucket: BUCKET_LABELS[bucket],
-    pending: paiseToRupees(ageingByBucket.get(bucket)?.pendingPaise ?? 0n),
-  }));
+  const ageingChartData = BUCKET_ORDER.map((bucket) => {
+    const row: Record<string, string | number> = {
+      bucket: BUCKET_LABELS[bucket],
+    };
+    if (ageingByBranch) {
+      for (const b of activeBranches) {
+        const match = (ageingByBranch.get(b.code) ?? []).find(
+          (x) => x.bucket === bucket,
+        );
+        row[b.code] = paiseToRupees(match?.pendingPaise ?? 0n);
+      }
+    } else {
+      row.pending = paiseToRupees(
+        ageingByBucket.get(bucket)?.pendingPaise ?? 0n,
+      );
+    }
+    return row;
+  });
+
+  const ageingSeries: ChartSeries[] = ageingByBranch
+    ? activeBranches.map((b, i) => ({
+        key: b.code,
+        label: b.name,
+        color: CHART_SERIES_ORDER[i % CHART_SERIES_ORDER.length]!,
+      }))
+    : [{ key: "pending", label: "Pending", color: "var(--attention-fill)" }];
 
   const flatSearchParams = Object.fromEntries(
     Object.entries(rawParams).map(([key, value]) => [
@@ -122,15 +200,31 @@ export async function ServiceScopeDashboard({
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-medium text-ink">{title}</h1>
-        <Link
-          href={`/${serviceType}/new`}
-          className="h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-colors duration-150"
-        >
-          Add student
-        </Link>
+        <div className="flex gap-2">
+          <ExportCsvButton
+            serviceType={serviceType}
+            academicYearId={year.id}
+            branch={branch}
+          />
+          <Link
+            href={`/${serviceType}/new`}
+            className="h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-colors duration-150"
+          >
+            Add student
+          </Link>
+        </div>
       </div>
 
       <StatCards summary={summary} />
+
+      {branchSplit ? (
+        <div className="flex flex-col gap-2">
+          <h2 className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
+            By branch
+          </h2>
+          <BranchSplitTable rows={branchSplit} />
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-md border border-hairline bg-surface p-4">
@@ -166,13 +260,7 @@ export async function ServiceScopeDashboard({
           <BreakdownBarChart
             data={ageingChartData}
             categoryKey="bucket"
-            series={[
-              {
-                key: "pending",
-                label: "Pending",
-                color: "var(--attention-fill)",
-              },
-            ]}
+            series={ageingSeries}
           />
         </div>
 

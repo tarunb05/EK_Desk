@@ -14,4 +14,4 @@ export function Field({
 }
 
 export const inputClassName =
-  "h-9 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none focus:border-accent";
+  "h-9 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent";

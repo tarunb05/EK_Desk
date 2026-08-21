@@ -20,7 +20,7 @@ export function LoginForm() {
           type="email"
           autoComplete="username"
           required
-          className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none focus:border-accent"
+          className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent"
         />
       </div>
 
@@ -34,7 +34,7 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none focus:border-accent"
+          className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent"
         />
       </div>
 

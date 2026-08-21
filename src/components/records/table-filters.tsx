@@ -14,6 +14,9 @@ const STATUS_LABELS: Record<(typeof STATUS_FILTERS)[number], string> = {
   paid: "Paid",
 };
 
+const controlClassName =
+  "h-9 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent";
+
 export function TableFilters({ classSections }: TableFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -34,16 +37,18 @@ export function TableFilters({ classSections }: TableFiltersProps) {
     <div className="flex flex-wrap items-center gap-3">
       <input
         type="search"
+        aria-label="Search by student name"
         placeholder="Search by student name"
         defaultValue={searchParams.get("q") ?? ""}
         onChange={(event) => updateParam("q", event.target.value)}
-        className="h-9 w-64 rounded-md border border-border bg-surface px-3 text-sm text-ink"
+        className={`w-64 ${controlClassName}`}
       />
 
       <select
+        aria-label="Filter by status"
         value={searchParams.get("status") ?? "all"}
         onChange={(event) => updateParam("status", event.target.value)}
-        className="h-9 rounded-md border border-border bg-surface px-2 text-sm text-ink"
+        className={controlClassName}
       >
         {STATUS_FILTERS.map((status) => (
           <option key={status} value={status}>
@@ -53,9 +58,10 @@ export function TableFilters({ classSections }: TableFiltersProps) {
       </select>
 
       <select
+        aria-label="Filter by class"
         value={searchParams.get("classSection") ?? ""}
         onChange={(event) => updateParam("classSection", event.target.value)}
-        className="h-9 rounded-md border border-border bg-surface px-2 text-sm text-ink"
+        className={controlClassName}
       >
         <option value="">All classes</option>
         {classSections.map((classSection) => (
