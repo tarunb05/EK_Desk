@@ -20,6 +20,21 @@ interface ServiceScopeDashboardProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
+// Produces the 12 "YYYY-MM" keys spanning one academic year starting on
+// startsOn (e.g. "2026-04-01" -> Apr 2026 .. Mar 2027), matching the key
+// format used by collectionByMonth and the months URL param.
+function generateTwelveMonths(startsOn: string): string[] {
+  const [startYear, startMonth] = startsOn.split("-").map(Number);
+  if (!startYear || !startMonth) return [];
+
+  return Array.from({ length: 12 }, (_, i) => {
+    const monthIndex = startMonth - 1 + i;
+    const year = startYear + Math.floor(monthIndex / 12);
+    const month = (monthIndex % 12) + 1;
+    return `${year}-${String(month).padStart(2, "0")}`;
+  });
+}
+
 // One dashboard, reused by /transport and /daycare with a different
 // service_type — the money and aggregation logic exists exactly once. The
 // per-student record listing lives on /students now (across both services,
@@ -85,17 +100,33 @@ export async function ServiceScopeDashboard({
     .split(",")
     .filter(Boolean);
 
+  const matchingMonthRows = collectionByMonth.filter((row) =>
+    selectedMonths.includes(row.month),
+  );
+
   const collectedInSelectedMonths =
     selectedMonths.length > 0
-      ? collectionByMonth
-          .filter((row) => selectedMonths.includes(row.month))
-          .reduce((sum, row) => sum + row.collectedPaise, 0n)
+      ? matchingMonthRows.reduce((sum, row) => sum + row.collectedPaise, 0n)
       : summary.totalCollectedPaise;
+
+  // A selected month with zero collections doesn't appear in
+  // collectionByMonth at all (it only carries months with at least one real
+  // payment), so "no matching rows" means "nothing was collected in any of
+  // the selected months" — worth calling out explicitly rather than letting
+  // it read as an unremarkable ₹0.
+  const selectedMonthsHaveNoData =
+    selectedMonths.length > 0 && matchingMonthRows.length === 0;
 
   const displaySummary = {
     ...summary,
     totalCollectedPaise: collectedInSelectedMonths,
   };
+
+  // The dashboard always offers all 12 calendar months of the selected
+  // academic year as filter options, regardless of whether a given month
+  // has any recorded collections yet — collectionByMonth only lists months
+  // with real data, so it can't be the source of the option list itself.
+  const allTwelveMonths = generateTwelveMonths(year.startsOn);
 
   return (
     <div className="flex flex-col gap-6">
@@ -125,12 +156,13 @@ export async function ServiceScopeDashboard({
         <span className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
           Collected &amp; rate below scope to the selected months
         </span>
-        <MonthFilter
-          availableMonths={collectionByMonth.map((row) => row.month)}
-        />
+        <MonthFilter availableMonths={allTwelveMonths} />
       </div>
 
-      <StatCards summary={displaySummary} />
+      <StatCards
+        summary={displaySummary}
+        collectedFiguresUnavailable={selectedMonthsHaveNoData}
+      />
 
       {branchSplit ? (
         <div className="flex flex-col gap-2">

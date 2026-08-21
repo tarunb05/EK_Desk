@@ -4,9 +4,18 @@ import type { DashboardSummary } from "@/lib/records/dashboard-queries";
 
 interface StatCardsProps {
   summary: DashboardSummary;
+  // True when the month filter's selected month(s) have no recorded
+  // collections at all — shown as a sentence instead of a misleading ₹0 /
+  // 0.0%, since a real zero and "no data yet" read the same otherwise.
+  // Only Total collected / Collection rate are month-scoped, so only those
+  // two cards are affected.
+  collectedFiguresUnavailable?: boolean;
 }
 
-export function StatCards({ summary }: StatCardsProps) {
+export function StatCards({
+  summary,
+  collectedFiguresUnavailable = false,
+}: StatCardsProps) {
   const rate = collectionRate(
     summary.totalReceivablePaise,
     summary.totalCollectedPaise,
@@ -31,7 +40,9 @@ export function StatCards({ summary }: StatCardsProps) {
     {
       testId: "total-collected",
       label: "Total collected",
-      value: formatPaise(summary.totalCollectedPaise),
+      value: collectedFiguresUnavailable
+        ? "No results found."
+        : formatPaise(summary.totalCollectedPaise),
       tone: "positive",
     },
     {
@@ -49,7 +60,9 @@ export function StatCards({ summary }: StatCardsProps) {
     {
       testId: "collection-rate",
       label: "Collection rate",
-      value: `${rate.toFixed(1)}%`,
+      value: collectedFiguresUnavailable
+        ? "No results found."
+        : `${rate.toFixed(1)}%`,
     },
   ];
 
@@ -65,13 +78,17 @@ export function StatCards({ summary }: StatCardsProps) {
           </div>
           <div
             data-testid={card.testId}
-            className={`mt-1 text-xl tabular-nums ${
-              card.tone === "positive"
-                ? "text-positive"
-                : card.tone === "attention"
-                  ? "text-attention"
-                  : "text-ink"
-            }`}
+            className={
+              card.value === "No results found."
+                ? "mt-1 text-sm text-ink-muted"
+                : `mt-1 text-xl tabular-nums ${
+                    card.tone === "positive"
+                      ? "text-positive"
+                      : card.tone === "attention"
+                        ? "text-attention"
+                        : "text-ink"
+                  }`
+            }
           >
             {card.value}
           </div>

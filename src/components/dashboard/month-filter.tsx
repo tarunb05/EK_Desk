@@ -7,6 +7,31 @@ interface MonthFilterProps {
   availableMonths: string[];
 }
 
+// availableMonths are "YYYY-MM" keys (matching dashboard_collection_by_month
+// and the months URL param), but the year is already picked separately via
+// the Year selector, so only the month name needs to show here. A given
+// academic year's 12-month span never repeats a calendar month, so this is
+// unambiguous even though the underlying key still carries the year.
+function monthName(monthKey: string): string {
+  const [year, month] = monthKey.split("-").map(Number);
+  if (!year || !month) return monthKey;
+  return new Date(year, month - 1, 1).toLocaleString("en-US", {
+    month: "long",
+  });
+}
+
+function monthNumber(monthKey: string): number {
+  return Number(monthKey.split("-")[1] ?? 0);
+}
+
+// Calendar order (Jan–Dec), not chronological — an academic year spans two
+// calendar years (e.g. Apr 2026–Mar 2027), so sorting the raw "YYYY-MM"
+// keys would list Nov/Dec before Jan/Feb even though Jan/Feb come later in
+// the year; sorting by month name is what actually reads naturally here.
+function byCalendarMonth(a: string, b: string): number {
+  return monthNumber(a) - monthNumber(b);
+}
+
 // Scopes only the Total collected / Collection rate stat cards to the
 // selected month(s) — Receivable/Pending/Overdue are point-in-time
 // balances, not sums over a date range, so filtering them by month
@@ -46,7 +71,9 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
   const label =
     selected.size === 0
       ? "All months"
-      : `${selected.size} month${selected.size > 1 ? "s" : ""} selected`;
+      : selected.size <= 2
+        ? [...selected].sort(byCalendarMonth).map(monthName).join(", ")
+        : `${selected.size} months selected`;
 
   if (availableMonths.length === 0) {
     return null;
@@ -83,7 +110,7 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
             </button>
           </div>
           <div className="flex max-h-48 flex-col gap-0.5 overflow-y-auto">
-            {availableMonths.map((month) => (
+            {[...availableMonths].sort(byCalendarMonth).map((month) => (
               <label
                 key={month}
                 className="flex items-center gap-2 rounded px-1 py-1 text-sm text-ink hover:bg-surface-accent"
@@ -93,7 +120,7 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
                   checked={selected.has(month)}
                   onChange={() => toggleMonth(month)}
                 />
-                {month}
+                {monthName(month)}
               </label>
             ))}
           </div>

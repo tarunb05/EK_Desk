@@ -2,6 +2,7 @@ export interface AcademicYearOption {
   id: string;
   label: string;
   isCurrent: boolean;
+  startsOn: string;
 }
 
 export interface BranchOption {

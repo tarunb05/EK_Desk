@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { resolveYearAndBranch } from "./resolve-year-branch";
 
 const years = [
-  { id: "y2025", label: "2025-26", isCurrent: false },
-  { id: "y2026", label: "2026-27", isCurrent: true },
+  { id: "y2025", label: "2025-26", isCurrent: false, startsOn: "2025-04-01" },
+  { id: "y2026", label: "2026-27", isCurrent: true, startsOn: "2026-04-01" },
 ];
 
 const branches = [
@@ -29,8 +29,18 @@ describe("resolveYearAndBranch", () => {
 
   it("falls back to the first year when no year is marked current", () => {
     const noCurrentYears = [
-      { id: "y2025", label: "2025-26", isCurrent: false },
-      { id: "y2026", label: "2026-27", isCurrent: false },
+      {
+        id: "y2025",
+        label: "2025-26",
+        isCurrent: false,
+        startsOn: "2025-04-01",
+      },
+      {
+        id: "y2026",
+        label: "2026-27",
+        isCurrent: false,
+        startsOn: "2026-04-01",
+      },
     ];
     const result = resolveYearAndBranch({}, noCurrentYears, branches);
     expect(result.year.label).toBe("2025-26");

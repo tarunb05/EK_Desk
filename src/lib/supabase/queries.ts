@@ -10,7 +10,7 @@ export async function getAcademicYears(
 ): Promise<AcademicYearOption[]> {
   const { data, error } = await supabase
     .from("academic_year")
-    .select("id, label, is_current")
+    .select("id, label, is_current, starts_on")
     .order("starts_on", { ascending: false });
 
   if (error) {
@@ -21,6 +21,7 @@ export async function getAcademicYears(
     id: row.id,
     label: row.label,
     isCurrent: row.is_current,
+    startsOn: row.starts_on,
   }));
 }
 
