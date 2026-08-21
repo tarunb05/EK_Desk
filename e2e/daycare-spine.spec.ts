@@ -1,0 +1,100 @@
+import { expect, test } from "@playwright/test";
+import {
+  TEST_ADMIN_EMAIL,
+  TEST_ADMIN_PASSWORD,
+} from "../scripts/test-credentials";
+
+function parseRupees(text: string): number {
+  return Number(text.replace(/[₹,]/g, ""));
+}
+
+async function readStat(page: import("@playwright/test").Page, testId: string) {
+  return parseRupees(await page.getByTestId(testId).innerText());
+}
+
+test.describe("daycare spine", () => {
+  test("add student with a slot, record payment, void it, and confirm transport is unaffected", async ({
+    page,
+  }) => {
+    await page.goto("/login");
+    await page.getByLabel("Email").fill(TEST_ADMIN_EMAIL);
+    await page.getByLabel("Password").fill(TEST_ADMIN_PASSWORD);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page).toHaveURL(/\/transport$/);
+
+    await page.goto("/daycare?branch=BR-B");
+    const baselineStudents = await readStat(page, "students-enrolled");
+    const baselineReceivable = await readStat(page, "total-receivable");
+
+    const baselineTransportText = await (async () => {
+      await page.goto("/transport");
+      return page.locator("main").innerText();
+    })();
+
+    // Add a student with a daycare fee account — the form must show a Slot
+    // field, not the transport-only Route/Pickup point fields.
+    await page.goto("/daycare/new");
+    const form = page.locator("main");
+    await expect(form.getByLabel("Route")).toHaveCount(0);
+    await form.getByLabel("Branch").selectOption({ label: "Branch B" });
+    await form.getByLabel("Admission number").fill("BR-B-E2E-001");
+    await form
+      .getByLabel("Student full name")
+      .fill("Playwright Daycare Student");
+    await form.getByLabel("Guardian name").fill("Playwright Guardian");
+    await form.getByLabel("Phone").fill("9000000456");
+    await form.getByLabel("Class and section").fill("UKG-A");
+    await form.getByLabel("Slot").fill("Morning (8-1)");
+    await form.getByLabel("Total receivable (₹)").fill("12000");
+    await form.getByLabel("Due date").fill("2026-06-01");
+    await form.getByLabel("Starts on").fill("2026-04-01");
+    await form.getByLabel("Ends on").fill("2027-03-31");
+    await form.getByRole("button", { name: "Add student" }).click();
+    await expect(page).toHaveURL(/\/daycare$/);
+
+    await page.goto("/daycare?branch=BR-B");
+    expect(await readStat(page, "students-enrolled")).toBe(
+      baselineStudents + 1,
+    );
+    expect(await readStat(page, "total-receivable")).toBe(
+      baselineReceivable + 12_000,
+    );
+
+    // Record a part payment.
+    await page.goto("/daycare?branch=BR-B&q=Playwright+Daycare");
+    await page.getByRole("link", { name: "Record payment" }).click();
+    await page.getByLabel("Amount (₹)").fill("5000");
+    await page.getByLabel("Paid on").fill("2026-05-01");
+    await page.getByLabel("Recorded by").fill("front_office");
+    await page.getByRole("button", { name: "Record payment" }).click();
+    await expect(page).toHaveURL(/\/daycare$/);
+
+    await page.goto("/daycare?branch=BR-B");
+    const afterPaymentCollected = await readStat(page, "total-collected");
+    const afterPaymentPending = await readStat(page, "total-pending");
+
+    // Void via the drawer; the void link must stay within /daycare.
+    await page.goto("/daycare?branch=BR-B&q=Playwright+Daycare");
+    await page
+      .getByRole("link", { name: "Playwright Daycare Student" })
+      .click();
+    const voidLink = page.getByRole("link", { name: "Void" });
+    await expect(voidLink).toHaveAttribute("href", /^\/daycare\/payment\//);
+    await voidLink.click();
+    await page.getByLabel("Reason for voiding").fill("E2E spine test cleanup");
+    await page.getByRole("button", { name: "Void payment" }).click();
+    await expect(page).toHaveURL(/\/daycare$/);
+
+    await page.goto("/daycare?branch=BR-B");
+    expect(await readStat(page, "total-collected")).toBe(
+      afterPaymentCollected - 5_000,
+    );
+    expect(await readStat(page, "total-pending")).toBe(
+      afterPaymentPending + 5_000,
+    );
+
+    // Transport never changed.
+    await page.goto("/transport");
+    expect(await page.locator("main").innerText()).toBe(baselineTransportText);
+  });
+});

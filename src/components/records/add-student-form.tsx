@@ -6,16 +6,19 @@ import {
   createStudentWithFeeAccount,
   type ActionState,
 } from "@/lib/records/actions";
+import type { ServiceType } from "@/lib/records/types";
 import type { BranchOption } from "@/lib/shell/resolve-year-branch";
 
 const initialState: ActionState = { error: null };
 
 interface AddStudentFormProps {
+  serviceType: ServiceType;
   branches: BranchOption[];
   academicYearId: string;
 }
 
 export function AddStudentForm({
+  serviceType,
   branches,
   academicYearId,
 }: AddStudentFormProps) {
@@ -26,7 +29,7 @@ export function AddStudentForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      <input type="hidden" name="serviceType" value="transport" />
+      <input type="hidden" name="serviceType" value={serviceType} />
       <input type="hidden" name="academicYearId" value={academicYearId} />
 
       <Field label="Branch">
@@ -64,13 +67,20 @@ export function AddStudentForm({
         />
       </Field>
 
-      <Field label="Route">
-        <input name="routeName" required className={inputClassName} />
-      </Field>
-
-      <Field label="Pickup point">
-        <input name="pickupPoint" required className={inputClassName} />
-      </Field>
+      {serviceType === "transport" ? (
+        <>
+          <Field label="Route">
+            <input name="routeName" required className={inputClassName} />
+          </Field>
+          <Field label="Pickup point">
+            <input name="pickupPoint" required className={inputClassName} />
+          </Field>
+        </>
+      ) : (
+        <Field label="Slot">
+          <input name="slot" required className={inputClassName} />
+        </Field>
+      )}
 
       <Field label="Total receivable (₹)">
         <input

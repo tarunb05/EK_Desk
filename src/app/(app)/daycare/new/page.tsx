@@ -4,7 +4,7 @@ import { getCurrentScope } from "@/lib/shell/get-current-scope";
 import { shellSearchParamsSchema } from "@/lib/shell/search-params";
 import { AddStudentForm } from "@/components/records/add-student-form";
 
-export default async function NewTransportStudentPage({
+export default async function NewDaycareStudentPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -18,11 +18,9 @@ export default async function NewTransportStudentPage({
 
   return (
     <div className="max-w-xl">
-      <h1 className="mb-4 text-xl font-medium text-ink">
-        Add transport student
-      </h1>
+      <h1 className="mb-4 text-xl font-medium text-ink">Add daycare student</h1>
       <AddStudentForm
-        serviceType="transport"
+        serviceType="daycare"
         branches={branches}
         academicYearId={scope.year.id}
       />

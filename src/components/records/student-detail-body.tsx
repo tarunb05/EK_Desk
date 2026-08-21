@@ -76,7 +76,7 @@ export function StudentDetailBody({ detail }: { detail: StudentDetail }) {
                           // drawer's full-screen backdrop rendered on top of
                           // the void page. A full navigation resets it.
                           <a
-                            href={`/transport/payment/${payment.id}/void`}
+                            href={`/${account.serviceType}/payment/${payment.id}/void`}
                             className="text-accent hover:underline"
                           >
                             Void
