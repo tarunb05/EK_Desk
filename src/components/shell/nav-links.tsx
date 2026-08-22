@@ -2,13 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DaycareIcon, StudentsIcon, TransportIcon } from "./nav-icons";
+import {
+  DaycareIcon,
+  SettingsIcon,
+  StudentsIcon,
+  TransportIcon,
+} from "./nav-icons";
 import { useSidebarContext } from "./sidebar-context";
 
 const LINKS = [
   { href: "/transport", label: "Transport", Icon: TransportIcon },
   { href: "/daycare", label: "Daycare", Icon: DaycareIcon },
   { href: "/students", label: "Students", Icon: StudentsIcon },
+  { href: "/settings", label: "Settings", Icon: SettingsIcon },
 ];
 
 // `collapsed` only ever narrows the desktop (md:) rail to icons-only — the

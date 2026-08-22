@@ -64,6 +64,15 @@ export function StudentsIcon(props: IconProps = {}) {
   );
 }
 
+export function SettingsIcon(props: IconProps = {}) {
+  return (
+    <IconBase {...props}>
+      <circle cx="10" cy="10" r="2.5" />
+      <path d="M10 3.5v2M10 14.5v2M3.5 10h2M14.5 10h2M5.6 5.6l1.4 1.4M13 13l1.4 1.4M14.4 5.6 13 7M7 13l-1.4 1.4" />
+    </IconBase>
+  );
+}
+
 export function CollapseIcon({
   direction,
   ...props
