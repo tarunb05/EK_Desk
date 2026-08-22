@@ -51,6 +51,16 @@ const SORT_COLUMN: Record<(typeof STUDENT_SORT_KEYS)[number], string> = {
   created_at: "created_at",
 };
 
+// PostgREST's .or() filter takes a raw filter-syntax string, not a
+// parameterized value — a search term containing "," or ")" would otherwise
+// close the current clause and let the user append arbitrary additional
+// filter conditions. Wrapping the value in double quotes (with internal
+// backslashes/quotes escaped) makes PostgREST treat everything inside as a
+// literal, per its own documented escaping rule, closing that off.
+export function escapePostgrestFilterValue(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
 function applyFilters(
   supabase: SupabaseClient<Database>,
   { branch, service, table }: StudentDirectoryParams,
@@ -96,9 +106,8 @@ function applyFilters(
     query = query.eq("class_section", table.classSection);
   }
   if (table.q) {
-    query = query.or(
-      `full_name.ilike.%${table.q}%,admission_no.ilike.%${table.q}%`,
-    );
+    const q = escapePostgrestFilterValue(table.q);
+    query = query.or(`full_name.ilike."%${q}%",admission_no.ilike."%${q}%"`);
   }
 
   return query;

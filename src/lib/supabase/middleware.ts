@@ -2,8 +2,41 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 
+// Next.js's own framework-injected inline scripts (the `self.__next_f.push(...)`
+// RSC-hydration payload) have no `src` — a `script-src 'self'` CSP with no
+// 'unsafe-inline' blocks them outright and silently kills hydration (dead
+// forms, no interactivity). The documented fix is a per-request nonce: it
+// goes on both the request (so the App Router's renderer picks it up and
+// stamps it onto those scripts automatically) and the response's CSP header.
+// https://nextjs.org/docs/app/guides/content-security-policy
+function buildCsp(nonce: string): string {
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "font-src 'self'",
+    "connect-src 'self' https://*.supabase.co",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join("; ");
+}
+
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const csp = buildCsp(nonce);
+
+  // Per Next.js's documented pattern: pass the nonce header through via
+  // NextResponse.next({ request: { headers } }), not by constructing a new
+  // NextRequest — the original `request` object is still what every
+  // `.cookies`/`.nextUrl` read below uses.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+
+  let supabaseResponse = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 
   const supabase = createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
@@ -17,7 +50,17 @@ export async function updateSession(request: NextRequest) {
           for (const { name, value } of cookiesToSet) {
             request.cookies.set(name, value);
           }
-          supabaseResponse = NextResponse.next({ request });
+          // Rebuild from the just-mutated `request.headers` (not the
+          // `requestHeaders` snapshot taken before this rotation) so a
+          // refreshed auth cookie is actually part of what gets forwarded
+          // to the page render — otherwise this response carries the
+          // pre-rotation Cookie header even though the browser gets the
+          // new one via Set-Cookie.
+          const rotatedHeaders = new Headers(request.headers);
+          rotatedHeaders.set("x-nonce", nonce);
+          supabaseResponse = NextResponse.next({
+            request: { headers: rotatedHeaders },
+          });
           for (const { name, value, options } of cookiesToSet) {
             supabaseResponse.cookies.set(name, value, options);
           }
@@ -35,14 +78,19 @@ export async function updateSession(request: NextRequest) {
   if (!user && !isLoginRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
+    const response = NextResponse.redirect(url);
+    response.headers.set("Content-Security-Policy", csp);
+    return response;
   }
 
   if (user && isLoginRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/transport";
-    return NextResponse.redirect(url);
+    const response = NextResponse.redirect(url);
+    response.headers.set("Content-Security-Policy", csp);
+    return response;
   }
 
+  supabaseResponse.headers.set("Content-Security-Policy", csp);
   return supabaseResponse;
 }
