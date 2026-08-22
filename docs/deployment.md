@@ -1,95 +1,167 @@
 # Deployment runbook
 
 One-time setup for shipping this app to production. Everything here is done
-by hand in the Vercel and Supabase dashboards — nothing in this file is
-automated, and nothing here should be run against the local dev stack.
+by hand in the Vercel and Supabase dashboards (plus a few CLI commands run
+from your own terminal) — nothing here is automated, and nothing here should
+be run against the local dev stack.
+
+Every step below reflects something that actually tripped us up doing this
+for real, not just the happy path — read the callouts, they're there because
+the obvious thing is wrong.
 
 ## 1. Create the production Supabase project
 
-1. In the Supabase dashboard, create a new project (a name like
-   `eurokids-fee-tracker-prod` and the region closest to the branches is
-   fine — there's no multi-region requirement).
-2. Apply the schema: `supabase link --project-ref <ref>` then
-   `supabase db push` from this repo, which applies every migration in
-   `supabase/migrations/` in order. Do **not** run `supabase db reset`
-   against a production project — `reset` drops and recreates the database
-   from scratch.
-3. Do **not** run `npm run db:seed` against production. That script exists
-   only to generate fake students/payments for local dev and CI — real
-   student data is PII and must never be seeded, faked, or otherwise
-   fabricated in a way that mixes with production rows.
-4. Create the one shared admin login by hand: Authentication → Users → Add
-   user. The app treats this as a plain username, not a real email
-   address — Supabase Auth itself has no username concept, so the sign-in
-   form takes a username and derives a fixed internal address from it (see
-   `src/lib/auth/username.ts`) before calling `signInWithPassword`. Use the
-   same scheme here: for a chosen username like `frontoffice`, create the
-   user with email `frontoffice@login.internal` and a strong password (not
-   the `deetha` used by local tests). This mirrors how the local
-   `auth:seed` script creates the dev admin, except done once, manually, in
-   the dashboard — there is no script that touches the production auth
-   store.
-5. Authentication → URL Configuration:
-   - **Site URL**: the production domain (e.g. `https://fees.eurokids-<branch>.example`).
-   - **Redirect URLs**: add the production domain and, if Preview
-     deployments should also be able to sign in, a wildcard for Vercel's
-     preview URL pattern (`https://*-<your-vercel-team>.vercel.app`).
-   - Nothing in the app currently calls `redirectTo`/`emailRedirectTo` (no
-     magic-link or password-reset flow exists yet), so this doesn't gate any
-     working feature today — but it's a five-minute step now versus a
-     confusing failure the day someone adds one, and Supabase's dashboard
-     already flags an unset Site URL as a warning.
-6. Settings → API: copy the **Project URL**, **anon public** key, and
-   **service_role** key — needed in step 3 below. Treat the service_role key
-   as a password: it bypasses RLS entirely.
+1. Go to [supabase.com/dashboard](https://supabase.com/dashboard), sign in,
+   click **New Project**.
+2. Name it something like `eurokids-fee-tracker-prod`, pick the region
+   closest to the branches, let it generate a database password (save it —
+   you likely won't need it for anything below, but keep it somewhere safe
+   regardless).
+3. Wait for provisioning (1-2 minutes).
 
-## 2. Create the Vercel project
+## 2. Push the schema
 
-1. Import this repository into a new Vercel project. Framework preset
-   should auto-detect as Next.js; no build command overrides are needed
-   (`next build --turbopack` from `package.json` is used as-is).
-2. Leave the root directory as the repo root — this isn't a monorepo.
+From your own terminal (this needs an interactive browser login, so it can't
+be run through an AI agent's shell):
 
-## 3. Environment variables
+```bash
+cd "path/to/this/repo"
+npx supabase login          # opens your browser — click Authorize
+npx supabase link --project-ref YOUR_PROJECT_REF
+npx supabase db push
+```
 
-Set these in Vercel → Project Settings → Environment Variables. Vercel lets
-each variable be scoped to Production, Preview, and/or Development
-independently — use that scoping rather than setting one value for all
-three, since Preview deployments should not share write access to the
-production database.
+`YOUR_PROJECT_REF` is the short id in the project's dashboard URL:
+`supabase.com/dashboard/project/<this-part>`.
 
-| Variable                        | Production                       | Preview                                           | Notes                                                                                                                                                                                                                                                                |
-| ------------------------------- | -------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Production project's Project URL | Same as Production, or a separate staging project | Public — safe to expose, it's just a hostname.                                                                                                                                                                                                                       |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Production project's anon key    | Matches whichever project `_URL` above points to  | Public — this is what RLS exists to protect against, not a secret in itself.                                                                                                                                                                                         |
-| `SUPABASE_SERVICE_ROLE_KEY`     | **Do not set**                   | **Do not set**                                    | The deployed app never reads this (see `src/lib/env.ts` — only the two `NEXT_PUBLIC_*` vars are validated). It exists solely for local/CI admin-user seeding; putting it in Vercel would be a live bypass-RLS credential sitting in a platform you don't need it in. |
+> **If `link` fails with `AlreadyExists: FileSystem.makeDirectory
+> (...\supabase\.temp)`**: delete the local `supabase/.temp` folder (it's
+> gitignored, disposable CLI cache) and re-run `link`.
 
-`Development` (Vercel's designation for `vercel dev` / local pulls via
-`vercel env pull`) should just mirror your own `.env.local` — most people
-never touch this scope and use `.env.local` directly instead, which is fine.
+`db push` applies every file in `supabase/migrations/` in order — tables,
+indexes, views, RLS policies, everything. It does **not** insert any data
+(see step 5 — this bites people).
 
-If you'd rather Preview deployments not touch the production database at
-all (recommended once there's real student data in it), create a second,
-separate Supabase project for Preview and point its `NEXT_PUBLIC_*` vars at
-that instead — same steps as section 1, minus the real admin user (a
-throwaway login + seed data is fine there, since it's not production).
+Do **not** run `supabase db reset` or `npm run db:seed` against this
+project: `reset` drops and recreates the database from scratch, and
+`db:seed` inserts fake students/payments meant only for local dev and CI —
+real student data is PII and must never be mixed with fabricated rows.
 
-## 4. Verify
+## 3. Get the Project URL and anon key
 
-- Trigger a deploy (push to `main`, or the initial import).
-- Visit the deployed URL, confirm the login page loads and the shared admin
-  account can sign in.
-- Confirm signing in redirects to `/transport` and the shell (sidebar,
-  year/branch selectors) renders.
+Settings → **API Keys**.
+
+> **Use the "Legacy anon, service_role API keys" tab**, not the default
+> "Publishable and secret API keys" tab. This app's code (`@supabase/ssr`)
+> was built against the classic anon-JWT key; the newer
+> `sb_publishable_...` format is a different Supabase feature and hasn't
+> been verified against this codebase.
+
+On that tab:
+- **anon / public** key → a long string starting with `eyJ...`. This is
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- **service_role** key → treat as a password, bypasses RLS entirely. You
+  don't need to copy this anywhere (see step 6).
+
+The **Project URL** is shown separately (top of the API settings, or under
+Settings → General/Data API) — it looks like `https://xxxxxxxx.supabase.co`.
+
+> **Copy exactly that, nothing appended.** The Data API page also shows a
+> REST endpoint like `https://xxxxxxxx.supabase.co/rest/v1` — that's a
+> different value. Pasting the `/rest/v1` version into
+> `NEXT_PUBLIC_SUPABASE_URL` makes every Supabase client request double up
+> the path (`/rest/v1/auth/v1/token`, 404) and nothing works. The value you
+> want has **only** the `.supabase.co` domain, no path after it.
+
+## 4. Create the Vercel project
+
+1. [vercel.com/new](https://vercel.com/new) → import this repo. Framework
+   auto-detects as Next.js, no build command overrides needed.
+2. Leave the root directory as the repo root.
+
+## 5. Environment variables
+
+Project Settings → Environment Variables, scoped to **Production and
+Preview**:
+
+| Variable | Value | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | the plain Project URL from step 3 | Public, safe to expose |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the legacy anon key from step 3 | Public — RLS is the real protection, not secrecy of this key |
+| `SUPABASE_SERVICE_ROLE_KEY` | **do not set** | The deployed app never reads it (`src/lib/env.ts` only validates the two `NEXT_PUBLIC_*` vars) — setting it here is a live bypass-RLS credential sitting somewhere it's never needed |
+
+> **Editing an env var does not redeploy the app.** `NEXT_PUBLIC_*` values
+> are baked into the build at build time, so the already-built deployment
+> keeps using whatever was set when it was last built. After changing any
+> env var: Deployments tab → "⋮" on the latest deployment → **Redeploy**,
+> and wait for it to say **Ready** before testing.
+
+## 6. Create the shared admin login
+
+Supabase dashboard → Authentication → **Users** → **Add user**.
+
+> **This is not a real email address.** The app has no username concept in
+> Supabase Auth itself — the login form takes a plain username and derives
+> a fixed, non-routable internal address before calling
+> `signInWithPassword` (see `src/lib/auth/username.ts`). For a username like
+> `frontoffice`, create the Supabase user with email
+> **`frontoffice@login.internal`** and a strong password (not `deetha` —
+> that's the plaintext local/CI test password, committed in this repo's own
+> `scripts/test-credentials.ts`, and reusing it for the real login is a real
+> weak-credential risk, not just a style nit).
+
+Check "Auto Confirm User" if the dashboard offers it.
+
+## 7. Auth URL configuration
+
+Still in Authentication → **URL Configuration**:
+- **Site URL**: your Vercel deployment URL (`https://your-app.vercel.app`,
+  or a custom domain once you have one).
+- **Redirect URLs**: add that same URL.
+
+Nothing in the app currently calls `redirectTo`/`emailRedirectTo`, so this
+doesn't gate a working feature today — but Supabase's dashboard flags an
+unset Site URL as a warning, and it's a five-minute step now versus a
+confusing failure the day someone adds a magic-link/reset flow.
+
+## 8. Seed the first academic year and branch
+
+`db push` creates the `academic_year` and `branch` **tables** — it inserts
+no rows. Every dashboard page resolves "which year am I looking at" through
+`resolveYearAndBranch`, which **throws** if there are zero academic years —
+so the very first login will crash on redirect to `/transport` with a
+generic error page. This is expected on a brand-new project, not a bug.
+
+Fix it through the app itself, no SQL needed:
+1. Log in with the admin user from step 6. It'll likely crash after
+   redirecting — that's fine.
+2. Manually type `/settings` into the URL bar (your login session is still
+   valid; only the page you landed on crashed).
+3. Add your real academic year (correct label and date range, check "Make
+   this the current year") and your real branches.
+4. Go to `/transport` — it should now load cleanly.
+
+## 9. Verify
+
 - Confirm CI (`.github/workflows/ci.yml`) is green on the commit being
-  deployed — Vercel deploying a red commit is not itself blocked by
-  anything in this repo, so treat "CI green" as a manual gate for now.
+  deployed — Vercel deploying a red commit isn't itself blocked by anything
+  in this repo, so treat "CI green" as a manual gate for now.
+- Sign in on the deployed URL, confirm redirect to `/transport`, confirm the
+  shell (sidebar, year/branch selectors) renders with the real year/branch
+  you just added.
+- Try adding a student, confirm it shows up.
 
-## 5. Ongoing
+## 10. Ongoing
 
-- Schema changes ship as new files in `supabase/migrations/`, applied to
-  production with `supabase db push` after merging to `main` — there is no
-  automatic migration-on-deploy step, so this is a manual action per release
-  that changes the schema.
+- Schema changes ship as new files in `supabase/migrations/`, applied with
+  `supabase db push` after merging to `main` — no automatic
+  migration-on-deploy step, so this is a manual action per release that
+  changes the schema.
+- If you want Preview deployments not touching the production database at
+  all (recommended once there's real student data in it), create a second,
+  separate Supabase project for Preview and point its `NEXT_PUBLIC_*` vars
+  at that instead — same steps as above, minus the real admin user (a
+  throwaway login + a manually-added test year/branch is fine there, since
+  it's not production).
 - See [`importing-existing-records.md`](./importing-existing-records.md) for
   bringing the office's existing real records into this schema.
