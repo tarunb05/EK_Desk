@@ -49,3 +49,6 @@ next-env.d.ts
 # locally-installed agent skills (not part of this app)
 /.agents/
 skills-lock.json
+
+.vercel
+.env*
