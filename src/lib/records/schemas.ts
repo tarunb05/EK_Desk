@@ -51,8 +51,17 @@ export const createStudentWithFeeAccountSchema = z
     }
   });
 
+// Covers both the student's own details and the fee-account terms in one
+// form/schema -- there was no student-detail edit UI at all before this,
+// only fee-account terms; teacher edit-submissions and the admin's direct
+// edit both need the full set, so one shared shape rather than two forks.
 export const updateFeeAccountSchema = z.object({
   feeAccountId: z.string().uuid(),
+  fullName: z.string().trim().min(1, "Enter the student's name."),
+  guardianName: z.string().trim().min(1, "Enter the guardian's name."),
+  phone: z.string().trim().min(1, "Enter a phone number."),
+  classSection: z.enum(CLASS_SECTIONS, "Choose a grade."),
+  notes: z.string().trim().optional(),
   totalReceivable: rupeesAmount,
   dueDate: dateField,
   startsOn: dateField,
@@ -84,4 +93,21 @@ export const voidPaymentSchema = z.object({
 export const archiveStudentSchema = z.object({
   studentId: z.string().uuid(),
   redirectTo: z.enum(["/transport", "/daycare"]),
+});
+
+export const SUBMISSION_TABLES = [
+  "student_submission",
+  "student_edit_submission",
+  "payment_submission",
+] as const;
+
+export const approveSubmissionSchema = z.object({
+  submissionTable: z.enum(SUBMISSION_TABLES),
+  submissionId: z.string().uuid(),
+});
+
+export const rejectSubmissionSchema = z.object({
+  submissionTable: z.enum(SUBMISSION_TABLES),
+  submissionId: z.string().uuid(),
+  reviewNote: z.string().trim().min(1, "Enter a reason for rejecting this."),
 });

@@ -1,6 +1,6 @@
 import type { Client } from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { connect, withRollback } from "./test-helpers";
+import { connect, impersonateAdmin, withRollback } from "./test-helpers";
 
 describe("record mutations (as authenticated)", () => {
   let client: Client;
@@ -29,7 +29,7 @@ describe("record mutations (as authenticated)", () => {
 
   it("creates a student with a transport fee account and reflects it in the balance view", async () => {
     await withRollback(client, async () => {
-      await client.query("set role authenticated");
+      await impersonateAdmin(client);
 
       const student = await client.query<{ id: string }>(
         `insert into student
@@ -63,7 +63,7 @@ describe("record mutations (as authenticated)", () => {
 
   it("recording a payment updates collected and pending on the balance view", async () => {
     await withRollback(client, async () => {
-      await client.query("set role authenticated");
+      await impersonateAdmin(client);
 
       const feeAccount = await client.query<{ id: string }>(
         `select id from fee_account where academic_year_id = $1 limit 1`,
@@ -96,7 +96,7 @@ describe("record mutations (as authenticated)", () => {
 
   it("voiding a payment restores the pending amount and keeps the row visible in history", async () => {
     await withRollback(client, async () => {
-      await client.query("set role authenticated");
+      await impersonateAdmin(client);
 
       const feeAccount = await client.query<{ id: string }>(
         `select id from fee_account where academic_year_id = $1 limit 1`,
@@ -138,7 +138,7 @@ describe("record mutations (as authenticated)", () => {
 
   it("editing a fee account's receivable amount changes pending on the balance view", async () => {
     await withRollback(client, async () => {
-      await client.query("set role authenticated");
+      await impersonateAdmin(client);
 
       const feeAccount = await client.query<{
         id: string;
@@ -166,7 +166,7 @@ describe("record mutations (as authenticated)", () => {
 
   it("archiving a student (soft delete) excludes them from fee_account_record but keeps their fee account and payment history intact", async () => {
     await withRollback(client, async () => {
-      await client.query("set role authenticated");
+      await impersonateAdmin(client);
 
       const student = await client.query<{ id: string }>(
         `insert into student
@@ -237,7 +237,7 @@ describe("record mutations (as authenticated)", () => {
 
   it("archiving a student removes their receivable from dashboard_summary", async () => {
     await withRollback(client, async () => {
-      await client.query("set role authenticated");
+      await impersonateAdmin(client);
 
       const student = await client.query<{ id: string }>(
         `insert into student

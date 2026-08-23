@@ -19,9 +19,10 @@ export function AddBranchForm() {
   return (
     <form
       action={formAction}
+      noValidate
       className="flex flex-col gap-3 border-t border-hairline pt-4"
     >
-      <Field label="Code">
+      <Field label="Code" error={state.fieldErrors?.code}>
         <input
           name="code"
           required
@@ -30,7 +31,7 @@ export function AddBranchForm() {
         />
       </Field>
 
-      <Field label="Name">
+      <Field label="Name" error={state.fieldErrors?.name}>
         <input
           name="name"
           required

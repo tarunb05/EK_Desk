@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
+import { defaultRouteFor, isRouteAllowed, type Role } from "@/lib/auth/routes";
 
 // Next.js's own framework-injected inline scripts (the `self.__next_f.push(...)`
 // RSC-hydration payload) have no `src` — a `script-src 'self'` CSP with no
@@ -83,11 +84,52 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
-  if (user && isLoginRoute) {
+  // A role is resolved via the auth_role() RPC (security definer, reads
+  // `profile`, returns nothing for a deactivated user) rather than reading
+  // `profile` directly — no policy grants a non-admin session read access
+  // to profile rows at all, including their own.
+  let role: Role | null = null;
+  if (user) {
+    const { data } = await supabase.rpc("auth_role");
+    role = (data as Role | null) ?? null;
+  }
+
+  // Authenticated but no resolvable role: a deactivated user, or a stale
+  // session that predates their profile row. Treat identically to
+  // unauthenticated rather than letting them through with no route check.
+  if (user && !role && !isLoginRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/transport";
+    url.pathname = "/login";
     const response = NextResponse.redirect(url);
     response.headers.set("Content-Security-Policy", csp);
+    return response;
+  }
+
+  if (user && role && isLoginRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = defaultRouteFor(role);
+    const response = NextResponse.redirect(url);
+    response.headers.set("Content-Security-Policy", csp);
+    return response;
+  }
+
+  if (
+    user &&
+    role &&
+    !isLoginRoute &&
+    !isRouteAllowed(request.nextUrl.pathname, role)
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = defaultRouteFor(role);
+    const response = NextResponse.redirect(url);
+    response.headers.set("Content-Security-Policy", csp);
+    // One-shot flash cookie: the shared app layout reads this client-side
+    // to show "that page isn't available for your account" once, then
+    // deletes it. A 10s expiry means it's harmless even if never read.
+    response.cookies.set("route_restricted_notice", "1", {
+      maxAge: 10,
+      path: "/",
+    });
     return response;
   }
 

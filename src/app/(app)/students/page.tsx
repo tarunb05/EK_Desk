@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getBranches } from "@/lib/supabase/queries";
 import { getCurrentScope } from "@/lib/shell/get-current-scope";
 import { shellSearchParamsSchema } from "@/lib/shell/search-params";
+import { requireAuth } from "@/lib/auth/require-role";
 import {
   studentDirectorySearchParamsSchema,
   type StudentSortKey,
@@ -25,6 +27,7 @@ export default async function StudentsPage({
   const scopeParams = shellSearchParamsSchema.parse(rawParams);
   const tableParams = studentDirectorySearchParamsSchema.parse(rawParams);
 
+  const authed = await requireAuth();
   const supabase = await createClient();
   const [{ branch }, branches, classSections] = await Promise.all([
     getCurrentScope(scopeParams),
@@ -49,9 +52,17 @@ export default async function StudentsPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-4">
-        <h1 className="text-xl font-medium text-ink">Students</h1>
-        <ScopeSelectors branches={branches} />
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <h1 className="text-xl font-medium text-ink">Students</h1>
+          <ScopeSelectors branches={branches} />
+        </div>
+        <Link
+          href="/students/new"
+          className="inline-block h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
+        >
+          Add student
+        </Link>
       </div>
 
       <StudentDirectoryFilters classSections={classSections} />
@@ -64,6 +75,7 @@ export default async function StudentsPage({
         pageSize={PAGE_SIZE}
         totalPages={pagination.totalPages}
         searchParams={flatSearchParams}
+        role={authed.role}
       />
     </div>
   );

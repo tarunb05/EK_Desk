@@ -10,6 +10,7 @@ import { Select } from "@/components/forms/select";
 import { type ActionState, updateFeeAccount } from "@/lib/records/actions";
 import { paiseToRupees } from "@/lib/domain/money";
 import type { FeeAccountRecordRow } from "@/lib/records/types";
+import { CLASS_SECTIONS } from "@/lib/records/class-sections";
 
 const initialState: ActionState = { error: null };
 
@@ -23,12 +24,76 @@ export function EditFeeAccountForm({
     initialState,
   );
   const [status, setStatus] = useState(record.status);
+  const [classSection, setClassSection] = useState(record.classSection);
+
+  if (state.submitted) {
+    return (
+      <p className="text-sm text-ink">
+        Submitted for approval. An admin will review this change before it
+        takes effect.
+      </p>
+    );
+  }
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} noValidate className="flex flex-col gap-4">
       <input type="hidden" name="feeAccountId" value={record.feeAccountId} />
 
-      <Field label="Total receivable (₹)">
+      <Field
+        label="Student full name"
+        error={state.fieldErrors?.fullName}
+      >
+        <input
+          name="fullName"
+          required
+          defaultValue={record.studentFullName}
+          className={inputClassName}
+        />
+      </Field>
+
+      <Field label="Guardian name" error={state.fieldErrors?.guardianName}>
+        <input
+          name="guardianName"
+          required
+          defaultValue={record.guardianName}
+          className={inputClassName}
+        />
+      </Field>
+
+      <Field label="Phone" error={state.fieldErrors?.phone}>
+        <input
+          name="phone"
+          required
+          defaultValue={record.phone}
+          className={inputClassName}
+        />
+      </Field>
+
+      <Field label="Grade" error={state.fieldErrors?.classSection}>
+        <Select
+          name="classSection"
+          ariaLabel="Grade"
+          value={classSection}
+          onChange={setClassSection}
+          options={CLASS_SECTIONS.map((section) => ({
+            value: section,
+            label: section,
+          }))}
+        />
+      </Field>
+
+      <Field label="Notes (optional)">
+        <input
+          name="notes"
+          defaultValue={record.notes ?? ""}
+          className={inputClassName}
+        />
+      </Field>
+
+      <Field
+        label="Total receivable (₹)"
+        error={state.fieldErrors?.totalReceivable}
+      >
         <input
           name="totalReceivable"
           type="number"
@@ -40,7 +105,7 @@ export function EditFeeAccountForm({
         />
       </Field>
 
-      <Field label="Due date">
+      <Field label="Due date" error={state.fieldErrors?.dueDate}>
         <input
           name="dueDate"
           type="date"
@@ -50,7 +115,7 @@ export function EditFeeAccountForm({
         />
       </Field>
 
-      <Field label="Starts on">
+      <Field label="Starts on" error={state.fieldErrors?.startsOn}>
         <input
           name="startsOn"
           type="date"
@@ -60,7 +125,7 @@ export function EditFeeAccountForm({
         />
       </Field>
 
-      <Field label="Ends on">
+      <Field label="Ends on" error={state.fieldErrors?.endsOn}>
         <input
           name="endsOn"
           type="date"
@@ -90,7 +155,10 @@ export function EditFeeAccountForm({
             name="routeName"
             value={record.routeName ?? ""}
           />
-          <Field label="Pickup point">
+          <Field
+            label="Pickup point"
+            error={state.fieldErrors?.pickupPoint}
+          >
             <input
               name="pickupPoint"
               required
@@ -100,7 +168,7 @@ export function EditFeeAccountForm({
           </Field>
         </>
       ) : (
-        <Field label="Slot">
+        <Field label="Slot" error={state.fieldErrors?.slot}>
           <input
             name="slot"
             required

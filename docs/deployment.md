@@ -60,8 +60,9 @@ Settings → **API Keys**.
 On that tab:
 - **anon / public** key → a long string starting with `eyJ...`. This is
   `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-- **service_role** key → treat as a password, bypasses RLS entirely. You
-  don't need to copy this anywhere (see step 6).
+- **service_role** key → treat as a password, bypasses RLS entirely. Needed
+  for `SUPABASE_SERVICE_ROLE_KEY` in step 5 (the Settings → Teachers feature
+  needs it) — copy it now while you're on this screen.
 
 The **Project URL** is shown separately (top of the API settings, or under
 Settings → General/Data API) — it looks like `https://xxxxxxxx.supabase.co`.
@@ -88,7 +89,7 @@ Preview**:
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | the plain Project URL from step 3 | Public, safe to expose |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the legacy anon key from step 3 | Public — RLS is the real protection, not secrecy of this key |
-| `SUPABASE_SERVICE_ROLE_KEY` | **do not set** | The deployed app never reads it (`src/lib/env.ts` only validates the two `NEXT_PUBLIC_*` vars) — setting it here is a live bypass-RLS credential sitting somewhere it's never needed |
+| `SUPABASE_SERVICE_ROLE_KEY` | the **service_role** key from step 3 | **This reverses earlier guidance.** As of the teacher-accounts feature (Settings → Teachers), the running app uses this key at runtime for the first time — creating a teacher login is only possible through the Supabase Admin API, which needs it (`src/lib/supabase/admin.ts`). Treat it exactly like a password: it bypasses RLS entirely. Every server-side use of it is gated behind `requireRole("admin")` first. |
 
 > **Editing an env var does not redeploy the app.** `NEXT_PUBLIC_*` values
 > are baked into the build at build time, so the already-built deployment
@@ -111,6 +112,12 @@ Supabase dashboard → Authentication → **Users** → **Add user**.
 > weak-credential risk, not just a style nit).
 
 Check "Auto Confirm User" if the dashboard offers it.
+
+This manual dashboard step is only needed **once**, for the first admin.
+After that, sign in and use **Settings → My login** to change this
+initial password to something only you know, and **Settings → Teachers**
+to create every teacher login from then on — no more direct Supabase
+dashboard user creation needed for teachers.
 
 ## 7. Auth URL configuration
 

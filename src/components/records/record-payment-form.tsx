@@ -25,11 +25,20 @@ export function RecordPaymentForm({ feeAccountId }: { feeAccountId: string }) {
   );
   const [method, setMethod] = useState("cash");
 
+  if (state.submitted) {
+    return (
+      <p className="text-sm text-ink">
+        Submitted for approval. An admin will review this payment before
+        it&apos;s recorded.
+      </p>
+    );
+  }
+
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} noValidate className="flex flex-col gap-4">
       <input type="hidden" name="feeAccountId" value={feeAccountId} />
 
-      <Field label="Amount (₹)">
+      <Field label="Amount (₹)" error={state.fieldErrors?.amount}>
         <input
           name="amount"
           type="number"
@@ -40,11 +49,11 @@ export function RecordPaymentForm({ feeAccountId }: { feeAccountId: string }) {
         />
       </Field>
 
-      <Field label="Paid on">
+      <Field label="Paid on" error={state.fieldErrors?.paidOn}>
         <input name="paidOn" type="date" required className={inputClassName} />
       </Field>
 
-      <Field label="Method">
+      <Field label="Method" error={state.fieldErrors?.method}>
         <Select
           name="method"
           ariaLabel="Method"
@@ -62,7 +71,7 @@ export function RecordPaymentForm({ feeAccountId }: { feeAccountId: string }) {
         <input name="note" className={inputClassName} />
       </Field>
 
-      <Field label="Recorded by">
+      <Field label="Recorded by" error={state.fieldErrors?.recordedBy}>
         <input name="recordedBy" required className={inputClassName} />
       </Field>
 

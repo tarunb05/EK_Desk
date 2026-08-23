@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatPaise } from "@/lib/domain/money";
 import type { StudentDirectoryRow } from "@/lib/records/student-directory";
 import type { StudentSortKey } from "@/lib/shell/student-table-params";
+import type { Role } from "@/lib/auth/routes";
 import { SortableHeader } from "@/components/records/sortable-header";
 import { PaginationControls } from "@/components/records/pagination-controls";
 import { AlertIcon, ClockIcon, StatusIcon } from "@/components/shell/nav-icons";
@@ -14,6 +15,7 @@ interface StudentDirectoryTableProps {
   pageSize: number;
   totalPages: number;
   searchParams: Record<string, string | undefined>;
+  role: Role;
 }
 
 function PaymentStatus({ row }: { row: StudentDirectoryRow }) {
@@ -52,37 +54,47 @@ const SERVICE_LABEL: Record<string, string> = {
 const actionButtonClassName =
   "h-6 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink";
 
-function RowActions({ row }: { row: StudentDirectoryRow }) {
+function RowActions({ row, role }: { row: StudentDirectoryRow; role: Role }) {
   if (row.feeAccounts.length === 0) {
     return <span className="text-2xs text-ink-muted">—</span>;
   }
   return (
     <div className="flex flex-col gap-1">
-      {row.feeAccounts.map((account) => (
-        <div
-          key={account.feeAccountId}
-          className="flex flex-wrap items-center gap-1.5 whitespace-nowrap"
-        >
-          <span className="text-2xs text-ink-muted">
-            {SERVICE_LABEL[account.serviceType] ?? account.serviceType}
-            {row.feeAccounts.length > 1
-              ? ` (${account.academicYearLabel})`
-              : ""}
-          </span>
-          <Link
-            href={`/${account.serviceType}/${account.feeAccountId}/edit`}
-            className={actionButtonClassName}
+      {row.feeAccounts.map((account) => {
+        // An admin keeps the existing direct-edit routes under
+        // /transport|daycare (untouched); a teacher's edit/payment is a
+        // proposal, so it goes through the /students-scoped routes that
+        // ROUTE_ACCESS actually lets them reach.
+        const [editHref, paymentHref] =
+          role === "admin"
+            ? [
+                `/${account.serviceType}/${account.feeAccountId}/edit`,
+                `/${account.serviceType}/${account.feeAccountId}/payment`,
+              ]
+            : [
+                `/students/fee-account/${account.feeAccountId}/edit`,
+                `/students/fee-account/${account.feeAccountId}/payment`,
+              ];
+        return (
+          <div
+            key={account.feeAccountId}
+            className="flex flex-wrap items-center gap-1.5 whitespace-nowrap"
           >
-            Edit
-          </Link>
-          <Link
-            href={`/${account.serviceType}/${account.feeAccountId}/payment`}
-            className={actionButtonClassName}
-          >
-            Record payment
-          </Link>
-        </div>
-      ))}
+            <span className="text-2xs text-ink-muted">
+              {SERVICE_LABEL[account.serviceType] ?? account.serviceType}
+              {row.feeAccounts.length > 1
+                ? ` (${account.academicYearLabel})`
+                : ""}
+            </span>
+            <Link href={editHref} className={actionButtonClassName}>
+              Edit
+            </Link>
+            <Link href={paymentHref} className={actionButtonClassName}>
+              Record payment
+            </Link>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -95,6 +107,7 @@ export function StudentDirectoryTable({
   pageSize,
   totalPages,
   searchParams,
+  role,
 }: StudentDirectoryTableProps) {
   if (rows.length === 0) {
     return (
@@ -210,7 +223,7 @@ export function StudentDirectoryTable({
                   <PaymentStatus row={row} />
                 </td>
                 <td className="px-3">
-                  <RowActions row={row} />
+                  <RowActions row={row} role={role} />
                 </td>
               </tr>
             ))}

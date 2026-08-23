@@ -19,9 +19,10 @@ export function AddAcademicYearForm() {
   return (
     <form
       action={formAction}
+      noValidate
       className="flex flex-col gap-3 border-t border-hairline pt-4"
     >
-      <Field label="Label">
+      <Field label="Label" error={state.fieldErrors?.label}>
         <input
           name="label"
           required
@@ -31,7 +32,7 @@ export function AddAcademicYearForm() {
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Starts on">
+        <Field label="Starts on" error={state.fieldErrors?.startsOn}>
           <input
             name="startsOn"
             type="date"
@@ -39,7 +40,7 @@ export function AddAcademicYearForm() {
             className={inputClassName}
           />
         </Field>
-        <Field label="Ends on">
+        <Field label="Ends on" error={state.fieldErrors?.endsOn}>
           <input
             name="endsOn"
             type="date"

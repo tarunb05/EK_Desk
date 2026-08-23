@@ -1,6 +1,6 @@
 import type { Client } from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { connect, withRollback } from "./test-helpers";
+import { connect, impersonateAdmin, withRollback } from "./test-helpers";
 
 describe("settings mutations (as authenticated)", () => {
   let client: Client;
@@ -19,7 +19,7 @@ describe("settings mutations (as authenticated)", () => {
 
   it("lets an authenticated user insert a new academic year", async () => {
     await withRollback(client, async () => {
-      await client.query("set role authenticated");
+      await impersonateAdmin(client);
 
       const result = await client.query(
         `insert into academic_year (label, starts_on, ends_on, is_current)
@@ -33,7 +33,7 @@ describe("settings mutations (as authenticated)", () => {
 
   it("lets an authenticated user insert a new branch", async () => {
     await withRollback(client, async () => {
-      await client.query("set role authenticated");
+      await impersonateAdmin(client);
 
       const result = await client.query(
         `insert into branch (code, name, is_active)
@@ -47,7 +47,7 @@ describe("settings mutations (as authenticated)", () => {
 
   it("rejects a second current academic year (partial unique index)", async () => {
     await withRollback(client, async () => {
-      await client.query("set role authenticated");
+      await impersonateAdmin(client);
 
       // The seeded dataset already has one is_current = true row — inserting
       // a second one must violate academic_year_one_current.
@@ -62,7 +62,7 @@ describe("settings mutations (as authenticated)", () => {
 
   it("allows flipping current to a different year once the old one is unset", async () => {
     await withRollback(client, async () => {
-      await client.query("set role authenticated");
+      await impersonateAdmin(client);
 
       await client.query(
         "update academic_year set is_current = false where is_current = true",

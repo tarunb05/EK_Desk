@@ -1,13 +1,29 @@
+// The error sits on the same row as the label, right of it -- next to the
+// field's name rather than buried at the bottom of the form past every
+// other field and the submit button, where it's disconnected from which box
+// is actually the problem.
 export function Field({
   label,
+  error,
   children,
 }: {
   label: string;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm text-ink-secondary">
-      {label}
+      <span className="flex items-baseline justify-between gap-2">
+        <span>{label}</span>
+        {error ? (
+          <span
+            className="text-xs font-normal normal-case text-attention"
+            role="alert"
+          >
+            {error}
+          </span>
+        ) : null}
+      </span>
       {children}
     </label>
   );

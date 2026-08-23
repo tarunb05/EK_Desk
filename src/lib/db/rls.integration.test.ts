@@ -1,6 +1,6 @@
 import type { Client } from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { connect } from "./test-helpers";
+import { connect, impersonateAdmin, withRollback } from "./test-helpers";
 
 describe("row level security", () => {
   let client: Client;
@@ -38,19 +38,23 @@ describe("row level security", () => {
     ).rejects.toThrow();
   });
 
-  it("allows authenticated to read student data", async () => {
-    await client.query("set role authenticated");
-    const result = await client.query<{ count: number }>(
-      "select count(*)::int as count from student",
-    );
-    expect(result.rows[0].count).toBeGreaterThan(0);
+  it("allows an admin to read student data", async () => {
+    await withRollback(client, async () => {
+      await impersonateAdmin(client);
+      const result = await client.query<{ count: number }>(
+        "select count(*)::int as count from student",
+      );
+      expect(result.rows[0].count).toBeGreaterThan(0);
+    });
   });
 
-  it("allows authenticated to read the balance view", async () => {
-    await client.query("set role authenticated");
-    const result = await client.query<{ count: number }>(
-      "select count(*)::int as count from fee_account_balance",
-    );
-    expect(result.rows[0].count).toBeGreaterThan(0);
+  it("allows an admin to read the balance view", async () => {
+    await withRollback(client, async () => {
+      await impersonateAdmin(client);
+      const result = await client.query<{ count: number }>(
+        "select count(*)::int as count from fee_account_balance",
+      );
+      expect(result.rows[0].count).toBeGreaterThan(0);
+    });
   });
 });

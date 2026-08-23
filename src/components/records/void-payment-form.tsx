@@ -17,10 +17,10 @@ export function VoidPaymentForm({ paymentId }: { paymentId: string }) {
   );
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} noValidate className="flex flex-col gap-4">
       <input type="hidden" name="paymentId" value={paymentId} />
 
-      <Field label="Reason for voiding">
+      <Field label="Reason for voiding" error={state.fieldErrors?.voidReason}>
         <input name="voidReason" required className={inputClassName} />
       </Field>
 

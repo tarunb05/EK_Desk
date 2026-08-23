@@ -19,7 +19,7 @@ export default async function EditFeeAccountPage({
 
   return (
     <div className="max-w-xl">
-      <BackLink href="/transport" />
+      <BackLink href="/students" label="Return to student page" />
       <h1 className="mb-1 text-xl font-medium text-ink">Edit fee account</h1>
       <p className="mb-4 text-sm text-ink-secondary">
         {record.studentFullName}

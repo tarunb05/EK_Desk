@@ -73,6 +73,15 @@ export function SettingsIcon(props: IconProps = {}) {
   );
 }
 
+export function ApprovalsIcon(props: IconProps = {}) {
+  return (
+    <IconBase {...props}>
+      <rect x="4" y="3.5" width="12" height="13" rx="1.5" />
+      <path d="m7 10 2 2 4-4.5" />
+    </IconBase>
+  );
+}
+
 export function CollapseIcon({
   direction,
   ...props

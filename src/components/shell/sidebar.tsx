@@ -4,10 +4,17 @@ import { useEffect, useState } from "react";
 import { NavLinks } from "./nav-links";
 import { CloseIcon, CollapseIcon } from "./nav-icons";
 import { useSidebarContext } from "./sidebar-context";
+import type { Role } from "@/lib/auth/routes";
 
 const COLLAPSED_STORAGE_KEY = "sidebar-collapsed";
 
-export function Sidebar() {
+export function Sidebar({
+  role,
+  pendingApprovalsCount = 0,
+}: {
+  role: Role;
+  pendingApprovalsCount?: number;
+}) {
   const { mobileOpen, setMobileOpen } = useSidebarContext();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -69,7 +76,11 @@ export function Sidebar() {
           </button>
         </div>
 
-        <NavLinks collapsed={collapsed} />
+        <NavLinks
+          collapsed={collapsed}
+          role={role}
+          pendingApprovalsCount={pendingApprovalsCount}
+        />
       </aside>
     </>
   );

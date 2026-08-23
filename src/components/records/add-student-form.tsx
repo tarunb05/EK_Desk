@@ -35,12 +35,21 @@ export function AddStudentForm({
   const [branchId, setBranchId] = useState(branches[0]?.id ?? "");
   const [classSection, setClassSection] = useState("");
 
+  if (state.submitted) {
+    return (
+      <p className="text-sm text-ink">
+        Submitted for approval. An admin will review this student before
+        they&apos;re added.
+      </p>
+    );
+  }
+
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} noValidate className="flex flex-col gap-4">
       <input type="hidden" name="serviceType" value={serviceType} />
       <input type="hidden" name="academicYearId" value={academicYearId} />
 
-      <Field label="Branch">
+      <Field label="Branch" error={state.fieldErrors?.branchId}>
         <Select
           name="branchId"
           ariaLabel="Branch"
@@ -53,23 +62,23 @@ export function AddStudentForm({
         />
       </Field>
 
-      <Field label="Admission number">
+      <Field label="Admission number" error={state.fieldErrors?.admissionNo}>
         <input name="admissionNo" required className={inputClassName} />
       </Field>
 
-      <Field label="Student full name">
+      <Field label="Student full name" error={state.fieldErrors?.fullName}>
         <input name="fullName" required className={inputClassName} />
       </Field>
 
-      <Field label="Guardian name">
+      <Field label="Guardian name" error={state.fieldErrors?.guardianName}>
         <input name="guardianName" required className={inputClassName} />
       </Field>
 
-      <Field label="Phone">
+      <Field label="Phone" error={state.fieldErrors?.phone}>
         <input name="phone" required className={inputClassName} />
       </Field>
 
-      <Field label="Grade">
+      <Field label="Grade" error={state.fieldErrors?.classSection}>
         <Select
           name="classSection"
           ariaLabel="Grade"
@@ -86,16 +95,19 @@ export function AddStudentForm({
       </Field>
 
       {serviceType === "transport" ? (
-        <Field label="Pickup point">
+        <Field label="Pickup point" error={state.fieldErrors?.pickupPoint}>
           <input name="pickupPoint" required className={inputClassName} />
         </Field>
       ) : (
-        <Field label="Slot">
+        <Field label="Slot" error={state.fieldErrors?.slot}>
           <input name="slot" required className={inputClassName} />
         </Field>
       )}
 
-      <Field label="Total receivable (₹)">
+      <Field
+        label="Total receivable (₹)"
+        error={state.fieldErrors?.totalReceivable}
+      >
         <input
           name="totalReceivable"
           type="number"
@@ -106,11 +118,11 @@ export function AddStudentForm({
         />
       </Field>
 
-      <Field label="Due date">
+      <Field label="Due date" error={state.fieldErrors?.dueDate}>
         <input name="dueDate" type="date" required className={inputClassName} />
       </Field>
 
-      <Field label="Starts on">
+      <Field label="Starts on" error={state.fieldErrors?.startsOn}>
         <input
           name="startsOn"
           type="date"
@@ -119,7 +131,7 @@ export function AddStudentForm({
         />
       </Field>
 
-      <Field label="Ends on">
+      <Field label="Ends on" error={state.fieldErrors?.endsOn}>
         <input name="endsOn" type="date" required className={inputClassName} />
       </Field>
 
