@@ -8,7 +8,12 @@ export const ROUTE_ACCESS: Record<string, readonly Role[]> = {
   "/transport": ["admin"],
   "/daycare": ["admin"],
   "/students": ["admin", "teacher"],
+  // More specific than /settings below, and must stay declared first --
+  // isRouteAllowed matches the first prefix that fits, so a narrower path
+  // needs to come before a broader one it would otherwise be shadowed by.
+  "/settings/expense-categories": ["admin"],
   "/settings": ["admin"],
+  "/expenses": ["admin", "teacher"],
   // Admin sees the full review queue (approve/reject everyone's pending
   // submissions); a teacher sees a read-only list of their own -- same
   // route, branched by role in the page itself, since RLS already scopes

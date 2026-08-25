@@ -21,6 +21,10 @@ payment         id, fee_account_id, amount_paise bigint, paid_on,
                 method ('cash'|'upi'|'cheque'|'bank_transfer'),
                 reference, note, recorded_by,
                 voided_at, void_reason
+expense_category  id, name, is_active, sort_order
+expense           id, branch_id, academic_year_id, category_id,
+                  amount_paise bigint, spent_on, method, reference, note,
+                  created_by, updated_by, created_at, updated_at
 ```
 
 Non-negotiable rules on this model:
@@ -32,6 +36,10 @@ Non-negotiable rules on this model:
 5. **One `fee_account` table serves both services.** The transport and daycare dashboards must be the same query with a different `service_type` filter — the money and aggregation logic exists exactly once. Add `CHECK` constraints so a `daycare` row cannot carry `route_name`/`pickup_point` and a `transport` row cannot carry `slot`.
 6. **RLS is default-deny, and there are now two roles: `admin` and `teacher`** (phase 8 — `profile` table, one row per auth user). The anon key still gets nothing. An admin has full access, matching everything this app did before phase 8. A teacher gets read-only access to `student`, `fee_account`, and `payment`, all scoped to their own `branch_id` — individual figures (pending, receivable, payment history) on the **Students page** are fine for a teacher to see; the **dashboards** (`/transport`, `/daycare`) are the thing kept admin-only, by route (`ROUTE_ACCESS`), not by hiding the underlying data. A teacher writes nothing directly to `student`/`fee_account`/`payment` — adding a student, editing one, or recording a payment all go through `student_submission` / `student_edit_submission` / `payment_submission` (typed columns, pending/approved/rejected, same convention as every other table here) and only take effect once an admin approves them via the matching `approve_*` `security definer` function. Role and branch are read via the `auth_role()` / `auth_branch_id()` / `auth_is_admin()` `security definer` functions (which read `profile`), never by trusting a client-supplied role, branch, or user id. `lib/auth/routes.ts`'s `ROUTE_ACCESS` map is the single source both middleware and the sidebar nav read for which role may reach which route — never duplicate that list.
 7. Index `fee_account(academic_year_id, service_type, status)`, `fee_account(student_id)`, `payment(fee_account_id)`, `payment(paid_on)`, `student(branch_id)`, plus a trigram index on `student.full_name`.
+8. **`expense` is the one exception to append-only money (rule 2).** It's spend the office made, not receivable owed to it — nothing downstream depends on an expense row never changing the way collection/pending figures depend on `payment` never changing. Edited and hard-deleted directly, with `created_by`/`updated_by` stamps and a server-side edit/delete log (actor, expense id, category id, amount, timestamp — no free text) as the only audit trail. No soft-delete flag, no shadow history table.
+9. **Unlike the fee dashboards, the Expenses dashboard is reachable by both roles.** Rule 6 already lets a teacher read their own branch's individual `payment`/`fee_account` figures — what's admin-only there is the *dashboard aggregate* (`/transport`, `/daycare`, gated by route, not by hiding row-level data). `expense` breaks that pattern deliberately: a teacher gets an aggregate `/expenses` dashboard too, scoped to their own branch. The fee side is untouched — `/transport` and `/daycare` stay admin-only exactly as before.
+10. **A teacher's expense needs no approval queue**, unlike a student submission. The Phase 8 queue exists because a student/fee-account write creates receivable a parent will be billed against; an expense creates no receivable and settles no account, so gating it behind approval would be ceremony, not safety.
+11. **Never fold an expense total into `fee_account_record`/a dashboard RPC.** Build a separate expense-only aggregate instead — the two money directions must never share a query function, so a change to one can never silently move a figure on the other.
 
 ## URL as state
 
