@@ -49,13 +49,20 @@ export function NavLinks({
   return (
     <nav className="flex flex-col gap-1">
       {links.map(({ href, label, Icon }) => {
+        // Same route and nav slot for both roles -- only the wording
+        // differs, since a teacher only ever sees their own requests here,
+        // never a review queue to act on.
+        const displayLabel =
+          href === "/approvals" && role === "teacher"
+            ? "My requests"
+            : label;
         const isActive = pathname.startsWith(href);
         return (
           <Link
             key={href}
             href={href}
-            aria-label={label}
-            title={label}
+            aria-label={displayLabel}
+            title={displayLabel}
             onClick={() => setMobileOpen(false)}
             className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-accent ${
               collapsed ? "md:justify-center" : ""
@@ -66,7 +73,9 @@ export function NavLinks({
             }`}
           >
             <Icon />
-            <span className={collapsed ? "md:hidden" : ""}>{label}</span>
+            <span className={collapsed ? "md:hidden" : ""}>
+              {displayLabel}
+            </span>
             {href === "/approvals" && pendingApprovalsCount > 0 ? (
               <span
                 className={`ml-auto rounded-md bg-attention px-1.5 py-0.5 text-2xs font-medium text-surface ${collapsed ? "md:hidden" : ""}`}

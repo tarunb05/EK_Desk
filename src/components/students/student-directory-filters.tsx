@@ -5,7 +5,9 @@ import {
   STUDENT_SERVICE_FILTERS,
   STUDENT_STATUS_FILTERS,
 } from "@/lib/shell/student-table-params";
+import type { AcademicYearOption } from "@/lib/shell/resolve-year-branch";
 import {
+  CalendarIcon,
   ClassIcon,
   SearchIcon,
   ServiceIcon,
@@ -15,6 +17,7 @@ import { Select } from "@/components/forms/select";
 
 interface StudentDirectoryFiltersProps {
   classSections: string[];
+  academicYears: AcademicYearOption[];
 }
 
 const STATUS_LABELS: Record<(typeof STUDENT_STATUS_FILTERS)[number], string> = {
@@ -45,6 +48,7 @@ const iconWrapperClassName =
 
 export function StudentDirectoryFilters({
   classSections,
+  academicYears,
 }: StudentDirectoryFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -62,7 +66,7 @@ export function StudentDirectoryFilters({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <>
       <div className="relative w-72">
         <span className={iconWrapperClassName}>
           <SearchIcon size={14} />
@@ -115,6 +119,25 @@ export function StudentDirectoryFilters({
         ]}
         className="w-40"
       />
-    </div>
+
+      <Select
+        ariaLabel="Filter by academic year"
+        icon={<CalendarIcon size={14} />}
+        value={
+          searchParams.get("academicYear") ??
+          academicYears.find((year) => year.isCurrent)?.label ??
+          "all"
+        }
+        onChange={(next) => updateParam("academicYear", next)}
+        options={[
+          { value: "all", label: "All years" },
+          ...academicYears.map((year) => ({
+            value: year.label,
+            label: year.label,
+          })),
+        ]}
+        className="w-36"
+      />
+    </>
   );
 }

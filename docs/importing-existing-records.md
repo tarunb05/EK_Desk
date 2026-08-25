@@ -39,7 +39,7 @@ Map each spreadsheet row to:
 | `full_name`     | student name                                    |                                                                        |
 | `guardian_name` | parent/guardian name                            |                                                                        |
 | `phone`         | contact number                                  | keep as text — do not coerce to a number and lose a leading `0`/`+91`  |
-| `class_section` | class + section                                 | free text today (e.g. `"Nursery-A"`) — match the format already seeded |
+| `class_section` | class                                            | must be one of `CLASS_SECTIONS` (`src/lib/records/class-sections.ts`): Play Group, Nursery, Euro Junior, Euro Senior, Daycare |
 | `status`        | `'active'` unless the office marks a withdrawal | defaults to `'active'`                                                 |
 
 `notes` is optional; leave null unless there's something worth carrying

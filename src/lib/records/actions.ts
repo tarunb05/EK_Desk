@@ -6,12 +6,22 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAuth, requireRole } from "@/lib/auth/require-role";
 import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
 import {
+  canTransitionFeeAccountStatus,
+  canTransitionStudentStatus,
+  type FeeAccountStatus,
+  type StudentStatus,
+} from "@/lib/domain/student-status";
+import {
   approveSubmissionSchema,
   archiveStudentSchema,
   createStudentWithFeeAccountSchema,
+  permanentlyDeleteStudentSchema,
   recordPaymentSchema,
   rejectSubmissionSchema,
+  requestStudentDeleteSchema,
   updateFeeAccountSchema,
+  updateFeeAccountStatusSchema,
+  updateStudentStatusSchema,
   voidPaymentSchema,
 } from "@/lib/records/schemas";
 
@@ -356,6 +366,12 @@ export async function archiveStudent(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  // This action's only call site (DeleteStudentButton) lives on an
+  // admin-only route already, but a Server Action is a public endpoint in
+  // its own right -- route gating alone doesn't protect it if called
+  // directly, so the check belongs here too.
+  await requireRole("admin");
+
   const parsed = archiveStudentSchema.safeParse(formEntries(formData));
   if (!parsed.success) {
     return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
@@ -363,6 +379,24 @@ export async function archiveStudent(
   const value = parsed.data;
 
   const supabase = await createClient();
+  const { data: current, error: readError } = await supabase
+    .from("student")
+    .select("status")
+    .eq("id", value.studentId)
+    .single();
+
+  if (readError || !current) {
+    return { error: "Could not find this student." };
+  }
+
+  if (
+    !canTransitionStudentStatus(current.status as StudentStatus, "inactive")
+  ) {
+    return {
+      error: `This student is already ${current.status} and can't be deleted directly.`,
+    };
+  }
+
   const { error } = await supabase
     .from("student")
     .update({ status: "inactive" })
@@ -374,13 +408,215 @@ export async function archiveStudent(
 
   revalidatePath("/transport");
   revalidatePath("/daycare");
+  revalidatePath("/students");
   redirect(value.redirectTo);
+}
+
+// A genuinely different, additional action from archiveStudent above: this
+// removes the row and everything referencing it (fee_account, payment) from
+// the database entirely, no tombstone, via the on-delete-cascade added in
+// the hard-delete-student migration. archiveStudent's soft delete
+// (status = 'inactive', reversible, keeps history) stays exactly as it was.
+export async function permanentlyDeleteStudent(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+
+  const parsed = permanentlyDeleteStudentSchema.safeParse(
+    formEntries(formData),
+  );
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+  const supabase = await createClient();
+
+  const { error, count } = await supabase
+    .from("student")
+    .delete({ count: "exact" })
+    .eq("id", value.studentId);
+
+  if (error) {
+    return { error: "Could not delete this student." };
+  }
+  if (!count) {
+    return { error: "This student no longer exists." };
+  }
+
+  revalidatePath("/students", "page");
+  revalidatePath("/transport", "page");
+  revalidatePath("/daycare", "page");
+  return { error: null };
+}
+
+// A teacher's version of permanentlyDeleteStudent -- same underlying
+// action, but a teacher can never do it directly (there's no grant path
+// for that, and there shouldn't be for something this irreversible).
+// Instead this queues a request an admin has to approve, same
+// submit/approve shape as add/edit/payment. requireAuth (not requireRole)
+// since an admin never needs this path -- they already have the direct one.
+export async function requestStudentDelete(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = requestStudentDeleteSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+  const authed = await requireAuth();
+  const supabase = await createClient();
+
+  // Re-read the student server-side rather than trust a client-supplied
+  // name/admission number for the denormalized display fields, and to
+  // confirm it's actually in the teacher's own branch before queuing
+  // anything (RLS enforces this too, but this gives a readable error
+  // instead of a generic "not saved" one).
+  const { data: student, error: readError } = await supabase
+    .from("student")
+    .select("full_name, admission_no, branch_id")
+    .eq("id", value.studentId)
+    .single();
+
+  if (readError || !student) {
+    return { error: "Could not find this student." };
+  }
+
+  if (authed.role === "teacher" && student.branch_id !== authed.branchId) {
+    return { error: "You can only request deletion for your own branch." };
+  }
+
+  const { error } = await supabase.from("student_delete_submission").insert({
+    student_id: value.studentId,
+    branch_id: student.branch_id,
+    submitted_by: authed.userId,
+    student_full_name: student.full_name,
+    student_admission_no: student.admission_no,
+  });
+
+  if (error) {
+    return {
+      error:
+        "Could not submit this delete request — it may already be queued.",
+    };
+  }
+
+  revalidatePath("/students", "page");
+  revalidatePath("/approvals");
+  return { error: null, submitted: true };
+}
+
+export async function updateStudentStatus(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = updateStudentStatusSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+  const authed = await requireAuth();
+  const supabase = await createClient();
+
+  // Re-read the row's current status server-side rather than trust a
+  // client-supplied "current" value -- a hidden form field would be a
+  // spoofing surface for the transition check below.
+  const { data: current, error: readError } = await supabase
+    .from("student")
+    .select("status, branch_id")
+    .eq("id", value.studentId)
+    .single();
+
+  if (readError || !current) {
+    return { error: "Could not find this student." };
+  }
+
+  if (authed.role === "teacher") {
+    if (current.branch_id !== authed.branchId) {
+      return { error: "You can only change students in your own branch." };
+    }
+    if (value.status === "withdrawn") {
+      return { error: "Only an admin can withdraw a student." };
+    }
+  }
+
+  if (
+    !canTransitionStudentStatus(current.status as StudentStatus, value.status)
+  ) {
+    return {
+      error: `A student can't move from ${current.status} to ${value.status} directly.`,
+    };
+  }
+
+  const { error } = await supabase
+    .from("student")
+    .update({ status: value.status })
+    .eq("id", value.studentId);
+
+  if (error) {
+    return { error: "Could not update this student's status." };
+  }
+
+  revalidatePath("/students", "page");
+  return { error: null };
+}
+
+export async function updateFeeAccountStatus(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+
+  const parsed = updateFeeAccountStatusSchema.safeParse(
+    formEntries(formData),
+  );
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+  const supabase = await createClient();
+
+  const { data: current, error: readError } = await supabase
+    .from("fee_account")
+    .select("status, service_type")
+    .eq("id", value.feeAccountId)
+    .single();
+
+  if (readError || !current) {
+    return { error: "Could not find this fee account." };
+  }
+
+  if (
+    !canTransitionFeeAccountStatus(
+      current.status as FeeAccountStatus,
+      value.status,
+    )
+  ) {
+    return {
+      error: `A fee account can't move from ${current.status} to ${value.status} directly.`,
+    };
+  }
+
+  const { error } = await supabase
+    .from("fee_account")
+    .update({ status: value.status })
+    .eq("id", value.feeAccountId);
+
+  if (error) {
+    return { error: "Could not update this fee account's status." };
+  }
+
+  revalidatePath("/students", "page");
+  revalidatePath(`/${current.service_type}`, "page");
+  return { error: null };
 }
 
 const APPROVE_RPC = {
   student_submission: "approve_student_submission",
   student_edit_submission: "approve_student_edit",
   payment_submission: "approve_payment_submission",
+  student_delete_submission: "approve_student_delete",
 } as const;
 
 export async function approveSubmission(

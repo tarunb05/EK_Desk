@@ -6,6 +6,7 @@ import type { Role } from "@/lib/auth/routes";
 import { SortableHeader } from "@/components/records/sortable-header";
 import { PaginationControls } from "@/components/records/pagination-controls";
 import { AlertIcon, ClockIcon, StatusIcon } from "@/components/shell/nav-icons";
+import { RowActionMenu } from "@/components/students/row-action-menu";
 
 interface StudentDirectoryTableProps {
   rows: StudentDirectoryRow[];
@@ -51,20 +52,20 @@ const SERVICE_LABEL: Record<string, string> = {
   daycare: "Daycare",
 };
 
-const actionButtonClassName =
-  "h-6 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink";
-
 function RowActions({ row, role }: { row: StudentDirectoryRow; role: Role }) {
   if (row.feeAccounts.length === 0) {
-    return <span className="text-2xs text-ink-muted">—</span>;
+    return (
+      <RowActionMenu studentId={row.id} studentName={row.fullName} role={role} />
+    );
   }
   return (
     <div className="flex flex-col gap-1">
       {row.feeAccounts.map((account) => {
-        // An admin keeps the existing direct-edit routes under
-        // /transport|daycare (untouched); a teacher's edit/payment is a
-        // proposal, so it goes through the /students-scoped routes that
-        // ROUTE_ACCESS actually lets them reach.
+        // Admin and teacher see an identical Students page -- the only
+        // difference is that a teacher's edit/payment lands in the
+        // approval queue instead of taking effect immediately, which is
+        // invisible here: it's just a different route target for the same
+        // two menu options, not a different control.
         const [editHref, paymentHref] =
           role === "admin"
             ? [
@@ -86,12 +87,13 @@ function RowActions({ row, role }: { row: StudentDirectoryRow; role: Role }) {
                 ? ` (${account.academicYearLabel})`
                 : ""}
             </span>
-            <Link href={editHref} className={actionButtonClassName}>
-              Edit
-            </Link>
-            <Link href={paymentHref} className={actionButtonClassName}>
-              Record payment
-            </Link>
+            <RowActionMenu
+              editHref={editHref}
+              paymentHref={paymentHref}
+              studentId={row.id}
+              studentName={row.fullName}
+              role={role}
+            />
           </div>
         );
       })}
@@ -173,9 +175,6 @@ export function StudentDirectoryTable({
                 />
               </th>
               <th className="px-3 text-left text-2xs font-medium uppercase tracking-wide text-ink-muted">
-                Status
-              </th>
-              <th className="px-3 text-left text-2xs font-medium uppercase tracking-wide text-ink-muted">
                 Payment
               </th>
               <th className="px-3 text-left text-2xs font-medium uppercase tracking-wide text-ink-muted">
@@ -198,7 +197,7 @@ export function StudentDirectoryTable({
                 </td>
                 <td className="px-3">
                   <Link
-                    href={`/transport/student/${row.id}`}
+                    href={`/students/student/${row.id}`}
                     className="text-accent hover:underline"
                   >
                     {row.fullName}
@@ -211,13 +210,6 @@ export function StudentDirectoryTable({
                 <td className="px-3 text-ink-secondary">{row.phone}</td>
                 <td className="px-3 text-ink-secondary tabular-nums">
                   {row.createdAt.slice(0, 10)}
-                </td>
-                <td className="px-3">
-                  {row.status === "inactive" ? (
-                    <span className="text-2xs text-attention">Deleted</span>
-                  ) : (
-                    <span className="text-2xs text-ink-muted">Active</span>
-                  )}
                 </td>
                 <td className="px-3 tabular-nums">
                   <PaymentStatus row={row} />

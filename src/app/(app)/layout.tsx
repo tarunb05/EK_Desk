@@ -22,11 +22,10 @@ export default async function AppLayout({
     data: { user },
   } = await supabase.auth.getUser();
   const username = user?.email ? internalEmailToUsername(user.email) : null;
-  // Only an admin can reach /approvals at all, and only an admin's RLS
-  // policies actually return a nonzero count here anyway -- skip the query
-  // for a teacher entirely.
-  const pendingApprovalsCount =
-    role === "admin" ? await getPendingSubmissionCount(supabase) : 0;
+  // Both roles reach /approvals now -- admin sees everyone's pending count,
+  // a teacher sees only their own (RLS scopes the underlying query to
+  // `submitted_by = auth.uid()` automatically, no role branch needed here).
+  const pendingApprovalsCount = await getPendingSubmissionCount(supabase);
 
   return (
     <SidebarProvider>

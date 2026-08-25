@@ -2,12 +2,14 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStudentDetail } from "@/lib/records/student-detail";
 import { StudentDrawer } from "@/components/records/student-drawer";
+import { requireRole } from "@/lib/auth/require-role";
 
 export default async function InterceptedStudentDrawer({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { role } = await requireRole("admin");
   const { id } = await params;
   const supabase = await createClient();
   const detail = await getStudentDetail(supabase, id);
@@ -16,5 +18,5 @@ export default async function InterceptedStudentDrawer({
     notFound();
   }
 
-  return <StudentDrawer detail={detail} closeHref="/daycare" />;
+  return <StudentDrawer detail={detail} closeHref="/daycare" role={role} />;
 }

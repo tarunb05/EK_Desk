@@ -444,6 +444,97 @@ export type Database = {
           },
         ]
       }
+      student_delete_submission: {
+        Row: {
+          branch_id: string
+          created_at: string
+          id: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          student_admission_no: string
+          student_full_name: string
+          student_id: string | null
+          submitted_at: string
+          submitted_by: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_admission_no: string
+          student_full_name: string
+          student_id?: string | null
+          submitted_at?: string
+          submitted_by: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_admission_no?: string
+          student_full_name?: string
+          student_id?: string | null
+          submitted_at?: string
+          submitted_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_delete_submission_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_delete_submission_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+          {
+            foreignKeyName: "student_delete_submission_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_delete_submission_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_delete_submission_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_delete_submission_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_edit_submission: {
         Row: {
           applied_at: string | null
@@ -830,6 +921,7 @@ export type Database = {
       }
       student_directory: {
         Row: {
+          academic_year_ids: string[] | null
           admission_no: string | null
           branch_code: string | null
           branch_name: string | null
@@ -852,6 +944,7 @@ export type Database = {
     }
     Functions: {
       approve_payment_submission: { Args: { p_id: string }; Returns: string }
+      approve_student_delete: { Args: { p_id: string }; Returns: undefined }
       approve_student_edit: { Args: { p_id: string }; Returns: undefined }
       approve_student_submission: { Args: { p_id: string }; Returns: string }
       auth_branch_id: { Args: never; Returns: string }

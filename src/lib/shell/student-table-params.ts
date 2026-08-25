@@ -40,6 +40,11 @@ export const studentDirectorySearchParamsSchema = z.object({
   status: z.enum(STUDENT_STATUS_FILTERS).catch("active"),
   service: z.enum(STUDENT_SERVICE_FILTERS).catch("all"),
   classSection: z.string().optional(),
+  // The academic year's label, not id -- matches the URL-as-state
+  // convention every other filter here uses. Absent/unmatched means "all
+  // years", not the current year -- this filter narrows an otherwise
+  // year-agnostic directory, it doesn't default to scoping it.
+  academicYear: z.string().optional(),
   q: z.string().optional(),
   sort: z.enum(STUDENT_SORT_KEYS).catch("created_at"),
   dir: z.enum(["asc", "desc"]).catch("desc"),

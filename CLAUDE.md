@@ -35,7 +35,7 @@ Non-negotiable rules on this model:
 
 ## URL as state
 
-Every filter and sort lives in the query string: `?year=2026-27&branch=all&service=transport&status=overdue&class=Nursery-A&sort=pending&dir=desc&q=sharma&page=2`. Parse and validate the params with Zod in the Server Component, and push filtering, sorting and pagination into Postgres — never fetch all rows and filter in React. The back button must work and a filtered view must be shareable as a link.
+Every filter and sort lives in the query string: `?year=2026-27&branch=all&service=transport&status=overdue&class=Nursery&sort=pending&dir=desc&q=sharma&page=2`. Parse and validate the params with Zod in the Server Component, and push filtering, sorting and pagination into Postgres — never fetch all rows and filter in React. The back button must work and a filtered view must be shareable as a link.
 
 ## Design system
 

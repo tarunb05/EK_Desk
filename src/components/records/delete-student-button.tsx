@@ -12,7 +12,7 @@ export function DeleteStudentButton({
 }: {
   studentId: string;
   studentName: string;
-  redirectTo: "/transport" | "/daycare";
+  redirectTo: "/transport" | "/daycare" | "/students";
 }) {
   const [state, formAction, isPending] = useActionState(
     archiveStudent,

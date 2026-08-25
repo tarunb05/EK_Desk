@@ -2,8 +2,21 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import { formatPaise } from "@/lib/domain/money";
 
+export type SubmissionActionType =
+  | "Student added"
+  | "Student edited"
+  | "Payment recorded"
+  | "Deletion requested";
+
+export interface FieldChange {
+  label: string;
+  before: string;
+  after: string;
+}
+
 export interface PendingStudentSubmission {
   table: "student_submission";
+  actionType: "Student added";
   id: string;
   submittedAt: string;
   branchId: string;
@@ -13,6 +26,22 @@ export interface PendingStudentSubmission {
 
 export interface PendingStudentEditSubmission {
   table: "student_edit_submission";
+  actionType: "Student edited";
+  id: string;
+  submittedAt: string;
+  branchId: string;
+  summary: string;
+  detail: { label: string; value: string }[];
+  // Only the fields the teacher actually proposed changing -- an edit
+  // submission always carries every field (it's a full replace), so
+  // comparing against the fee account's current values is what actually
+  // answers "what change was made" instead of restating the whole record.
+  changes: FieldChange[];
+}
+
+export interface PendingPaymentSubmission {
+  table: "payment_submission";
+  actionType: "Payment recorded";
   id: string;
   submittedAt: string;
   branchId: string;
@@ -20,8 +49,9 @@ export interface PendingStudentEditSubmission {
   detail: { label: string; value: string }[];
 }
 
-export interface PendingPaymentSubmission {
-  table: "payment_submission";
+export interface PendingStudentDeleteSubmission {
+  table: "student_delete_submission";
+  actionType: "Deletion requested";
   id: string;
   submittedAt: string;
   branchId: string;
@@ -32,12 +62,27 @@ export interface PendingPaymentSubmission {
 export type PendingSubmission =
   | PendingStudentSubmission
   | PendingStudentEditSubmission
-  | PendingPaymentSubmission;
+  | PendingPaymentSubmission
+  | PendingStudentDeleteSubmission;
+
+// null and "" both mean "nothing there" for these fields -- treating them as
+// equal avoids flagging a no-op change (e.g. notes staying unset) as if the
+// teacher had actually proposed something.
+function diffField(
+  label: string,
+  before: string | number | bigint | null | undefined,
+  after: string | number | bigint | null | undefined,
+): FieldChange | null {
+  const beforeStr = before === null || before === undefined ? "" : String(before);
+  const afterStr = after === null || after === undefined ? "" : String(after);
+  if (beforeStr === afterStr) return null;
+  return { label, before: beforeStr || "—", after: afterStr || "—" };
+}
 
 export async function getPendingSubmissionCount(
   supabase: SupabaseClient<Database>,
 ): Promise<number> {
-  const [students, edits, payments] = await Promise.all([
+  const [students, edits, payments, deletes] = await Promise.all([
     supabase
       .from("student_submission")
       .select("id", { count: "exact", head: true })
@@ -50,17 +95,24 @@ export async function getPendingSubmissionCount(
       .from("payment_submission")
       .select("id", { count: "exact", head: true })
       .eq("status", "pending"),
+    supabase
+      .from("student_delete_submission")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
   ]);
 
   return (
-    (students.count ?? 0) + (edits.count ?? 0) + (payments.count ?? 0)
+    (students.count ?? 0) +
+    (edits.count ?? 0) +
+    (payments.count ?? 0) +
+    (deletes.count ?? 0)
   );
 }
 
 export async function getPendingSubmissions(
   supabase: SupabaseClient<Database>,
 ): Promise<PendingSubmission[]> {
-  const [students, edits, payments] = await Promise.all([
+  const [students, edits, payments, deletes] = await Promise.all([
     supabase
       .from("student_submission")
       .select("*")
@@ -73,6 +125,11 @@ export async function getPendingSubmissions(
       .order("submitted_at", { ascending: true }),
     supabase
       .from("payment_submission")
+      .select("*")
+      .eq("status", "pending")
+      .order("submitted_at", { ascending: true }),
+    supabase
+      .from("student_delete_submission")
       .select("*")
       .eq("status", "pending")
       .order("submitted_at", { ascending: true }),
@@ -82,6 +139,7 @@ export async function getPendingSubmissions(
   for (const row of students.data ?? []) submittedByIds.add(row.submitted_by);
   for (const row of edits.data ?? []) submittedByIds.add(row.submitted_by);
   for (const row of payments.data ?? []) submittedByIds.add(row.submitted_by);
+  for (const row of deletes.data ?? []) submittedByIds.add(row.submitted_by);
 
   const { data: profiles } = await supabase
     .from("profile")
@@ -91,11 +149,16 @@ export async function getPendingSubmissions(
     (profiles ?? []).map((p) => [p.id, p.full_name]),
   );
 
-  // A payment submission only stores fee_account_id -- fee_account_record
-  // already carries every student/guardian/branch field in one place, so
-  // reuse it rather than re-deriving the same join by hand.
+  // Both payment and edit submissions only store fee_account_id --
+  // fee_account_record already carries every student/guardian/branch field
+  // in one place (plus the fee account's own current values, which an edit
+  // needs to diff against), so one batched fetch covers both instead of
+  // querying per submission type.
   const feeAccountIds = Array.from(
-    new Set((payments.data ?? []).map((row) => row.fee_account_id)),
+    new Set([
+      ...(payments.data ?? []).map((row) => row.fee_account_id),
+      ...(edits.data ?? []).map((row) => row.fee_account_id),
+    ]),
   );
   const { data: feeAccountRecords } =
     feeAccountIds.length > 0
@@ -111,6 +174,7 @@ export async function getPendingSubmissions(
   const studentRows: PendingStudentSubmission[] = (students.data ?? []).map(
     (row) => ({
       table: "student_submission",
+      actionType: "Student added",
       id: row.id,
       submittedAt: row.submitted_at,
       branchId: row.branch_id,
@@ -142,32 +206,50 @@ export async function getPendingSubmissions(
   );
 
   const editRows: PendingStudentEditSubmission[] = (edits.data ?? []).map(
-    (row) => ({
-      table: "student_edit_submission",
-      id: row.id,
-      submittedAt: row.submitted_at,
-      branchId: row.branch_id,
-      summary: `Edit — ${row.full_name}`,
-      detail: [
-        { label: "Submitted by", value: submittedByName.get(row.submitted_by) ?? "" },
-        { label: "Full name", value: row.full_name },
-        { label: "Guardian", value: row.guardian_name },
-        { label: "Phone", value: row.phone },
-        { label: "Grade", value: row.class_section },
-        { label: "Notes", value: row.notes ?? "" },
-        {
-          label: "Total receivable",
-          value: formatPaise(BigInt(row.total_receivable_paise)),
-        },
-        { label: "Due date", value: row.due_date },
-        { label: "Starts on", value: row.starts_on },
-        { label: "Ends on", value: row.ends_on },
-        { label: "Fee account status", value: row.fee_account_status },
-        { label: "Route name", value: row.route_name ?? "" },
-        { label: "Pickup point", value: row.pickup_point ?? "" },
-        { label: "Slot", value: row.slot ?? "" },
-      ],
-    }),
+    (row) => {
+      const current = feeAccountById.get(row.fee_account_id);
+      const changes = [
+        diffField("Full name", current?.student_full_name, row.full_name),
+        diffField(
+          "Guardian",
+          current?.student_guardian_name,
+          row.guardian_name,
+        ),
+        diffField("Phone", current?.student_phone, row.phone),
+        diffField("Grade", current?.class_section, row.class_section),
+        diffField("Notes", current?.student_notes, row.notes),
+        diffField(
+          "Total receivable",
+          current
+            ? formatPaise(BigInt(current.total_receivable_paise ?? 0))
+            : null,
+          formatPaise(BigInt(row.total_receivable_paise)),
+        ),
+        diffField("Due date", current?.due_date, row.due_date),
+        diffField("Starts on", current?.starts_on, row.starts_on),
+        diffField("Ends on", current?.ends_on, row.ends_on),
+        diffField("Fee account status", current?.status, row.fee_account_status),
+        diffField("Route name", current?.route_name, row.route_name),
+        diffField("Pickup point", current?.pickup_point, row.pickup_point),
+        diffField("Slot", current?.slot, row.slot),
+      ].filter((change): change is FieldChange => change !== null);
+
+      return {
+        table: "student_edit_submission",
+        actionType: "Student edited",
+        id: row.id,
+        submittedAt: row.submitted_at,
+        branchId: row.branch_id,
+        summary: `Edit — ${row.full_name}`,
+        detail: [
+          {
+            label: "Submitted by",
+            value: submittedByName.get(row.submitted_by) ?? "",
+          },
+        ],
+        changes,
+      };
+    },
   );
 
   const paymentRows: PendingPaymentSubmission[] = (payments.data ?? []).map(
@@ -175,6 +257,7 @@ export async function getPendingSubmissions(
       const feeAccount = feeAccountById.get(row.fee_account_id);
       return {
         table: "payment_submission",
+        actionType: "Payment recorded",
         id: row.id,
         submittedAt: row.submitted_at,
         branchId: row.branch_id,
@@ -215,7 +298,26 @@ export async function getPendingSubmissions(
     },
   );
 
-  return [...studentRows, ...editRows, ...paymentRows].sort((a, b) =>
-    a.submittedAt.localeCompare(b.submittedAt),
+  const deleteRows: PendingStudentDeleteSubmission[] = (
+    deletes.data ?? []
+  ).map((row) => ({
+    table: "student_delete_submission",
+    actionType: "Deletion requested",
+    id: row.id,
+    submittedAt: row.submitted_at,
+    branchId: row.branch_id,
+    summary: `Delete — ${row.student_full_name}`,
+    detail: [
+      {
+        label: "Submitted by",
+        value: submittedByName.get(row.submitted_by) ?? "",
+      },
+      { label: "Student", value: row.student_full_name },
+      { label: "Admission no.", value: row.student_admission_no },
+    ],
+  }));
+
+  return [...studentRows, ...editRows, ...paymentRows, ...deleteRows].sort(
+    (a, b) => a.submittedAt.localeCompare(b.submittedAt),
   );
 }

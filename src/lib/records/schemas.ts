@@ -92,13 +92,32 @@ export const voidPaymentSchema = z.object({
 
 export const archiveStudentSchema = z.object({
   studentId: z.string().uuid(),
-  redirectTo: z.enum(["/transport", "/daycare"]),
+  redirectTo: z.enum(["/transport", "/daycare", "/students"]),
+});
+
+export const updateStudentStatusSchema = z.object({
+  studentId: z.string().uuid(),
+  status: z.enum(["active", "inactive", "withdrawn"]),
+});
+
+export const permanentlyDeleteStudentSchema = z.object({
+  studentId: z.string().uuid(),
+});
+
+export const requestStudentDeleteSchema = z.object({
+  studentId: z.string().uuid(),
+});
+
+export const updateFeeAccountStatusSchema = z.object({
+  feeAccountId: z.string().uuid(),
+  status: z.enum(["active", "discontinued"]),
 });
 
 export const SUBMISSION_TABLES = [
   "student_submission",
   "student_edit_submission",
   "payment_submission",
+  "student_delete_submission",
 ] as const;
 
 export const approveSubmissionSchema = z.object({

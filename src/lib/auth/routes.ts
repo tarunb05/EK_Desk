@@ -9,7 +9,11 @@ export const ROUTE_ACCESS: Record<string, readonly Role[]> = {
   "/daycare": ["admin"],
   "/students": ["admin", "teacher"],
   "/settings": ["admin"],
-  "/approvals": ["admin"],
+  // Admin sees the full review queue (approve/reject everyone's pending
+  // submissions); a teacher sees a read-only list of their own -- same
+  // route, branched by role in the page itself, since RLS already scopes
+  // a teacher's own submission reads to just theirs.
+  "/approvals": ["admin", "teacher"],
 };
 
 export function isRouteAllowed(pathname: string, role: Role): boolean {

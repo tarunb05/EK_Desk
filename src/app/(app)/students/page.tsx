@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getBranches } from "@/lib/supabase/queries";
+import { getAcademicYears, getBranches } from "@/lib/supabase/queries";
 import { getCurrentScope } from "@/lib/shell/get-current-scope";
 import { shellSearchParamsSchema } from "@/lib/shell/search-params";
 import { requireAuth } from "@/lib/auth/require-role";
@@ -15,6 +15,7 @@ import {
 import { StudentDirectoryFilters } from "@/components/students/student-directory-filters";
 import { StudentDirectoryTable } from "@/components/students/student-directory-table";
 import { ScopeSelectors } from "@/components/shell/scope-selectors";
+import { Toolbar } from "@/components/shell/toolbar";
 
 const PAGE_SIZE = 20;
 
@@ -29,15 +30,33 @@ export default async function StudentsPage({
 
   const authed = await requireAuth();
   const supabase = await createClient();
-  const [{ branch }, branches, classSections] = await Promise.all([
-    getCurrentScope(scopeParams),
-    getBranches(supabase),
-    getStudentClassSections(supabase),
-  ]);
+  const [{ branch }, branches, classSections, academicYears] =
+    await Promise.all([
+      getCurrentScope(scopeParams),
+      getBranches(supabase),
+      getStudentClassSections(supabase),
+      getAcademicYears(supabase),
+    ]);
+
+  // The label lives in the URL (URL-as-state, matching every other filter
+  // here). "all" is an explicit choice (no filter, every year); no param
+  // at all means the page just loaded, which defaults to the current year
+  // -- matching the dashboards' own default -- rather than showing every
+  // student's every year's account unfiltered. An unmatched/stale label
+  // falls back to the current year too, same as a missing one.
+  const currentYear = academicYears.find((year) => year.isCurrent);
+  const matchedYear = academicYears.find(
+    (year) => year.label === tableParams.academicYear,
+  );
+  const academicYearId =
+    tableParams.academicYear === "all"
+      ? undefined
+      : (matchedYear ?? currentYear)?.id;
 
   const { rows, pagination } = await getStudentDirectory(supabase, {
     branch,
     service: tableParams.service,
+    academicYearId,
     table: tableParams,
     page: tableParams.page,
     pageSize: PAGE_SIZE,
@@ -52,20 +71,24 @@ export default async function StudentsPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <h1 className="text-xl font-medium text-ink">Students</h1>
-          <ScopeSelectors branches={branches} />
-        </div>
-        <Link
-          href="/students/new"
-          className="inline-block h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
-        >
-          Add student
-        </Link>
-      </div>
+      <h1 className="text-xl font-medium text-ink">Students</h1>
 
-      <StudentDirectoryFilters classSections={classSections} />
+      <Toolbar
+        actions={
+          <Link
+            href="/students/new"
+            className="inline-block h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
+          >
+            Add student
+          </Link>
+        }
+      >
+        <ScopeSelectors branches={branches} compact />
+        <StudentDirectoryFilters
+          classSections={classSections}
+          academicYears={academicYears}
+        />
+      </Toolbar>
 
       <StudentDirectoryTable
         rows={rows}

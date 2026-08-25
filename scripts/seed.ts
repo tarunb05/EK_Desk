@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { Client } from "pg";
+import { CLASS_SECTIONS } from "../src/lib/records/class-sections";
 
 // Deterministic: same seed every run, so integration tests can assert exact
 // totals against this dataset.
@@ -48,8 +49,6 @@ const LAST_NAMES = [
   "Pillai",
   "Desai",
 ];
-const CLASS_LEVELS = ["Nursery", "LKG", "UKG", "Class 1", "Class 2"];
-const SECTIONS = ["A", "B"];
 const ROUTES = [
   "Route 1 - MG Road",
   "Route 2 - Whitefield",
@@ -157,8 +156,7 @@ async function main() {
 
     for (let i = 0; i < STUDENT_COUNT; i++) {
       const branchCode = i % 2 === 0 ? "BR-A" : "BR-B";
-      const classLevel = CLASS_LEVELS[i % CLASS_LEVELS.length];
-      const section = SECTIONS[i % SECTIONS.length];
+      const classSection = CLASS_SECTIONS[i % CLASS_SECTIONS.length];
       const result = await client.query<{ id: string }>(
         `insert into student
           (branch_id, admission_no, full_name, guardian_name, phone, class_section, status)
@@ -170,7 +168,7 @@ async function main() {
           fullName(),
           fullName(),
           randomIndianPhone(),
-          `${classLevel}-${section}`,
+          classSection,
         ],
       );
       students.push({ id: result.rows[0].id, index: i });

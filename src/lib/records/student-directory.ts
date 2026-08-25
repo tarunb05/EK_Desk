@@ -12,6 +12,7 @@ export interface StudentFeeAccountRef {
   feeAccountId: string;
   serviceType: ServiceType;
   academicYearLabel: string;
+  status: "active" | "discontinued";
 }
 
 export interface StudentDirectoryRow {
@@ -36,6 +37,9 @@ export interface StudentDirectoryRow {
 export interface StudentDirectoryParams {
   branch: "all" | string;
   service: StudentServiceFilter;
+  // Resolved server-side from the table.academicYear label -- undefined
+  // means "all years", not "the current year".
+  academicYearId?: string;
   table: StudentDirectorySearchParams;
 }
 
@@ -63,7 +67,7 @@ export function escapePostgrestFilterValue(value: string): string {
 
 function applyFilters(
   supabase: SupabaseClient<Database>,
-  { branch, service, table }: StudentDirectoryParams,
+  { branch, service, academicYearId, table }: StudentDirectoryParams,
   { head }: { head: boolean },
 ) {
   let query = supabase
@@ -72,6 +76,9 @@ function applyFilters(
 
   if (branch !== "all") {
     query = query.eq("branch_code", branch);
+  }
+  if (academicYearId) {
+    query = query.contains("academic_year_ids", [academicYearId]);
   }
   if (service === "transport") {
     query = query.eq("has_transport", true);
@@ -148,6 +155,7 @@ export async function getStudentDirectory(
               feeAccountId: string | null;
               serviceType: string | null;
               academicYearLabel: string | null;
+              status: string | null;
             }[]
           )
             .filter(
@@ -157,12 +165,14 @@ export async function getStudentDirectory(
                 feeAccountId: string;
                 serviceType: string;
                 academicYearLabel: string;
+                status: string;
               } => !!fa.feeAccountId && !!fa.serviceType,
             )
             .map((fa) => ({
               feeAccountId: fa.feeAccountId,
               serviceType: fa.serviceType as ServiceType,
               academicYearLabel: fa.academicYearLabel ?? "",
+              status: (fa.status ?? "active") as "active" | "discontinued",
             }))
         : [];
 

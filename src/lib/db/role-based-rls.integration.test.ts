@@ -160,6 +160,19 @@ describe("role-based RLS (phase 8.1)", () => {
     });
   });
 
+  it("a teacher reads their own profile row, but not another teacher's", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      await impersonate(client, TEACHER_A_ID);
+
+      const rows = await client.query<{ id: string }>("select id from profile");
+      const ids = rows.rows.map((r) => r.id);
+      expect(ids).toContain(TEACHER_A_ID);
+      expect(ids).not.toContain(TEACHER_B_ID);
+      expect(ids).not.toContain(ADMIN_ID);
+    });
+  });
+
   it("a teacher cannot insert or update student directly", async () => {
     await withRollback(client, async () => {
       await seedProfiles(client);

@@ -1,4 +1,5 @@
 import type { StudentDetail } from "@/lib/records/student-detail";
+import type { Role } from "@/lib/auth/routes";
 import { StudentDetailBody } from "./student-detail-body";
 import { EscapeToClose } from "./escape-to-close";
 import { CloseDrawerLink } from "./close-drawer-link";
@@ -6,9 +7,11 @@ import { CloseDrawerLink } from "./close-drawer-link";
 export function StudentDrawer({
   detail,
   closeHref,
+  role,
 }: {
   detail: StudentDetail;
   closeHref: "/transport" | "/daycare";
+  role: Role;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -38,7 +41,11 @@ export function StudentDrawer({
             Close
           </CloseDrawerLink>
         </div>
-        <StudentDetailBody detail={detail} redirectTo={closeHref} />
+        <StudentDetailBody
+          detail={detail}
+          redirectTo={closeHref}
+          role={role}
+        />
       </div>
     </div>
   );
