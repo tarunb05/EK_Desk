@@ -37,7 +37,9 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${sourceSerif.variable} antialiased`}>
+      <body
+        className={`${inter.variable} ${sourceSerif.variable} antialiased`}
+      >
         {children}
       </body>
     </html>

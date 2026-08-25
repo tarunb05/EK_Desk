@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
+import { sessionOnlyCookieOptions } from "@/lib/supabase/session-only-cookie";
 import { defaultRouteFor, isRouteAllowed, type Role } from "@/lib/auth/routes";
 
 // Next.js's own framework-injected inline scripts (the `self.__next_f.push(...)`
@@ -62,8 +63,17 @@ export async function updateSession(request: NextRequest) {
           supabaseResponse = NextResponse.next({
             request: { headers: rotatedHeaders },
           });
+          // A session-only sign-in (login/actions.ts) leaves this marker so
+          // a token refresh here doesn't silently restore @supabase/ssr's
+          // own 400-day default persistence on the cookies it rewrites.
+          const remembered =
+            request.cookies.get("remember_me")?.value !== "0";
           for (const { name, value, options } of cookiesToSet) {
-            supabaseResponse.cookies.set(name, value, options);
+            supabaseResponse.cookies.set(
+              name,
+              value,
+              remembered ? options : sessionOnlyCookieOptions(options),
+            );
           }
         },
       },

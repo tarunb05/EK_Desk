@@ -31,7 +31,7 @@ export function LoginForm() {
           type="text"
           autoComplete="username"
           required
-          className={`h-10 ${inputClassName}`}
+          className={`h-10 ${inputClassName} rounded-field!`}
         />
       </div>
 
@@ -52,8 +52,21 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className={`h-10 ${inputClassName}`}
+          className={`h-10 ${inputClassName} rounded-field!`}
         />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <input
+          id="rememberMe"
+          name="rememberMe"
+          type="checkbox"
+          defaultChecked
+          className="h-4 w-4 rounded border-border text-accent focus-visible:outline-2 focus-visible:outline-accent"
+        />
+        <label htmlFor="rememberMe" className="text-sm text-ink-secondary">
+          Remember me
+        </label>
       </div>
 
       {state.error ? (
@@ -65,9 +78,25 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isPending}
-        className={primaryButtonClassName}
+        className={`${primaryButtonClassName} rounded-field! flex items-center justify-center gap-2`}
       >
-        {isPending ? "Signing in…" : "Sign in"}
+        {isPending ? (
+          <>
+            {/* Reuses the existing loading-ring pattern (app/(app)/loading.tsx)
+                rather than a new spinner — same animation, already has its
+                own prefers-reduced-motion rule in globals.css. Sized down
+                (h-4/w-4) for inline button use; ring colors swapped to
+                border-surface since this sits on the dark --accent button,
+                not the light canvas the page-loading version sits on. */}
+            <span
+              aria-hidden="true"
+              className="animate-loading-ring h-4 w-4 rounded-full border-2 border-surface/30 border-t-surface"
+            />
+            Signing in…
+          </>
+        ) : (
+          "Sign in"
+        )}
       </button>
     </form>
   );

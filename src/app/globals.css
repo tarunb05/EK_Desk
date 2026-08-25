@@ -49,9 +49,17 @@
   --text-lg: 16px;
   --text-xl: 20px;
   --text-2xl: 28px;
+  /* Scoped exception, login page wordmark only — see CLAUDE.md. Every other
+     <h1>/heading in the app stays inside the 28px cap. */
+  --text-login-wordmark: 36px;
 
   --radius-sm: 4px;
   --radius-md: 6px;
+  /* Scoped exception, login page inputs + submit button only — see
+     CLAUDE.md. 10px on a 40px-tall control is nowhere near a pill (~20px),
+     and the two controls share this token so neither reads as unfinished
+     against the other. */
+  --radius-field: 10px;
 
   /* Every existing `transition-*` utility (colors, transform, opacity)
      already in use across the app picks up this curve automatically —
@@ -68,9 +76,17 @@ body {
 
 /* Every page title in the app is an <h1>; data/numerals stay on Inter
    everywhere else (tabular-nums, small-size legibility). A single rule here
-   covers all of them instead of touching each page. */
-h1 {
-  font-family: var(--font-serif), Georgia, serif;
+   covers all of them instead of touching each page.
+   In `@layer base`, not left unlayered — Tailwind wraps every utility class
+   in `@layer utilities`, and an unlayered rule always beats a layered one
+   regardless of specificity, class or not. Left unlayered, this rule would
+   permanently win over any utility (e.g. font-sans on the login wordmark)
+   trying to override font-family on a specific <h1>, which is exactly the
+   silent bug that shipped here once before. */
+@layer base {
+  h1 {
+    font-family: var(--font-serif), Georgia, serif;
+  }
 }
 
 /* Subtle entrance for popovers/dropdowns (e.g. the month filter) — a plain
@@ -93,6 +109,25 @@ h1 {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-pop-in {
+    animation: none;
+  }
+}
+
+/* Page-transition loading (app/(app)/loading.tsx): a spinning ring. Rotates
+   linear, not eased — an eased infinite spin reads as uneven/jittery since
+   there's no start or end to settle into. */
+@keyframes loading-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-loading-ring {
+  animation: loading-ring-spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-loading-ring {
     animation: none;
   }
 }
