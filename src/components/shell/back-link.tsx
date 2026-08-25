@@ -5,7 +5,7 @@ export function BackLink({
   href,
   label = "Back to dashboard",
 }: {
-  href: "/transport" | "/daycare" | "/students";
+  href: "/transport" | "/daycare" | "/students" | "/expenses";
   label?: string;
 }) {
   return (

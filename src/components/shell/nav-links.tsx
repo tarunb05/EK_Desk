@@ -8,6 +8,7 @@ import {
   SettingsIcon,
   StudentsIcon,
   TransportIcon,
+  WalletIcon,
 } from "./nav-icons";
 import { useSidebarContext } from "./sidebar-context";
 import { ROUTE_ACCESS, type Role } from "@/lib/auth/routes";
@@ -20,6 +21,7 @@ export const NAV_LINKS = [
   { href: "/transport", label: "Transport", Icon: TransportIcon },
   { href: "/daycare", label: "Daycare", Icon: DaycareIcon },
   { href: "/students", label: "Students", Icon: StudentsIcon },
+  { href: "/expenses", label: "Expenses", Icon: WalletIcon },
   { href: "/approvals", label: "Approvals", Icon: ApprovalsIcon },
   { href: "/settings", label: "Settings", Icon: SettingsIcon },
 ];

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { rupeesToPaise } from "@/lib/domain/money";
+import { MONEY_METHODS, parseRupeesToPaise, rupeesToPaise } from "@/lib/domain/money";
 import { CLASS_SECTIONS } from "@/lib/records/class-sections";
 
 const rupeesAmount = z
@@ -12,6 +12,32 @@ const rupeesAmount = z
   .transform((value) => rupeesToPaise(Number(value)));
 
 const dateField = z.string().min(1, "Choose a date.");
+
+// Stricter than rupeesAmount above on purpose (no Number()/parseFloat in the
+// parse path -- see parseRupeesToPaise) -- new code, not a weaker copy of
+// the pattern payment already uses.
+const expenseRupeesAmount = z
+  .string()
+  .trim()
+  .min(1, "Enter an amount.")
+  .transform((value, ctx) => {
+    const paise = parseRupeesToPaise(value);
+    if (paise === null) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Enter a valid amount, like 1234.50.",
+      });
+      return z.NEVER;
+    }
+    if (paise <= 0n) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Enter an amount greater than zero.",
+      });
+      return z.NEVER;
+    }
+    return paise;
+  });
 
 export const createStudentWithFeeAccountSchema = z
   .object({
@@ -76,7 +102,7 @@ export const recordPaymentSchema = z.object({
   feeAccountId: z.string().uuid(),
   amount: rupeesAmount,
   paidOn: dateField,
-  method: z.enum(["cash", "upi", "cheque", "bank_transfer"]),
+  method: z.enum(MONEY_METHODS),
   reference: z.string().trim().optional(),
   note: z.string().trim().optional(),
   recordedBy: z.string().trim().min(1, "Enter who recorded this payment."),
@@ -129,4 +155,26 @@ export const rejectSubmissionSchema = z.object({
   submissionTable: z.enum(SUBMISSION_TABLES),
   submissionId: z.string().uuid(),
   reviewNote: z.string().trim().min(1, "Enter a reason for rejecting this."),
+});
+
+// branchId is optional here, not required -- a teacher's form never renders
+// the field at all (formEntries() simply won't include the key), and an
+// admin omitting it is a business-rule check the Server Action makes after
+// resolving the caller's role, the same way createStudentWithFeeAccount
+// checks branch ownership after parsing rather than branching the schema
+// itself on role.
+export const recordExpenseSchema = z.object({
+  categoryId: z.string().uuid("Choose a category."),
+  amount: expenseRupeesAmount,
+  spentOn: dateField,
+  method: z.enum(MONEY_METHODS),
+  reference: z.string().trim().optional(),
+  note: z.string().trim().optional(),
+  branchId: z.string().uuid().optional(),
+  academicYearId: z.string().uuid(),
+  confirmed: z.enum(["true"]).optional(),
+});
+
+export const updateExpenseSchema = recordExpenseSchema.extend({
+  expenseId: z.string().uuid(),
 });

@@ -961,6 +961,79 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_record: {
+        Row: {
+          academic_year_id: string | null
+          amount_paise: number | null
+          branch_code: string | null
+          branch_id: string | null
+          branch_name: string | null
+          category_id: string | null
+          category_name: string | null
+          created_at: string | null
+          created_by: string | null
+          created_by_name: string | null
+          id: string | null
+          method: string | null
+          note: string | null
+          reference: string | null
+          spent_on: string | null
+          updated_at: string | null
+          updated_by: string | null
+          updated_by_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_year"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+          {
+            foreignKeyName: "expense_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_category_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_account_balance: {
         Row: {
           academic_year_id: string | null
@@ -1151,6 +1224,15 @@ export type Database = {
           total_receivable_paise: number
         }[]
       }
+      expense_category_breakdown: {
+        Args: { p_academic_year_id: string; p_branch_code?: string }
+        Returns: {
+          amount_paise: number
+          category_id: string
+          category_name: string
+        }[]
+      }
+      profile_full_name: { Args: { p_id: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }

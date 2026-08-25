@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth, requireRole } from "@/lib/auth/require-role";
 import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
+import { EXPENSE_SANITY_CEILING_PAISE } from "@/lib/domain/money";
+import { isWithinAcademicYear } from "@/lib/domain/academic-year";
 import {
   canTransitionFeeAccountStatus,
   canTransitionStudentStatus,
@@ -16,9 +18,11 @@ import {
   archiveStudentSchema,
   createStudentWithFeeAccountSchema,
   permanentlyDeleteStudentSchema,
+  recordExpenseSchema,
   recordPaymentSchema,
   rejectSubmissionSchema,
   requestStudentDeleteSchema,
+  updateExpenseSchema,
   updateFeeAccountSchema,
   updateFeeAccountStatusSchema,
   updateStudentStatusSchema,
@@ -36,6 +40,11 @@ export interface ActionState {
   // confirmation sentence rather than navigating away, since there's no
   // saved record yet to navigate to.
   submitted?: boolean;
+  // Set instead of writing when a parsed amount exceeds the sanity ceiling
+  // and the form hasn't re-submitted with confirmed=true yet -- the form
+  // shows an explicit "confirm this large amount" step instead of either
+  // silently writing it or hard-blocking it.
+  confirmAmountPaise?: string;
 }
 
 function formEntries(formData: FormData): Record<string, string> {
@@ -678,6 +687,171 @@ export async function rejectSubmission(
   if (error) {
     return { error: "Could not reject this submission." };
   }
+
+  revalidatePath("/approvals");
+  return { error: null };
+}
+
+async function resolveExpenseBranchAndYear(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  authed: Awaited<ReturnType<typeof requireAuth>>,
+  value: { branchId?: string; academicYearId: string; spentOn: string },
+): Promise<{ branchId: string } | { error: string; field?: string }> {
+  let branchId: string;
+  if (authed.role === "teacher") {
+    if (!authed.branchId) {
+      return { error: "Your account has no branch assigned — ask an admin." };
+    }
+    branchId = authed.branchId;
+  } else {
+    if (!value.branchId) {
+      return { error: "Choose a branch.", field: "branchId" };
+    }
+    branchId = value.branchId;
+  }
+
+  const { data: year, error: yearError } = await supabase
+    .from("academic_year")
+    .select("label, starts_on, ends_on")
+    .eq("id", value.academicYearId)
+    .single();
+
+  if (yearError || !year) {
+    return { error: "Could not find that academic year." };
+  }
+
+  if (
+    !isWithinAcademicYear(new Date(value.spentOn), {
+      startsOn: new Date(year.starts_on),
+      endsOn: new Date(year.ends_on),
+    })
+  ) {
+    return {
+      error: `${value.spentOn} falls outside the ${year.label} academic year.`,
+      field: "spentOn",
+    };
+  }
+
+  return { branchId };
+}
+
+export async function recordExpense(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = recordExpenseSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+  const authed = await requireAuth();
+  const supabase = await createClient();
+
+  const resolved = await resolveExpenseBranchAndYear(supabase, authed, value);
+  if ("error" in resolved) {
+    return resolved.field
+      ? { error: null, fieldErrors: { [resolved.field]: resolved.error } }
+      : { error: resolved.error };
+  }
+
+  if (
+    value.amount > EXPENSE_SANITY_CEILING_PAISE &&
+    value.confirmed !== "true"
+  ) {
+    return { error: null, confirmAmountPaise: value.amount.toString() };
+  }
+
+  const { error } = await supabase.from("expense").insert({
+    branch_id: resolved.branchId,
+    academic_year_id: value.academicYearId,
+    category_id: value.categoryId,
+    amount_paise: Number(value.amount),
+    spent_on: value.spentOn,
+    method: value.method,
+    reference: value.reference ?? null,
+    note: value.note ?? null,
+    created_by: authed.userId,
+  });
+
+  if (error) {
+    return { error: "Could not record this expense." };
+  }
+
+  revalidatePath("/expenses", "page");
+  redirect("/expenses");
+}
+
+export async function updateExpense(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = updateExpenseSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+  const authed = await requireAuth();
+  const supabase = await createClient();
+
+  const { data: existing, error: fetchError } = await supabase
+    .from("expense")
+    .select("branch_id")
+    .eq("id", value.expenseId)
+    .single();
+
+  if (fetchError || !existing) {
+    return { error: "Could not find that expense." };
+  }
+
+  // Re-checked on the way in (this row must already be the teacher's own
+  // branch -- RLS would also block the read otherwise, this just gives a
+  // readable error instead of a bare "not found") and, by never letting
+  // branch_id appear in a teacher's update payload below, on the way out --
+  // a teacher can edit any field on a row in their branch but can never
+  // move it to another one.
+  if (authed.role === "teacher") {
+    if (!authed.branchId || existing.branch_id !== authed.branchId) {
+      return { error: "You can only edit expenses in your own branch." };
+    }
+  }
+
+  const resolved = await resolveExpenseBranchAndYear(supabase, authed, value);
+  if ("error" in resolved) {
+    return resolved.field
+      ? { error: null, fieldErrors: { [resolved.field]: resolved.error } }
+      : { error: resolved.error };
+  }
+
+  if (
+    value.amount > EXPENSE_SANITY_CEILING_PAISE &&
+    value.confirmed !== "true"
+  ) {
+    return { error: null, confirmAmountPaise: value.amount.toString() };
+  }
+
+  const { error } = await supabase
+    .from("expense")
+    .update({
+      academic_year_id: value.academicYearId,
+      category_id: value.categoryId,
+      amount_paise: Number(value.amount),
+      spent_on: value.spentOn,
+      method: value.method,
+      reference: value.reference ?? null,
+      note: value.note ?? null,
+      updated_by: authed.userId,
+      updated_at: new Date().toISOString(),
+      // Only admin's payload can move a row to another branch.
+      ...(authed.role === "admin" ? { branch_id: resolved.branchId } : {}),
+    })
+    .eq("id", value.expenseId);
+
+  if (error) {
+    return { error: "Could not save this expense." };
+  }
+
+  revalidatePath("/expenses", "page");
+  redirect("/expenses");
 
   revalidatePath("/approvals");
   redirect("/approvals");

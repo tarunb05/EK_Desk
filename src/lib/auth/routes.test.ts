@@ -50,6 +50,14 @@ describe("ROUTE_ACCESS", () => {
     expect(isRouteAllowed("/students", "admin")).toBe(true);
     expect(isRouteAllowed("/approvals", "teacher")).toBe(true);
     expect(isRouteAllowed("/approvals", "admin")).toBe(true);
+    expect(isRouteAllowed("/expenses", "teacher")).toBe(true);
+    expect(isRouteAllowed("/expenses", "admin")).toBe(true);
+    expect(isRouteAllowed("/settings/expense-categories", "teacher")).toBe(
+      false,
+    );
+    expect(isRouteAllowed("/settings/expense-categories", "admin")).toBe(
+      true,
+    );
   });
 
   it("has no opinion on an unmapped path", () => {
@@ -67,7 +75,7 @@ describe("teacher nav", () => {
     const teacherHrefs = NAV_LINKS.filter((link) =>
       ROUTE_ACCESS[link.href]?.includes("teacher"),
     ).map((link) => link.href);
-    expect(teacherHrefs).toEqual(["/students", "/approvals"]);
+    expect(teacherHrefs).toEqual(["/students", "/expenses", "/approvals"]);
   });
 
   it("shows every NAV_LINKS entry for admin", () => {
