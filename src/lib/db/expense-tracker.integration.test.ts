@@ -296,4 +296,30 @@ describe("expense tracker (phase 10.1 -- schema and authorization)", () => {
       ).rejects.toThrow();
     });
   });
+
+  it("a teacher's delete on expense_category matches zero rows, but an admin's succeeds", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      await impersonateAdmin(client);
+      const created = await client.query<{ id: string }>(
+        "insert into expense_category (name) values ('RLS Delete Test') returning id",
+      );
+
+      await client.query("reset role");
+      await impersonate(client, TEACHER_A_ID);
+      const teacherResult = await client.query(
+        "delete from expense_category where id = $1",
+        [created.rows[0]!.id],
+      );
+      expect(teacherResult.rowCount).toBe(0);
+
+      await client.query("reset role");
+      await impersonateAdmin(client);
+      const adminResult = await client.query(
+        "delete from expense_category where id = $1",
+        [created.rows[0]!.id],
+      );
+      expect(adminResult.rowCount).toBe(1);
+    });
+  });
 });

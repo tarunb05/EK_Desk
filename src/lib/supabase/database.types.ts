@@ -91,6 +91,131 @@ export type Database = {
         }
         Relationships: []
       }
+      expense: {
+        Row: {
+          academic_year_id: string
+          amount_paise: number
+          branch_id: string
+          category_id: string
+          created_at: string
+          created_by: string
+          id: string
+          method: string
+          note: string | null
+          reference: string | null
+          spent_on: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          academic_year_id: string
+          amount_paise: number
+          branch_id: string
+          category_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          method: string
+          note?: string | null
+          reference?: string | null
+          spent_on: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          academic_year_id?: string
+          amount_paise?: number
+          branch_id?: string
+          category_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          method?: string
+          note?: string | null
+          reference?: string | null
+          spent_on?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_year"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+          {
+            foreignKeyName: "expense_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_category_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_category: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fee_account: {
         Row: {
           academic_year_id: string
@@ -231,7 +356,7 @@ export type Database = {
           branch_id: string
           created_at: string
           created_payment_id: string | null
-          fee_account_id: string
+          fee_account_id: string | null
           id: string
           method: string
           note: string | null
@@ -250,7 +375,7 @@ export type Database = {
           branch_id: string
           created_at?: string
           created_payment_id?: string | null
-          fee_account_id: string
+          fee_account_id?: string | null
           id?: string
           method: string
           note?: string | null
@@ -269,7 +394,7 @@ export type Database = {
           branch_id?: string
           created_at?: string
           created_payment_id?: string | null
-          fee_account_id?: string
+          fee_account_id?: string | null
           id?: string
           method?: string
           note?: string | null
@@ -543,7 +668,7 @@ export type Database = {
           created_at: string
           due_date: string
           ends_on: string
-          fee_account_id: string
+          fee_account_id: string | null
           fee_account_status: string
           full_name: string
           guardian_name: string
@@ -558,7 +683,7 @@ export type Database = {
           slot: string | null
           starts_on: string
           status: string
-          student_id: string
+          student_id: string | null
           submitted_at: string
           submitted_by: string
           total_receivable_paise: number
@@ -571,7 +696,7 @@ export type Database = {
           created_at?: string
           due_date: string
           ends_on: string
-          fee_account_id: string
+          fee_account_id?: string | null
           fee_account_status: string
           full_name: string
           guardian_name: string
@@ -586,7 +711,7 @@ export type Database = {
           slot?: string | null
           starts_on: string
           status?: string
-          student_id: string
+          student_id?: string | null
           submitted_at?: string
           submitted_by: string
           total_receivable_paise: number
@@ -599,7 +724,7 @@ export type Database = {
           created_at?: string
           due_date?: string
           ends_on?: string
-          fee_account_id?: string
+          fee_account_id?: string | null
           fee_account_status?: string
           full_name?: string
           guardian_name?: string
@@ -614,7 +739,7 @@ export type Database = {
           slot?: string | null
           starts_on?: string
           status?: string
-          student_id?: string
+          student_id?: string | null
           submitted_at?: string
           submitted_by?: string
           total_receivable_paise?: number
@@ -825,6 +950,17 @@ export type Database = {
       }
     }
     Views: {
+      expense_category_summary: {
+        Row: {
+          expense_count: number | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          sort_order: number | null
+          total_spent_paise: number | null
+        }
+        Relationships: []
+      }
       fee_account_balance: {
         Row: {
           academic_year_id: string | null

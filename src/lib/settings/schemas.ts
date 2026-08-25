@@ -61,3 +61,26 @@ export const updateOwnCredentialsSchema = z.object({
   username: usernameField,
   newPassword: optionalNewPassword,
 });
+
+export const createExpenseCategorySchema = z.object({
+  name: z.string().min(1, "Enter a category name."),
+});
+
+export const renameExpenseCategorySchema = z.object({
+  categoryId: z.string().uuid(),
+  name: z.string().min(1, "Enter a category name."),
+});
+
+export const setExpenseCategoryActiveSchema = z.object({
+  categoryId: z.string().uuid(),
+  isActive: z.enum(["true", "false"]).transform((value) => value === "true"),
+});
+
+export const reorderExpenseCategorySchema = z.object({
+  categoryId: z.string().uuid(),
+  direction: z.enum(["up", "down"]),
+});
+
+export const deleteExpenseCategorySchema = z.object({
+  categoryId: z.string().uuid(),
+});

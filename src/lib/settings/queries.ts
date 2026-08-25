@@ -1,5 +1,7 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { createAdminClient } from "@/lib/supabase/admin";
 import { internalEmailToUsername } from "@/lib/auth/username";
+import type { Database } from "@/lib/supabase/database.types";
 
 export interface TeacherRow {
   id: string;
@@ -45,4 +47,42 @@ export async function getTeachersWithBranch(
       isActive: profile.is_active,
     };
   });
+}
+
+export interface ExpenseCategoryWithStats {
+  id: string;
+  name: string;
+  isActive: boolean;
+  sortOrder: number;
+  expenseCount: number;
+  totalSpentPaise: bigint;
+}
+
+export async function getExpenseCategoriesWithStats(
+  supabase: SupabaseClient<Database>,
+): Promise<ExpenseCategoryWithStats[]> {
+  const { data, error } = await supabase
+    .from("expense_category_summary")
+    .select("*")
+    .order("sort_order");
+
+  if (error) {
+    throw new Error("Could not load expense categories.");
+  }
+
+  // Every column on a Postgres view is typed nullable by the generator
+  // regardless of the underlying table's own constraints (it can't prove
+  // otherwise) -- id can't actually be null for a real row, so a row
+  // without one isn't a category to render, just a generation artifact to
+  // skip rather than something to force past the type system.
+  return data
+    .filter((row): row is typeof row & { id: string } => row.id !== null)
+    .map((row) => ({
+      id: row.id,
+      name: row.name ?? "",
+      isActive: row.is_active ?? false,
+      sortOrder: row.sort_order ?? 0,
+      expenseCount: row.expense_count ?? 0,
+      totalSpentPaise: BigInt(row.total_spent_paise ?? 0),
+    }));
 }

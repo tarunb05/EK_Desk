@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getAcademicYears, getBranches } from "@/lib/supabase/queries";
 import { requireRole } from "@/lib/auth/require-role";
@@ -110,6 +111,20 @@ export default async function SettingsPage() {
         )}
 
         <AddTeacherForm branches={branches} />
+      </section>
+
+      <section className="flex max-w-md flex-col gap-3 rounded-md border border-border bg-surface p-5">
+        <h2 className="text-sm font-medium text-ink">Expense categories</h2>
+        <p className="text-sm text-ink-secondary">
+          Add, rename, reorder, and deactivate the categories expenses are
+          recorded against.
+        </p>
+        <Link
+          href="/settings/expense-categories"
+          className="text-sm text-accent hover:underline"
+        >
+          Manage expense categories →
+        </Link>
       </section>
 
       <section className="flex max-w-md flex-col gap-4 rounded-md border border-border bg-surface p-5">

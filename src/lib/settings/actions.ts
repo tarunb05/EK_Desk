@@ -6,11 +6,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/require-role";
 import { usernameToInternalEmail } from "@/lib/auth/username";
 import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
+import { normalizeCategoryName } from "@/lib/domain/expense-category-name";
 import {
   createAcademicYearSchema,
   createBranchSchema,
+  createExpenseCategorySchema,
   createTeacherSchema,
+  deleteExpenseCategorySchema,
   deleteTeacherSchema,
+  renameExpenseCategorySchema,
+  reorderExpenseCategorySchema,
+  setExpenseCategoryActiveSchema,
   updateOwnCredentialsSchema,
   updateTeacherSchema,
 } from "@/lib/settings/schemas";
@@ -286,5 +292,215 @@ export async function updateOwnCredentials(
   }
 
   revalidatePath("/settings");
+  return { error: null };
+}
+
+// /expenses has no page yet (that's phase 10.3) -- revalidating it now is
+// inert but harmless, and saves having to remember to add it once the page
+// exists. A renamed/reordered/deactivated category that still shows its old
+// state there is exactly the kind of disagreement this app exists to avoid.
+function revalidateExpenseCategoryDependents() {
+  revalidatePath("/settings/expense-categories");
+  revalidatePath("/expenses", "page");
+}
+
+async function findDuplicateCategoryName(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  name: string,
+  excludeId?: string,
+): Promise<boolean> {
+  let query = supabase
+    .from("expense_category")
+    .select("id")
+    // No wildcards in the pattern -- ilike with a plain string is an exact
+    // case-insensitive match, exactly the "Grocery"/"grocery" check the
+    // spec asks for.
+    .ilike("name", name);
+  if (excludeId) {
+    query = query.neq("id", excludeId);
+  }
+  const { data } = await query.limit(1);
+  return (data?.length ?? 0) > 0;
+}
+
+export async function createExpenseCategory(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = createExpenseCategorySchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const name = normalizeCategoryName(parsed.data.name);
+  if (!name) {
+    return { error: null, fieldErrors: { name: "Enter a category name." } };
+  }
+  const supabase = await createClient();
+
+  if (await findDuplicateCategoryName(supabase, name)) {
+    return { error: null, fieldErrors: { name: `"${name}" already exists.` } };
+  }
+
+  const { data: maxRow } = await supabase
+    .from("expense_category")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextSortOrder = (maxRow?.sort_order ?? -1) + 1;
+
+  const { error } = await supabase
+    .from("expense_category")
+    .insert({ name, sort_order: nextSortOrder });
+
+  if (error) {
+    return { error: "Could not save this category." };
+  }
+
+  revalidateExpenseCategoryDependents();
+  return { error: null };
+}
+
+export async function renameExpenseCategory(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = renameExpenseCategorySchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const { categoryId } = parsed.data;
+  const name = normalizeCategoryName(parsed.data.name);
+  if (!name) {
+    return { error: null, fieldErrors: { name: "Enter a category name." } };
+  }
+  const supabase = await createClient();
+
+  if (await findDuplicateCategoryName(supabase, name, categoryId)) {
+    return { error: null, fieldErrors: { name: `"${name}" already exists.` } };
+  }
+
+  const { error } = await supabase
+    .from("expense_category")
+    .update({ name })
+    .eq("id", categoryId);
+
+  if (error) {
+    return { error: "Could not rename this category." };
+  }
+
+  revalidateExpenseCategoryDependents();
+  return { error: null };
+}
+
+export async function setExpenseCategoryActive(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = setExpenseCategoryActiveSchema.safeParse(
+    formEntries(formData),
+  );
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("expense_category")
+    .update({ is_active: parsed.data.isActive })
+    .eq("id", parsed.data.categoryId);
+
+  if (error) {
+    return { error: "Could not update this category." };
+  }
+
+  revalidateExpenseCategoryDependents();
+  return { error: null };
+}
+
+export async function reorderExpenseCategory(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = reorderExpenseCategorySchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const { categoryId, direction } = parsed.data;
+  const supabase = await createClient();
+
+  const { data: rows, error: readError } = await supabase
+    .from("expense_category")
+    .select("id, sort_order")
+    .order("sort_order");
+
+  if (readError || !rows) {
+    return { error: "Could not reorder this category." };
+  }
+
+  const index = rows.findIndex((row) => row.id === categoryId);
+  const swapIndex = direction === "up" ? index - 1 : index + 1;
+  if (index === -1 || swapIndex < 0 || swapIndex >= rows.length) {
+    // Already at the top/bottom -- a clean no-op, not an error.
+    return { error: null };
+  }
+
+  const current = rows[index]!;
+  const swapWith = rows[swapIndex]!;
+
+  const [{ error: firstError }, { error: secondError }] = await Promise.all([
+    supabase
+      .from("expense_category")
+      .update({ sort_order: swapWith.sort_order })
+      .eq("id", current.id),
+    supabase
+      .from("expense_category")
+      .update({ sort_order: current.sort_order })
+      .eq("id", swapWith.id),
+  ]);
+
+  if (firstError || secondError) {
+    return { error: "Could not reorder this category." };
+  }
+
+  revalidateExpenseCategoryDependents();
+  return { error: null };
+}
+
+export async function deleteExpenseCategory(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = deleteExpenseCategorySchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("expense_category")
+    .delete()
+    .eq("id", parsed.data.categoryId);
+
+  if (error) {
+    // 23503 = foreign_key_violation -- the UI only offers delete when the
+    // category has zero expenses, but that count can go stale between the
+    // page render and this click, so on_delete_restrict is the real
+    // guarantee here, not just the UI's own check.
+    if (error.code === "23503") {
+      return {
+        error:
+          "This category has expenses recorded against it — deactivate it instead.",
+      };
+    }
+    return { error: "Could not delete this category." };
+  }
+
+  revalidateExpenseCategoryDependents();
   return { error: null };
 }
