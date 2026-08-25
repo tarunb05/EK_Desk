@@ -140,4 +140,81 @@ describe("hard delete a student (phase 9)", () => {
       expect(survivor.rowCount).toBe(1);
     });
   });
+
+  // Regression: a student created or edited via an approved teacher
+  // submission has a row in student_submission/student_edit_submission
+  // referencing it. Those FKs used to have no cascade/set-null behavior,
+  // so deleting such a student failed with a foreign key violation --
+  // exactly what happened to a real student in production.
+  it("admin can still delete a student that has approved submission history, and the audit rows survive with nulled references", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      const { studentId, feeAccountId } =
+        await seedStudentWithFeeAccountAndPayment(client);
+
+      const submission = await client.query<{ id: string }>(
+        `insert into student_submission
+           (branch_id, submitted_by, admission_no, full_name, guardian_name, phone,
+            class_section, academic_year_id, service_type, total_receivable_paise,
+            due_date, starts_on, ends_on, status, reviewed_by, reviewed_at, created_student_id)
+         values
+           ($1, $2, 'HARD-DEL-SUB', 'Delete Me', 'Guardian', '9998887777', 'Nursery-A',
+            $3, 'transport', 1000000, '2026-06-01', '2026-04-01', '2027-03-31',
+            'approved', $2, now(), $4)
+         returning id`,
+        [branchAId, TEACHER_A_ID, academicYearId, studentId],
+      );
+      const edit = await client.query<{ id: string }>(
+        `insert into student_edit_submission
+           (student_id, fee_account_id, branch_id, submitted_by, full_name, guardian_name,
+            phone, class_section, total_receivable_paise, due_date, starts_on, ends_on,
+            fee_account_status, status, reviewed_by, reviewed_at, applied_at)
+         values
+           ($1, $2, $3, $4, 'Delete Me', 'Guardian', '9998887777', 'Nursery-A',
+            1000000, '2026-06-01', '2026-04-01', '2027-03-31', 'active',
+            'approved', $4, now(), now())
+         returning id`,
+        [studentId, feeAccountId, branchAId, TEACHER_A_ID],
+      );
+      const existingPayment = await client.query<{ id: string }>(
+        "select id from payment where fee_account_id = $1 limit 1",
+        [feeAccountId],
+      );
+      const payment = await client.query<{ id: string }>(
+        `insert into payment_submission
+           (fee_account_id, branch_id, submitted_by, amount_paise, paid_on, method,
+            status, reviewed_by, reviewed_at, created_payment_id)
+         values
+           ($1, $2, $3, 50000, '2026-06-01', 'cash', 'approved', $3, now(), $4)
+         returning id`,
+        [feeAccountId, branchAId, TEACHER_A_ID, existingPayment.rows[0]!.id],
+      );
+
+      await impersonateAdmin(client);
+      const result = await client.query("delete from student where id = $1", [
+        studentId,
+      ]);
+      expect(result.rowCount).toBe(1);
+
+      const submissionRow = await client.query(
+        "select created_student_id from student_submission where id = $1",
+        [submission.rows[0]!.id],
+      );
+      expect(submissionRow.rows[0]!.created_student_id).toBeNull();
+
+      const editRow = await client.query(
+        "select student_id, fee_account_id from student_edit_submission where id = $1",
+        [edit.rows[0]!.id],
+      );
+      expect(editRow.rows[0]!.student_id).toBeNull();
+      expect(editRow.rows[0]!.fee_account_id).toBeNull();
+
+      const paymentRow = await client.query(
+        "select fee_account_id, created_payment_id from payment_submission where id = $1",
+        [payment.rows[0]!.id],
+      );
+      expect(paymentRow.rows[0]!.fee_account_id).toBeNull();
+      expect(paymentRow.rows[0]!.created_payment_id).toBeNull();
+    });
+  });
 });
