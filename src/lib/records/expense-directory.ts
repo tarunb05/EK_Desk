@@ -170,6 +170,48 @@ function applyFilters(
   return query;
 }
 
+// Every expense in scope, unpaginated -- backs the "Total expenses" card's
+// Excel export. Scoped by year + branch only, same as
+// getExpenseCategoryBreakdown, not by the list table's own filters.
+export async function getAllExpenses(
+  supabase: SupabaseClient<Database>,
+  params: { branch: "all" | string; academicYearId: string },
+): Promise<ExpenseDirectoryRow[]> {
+  let query = supabase
+    .from("expense_record")
+    .select("*")
+    .eq("academic_year_id", params.academicYearId);
+
+  if (params.branch !== "all") {
+    query = query.eq("branch_code", params.branch);
+  }
+
+  const { data, error } = await query.order("spent_on", { ascending: false });
+
+  if (error) {
+    throw new Error("Could not load expenses for export.");
+  }
+
+  return data
+    .filter((row): row is typeof row & { id: string } => row.id !== null)
+    .map((row) => ({
+      id: row.id,
+      branchCode: row.branch_code ?? "",
+      branchName: row.branch_name ?? "",
+      categoryName: row.category_name ?? "",
+      amountPaise: BigInt(row.amount_paise ?? 0),
+      spentOn: row.spent_on ?? "",
+      method: row.method ?? "",
+      reference: row.reference ?? "",
+      note: row.note ?? "",
+      createdByName: row.created_by_name ?? "",
+      updatedByName: row.updated_by_name ?? "",
+      createdAt: row.created_at ?? "",
+      updatedAt: row.updated_at ?? "",
+      isEdited: row.updated_at !== row.created_at,
+    }));
+}
+
 export async function getExpenseDirectory(
   supabase: SupabaseClient<Database>,
   params: ExpenseDirectoryParams & { page: number; pageSize: number },

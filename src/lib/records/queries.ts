@@ -109,6 +109,62 @@ export async function getAllFeeAccountRecords(
   return data.map((row) => mapFeeAccountRecordRow(row, params.serviceType));
 }
 
+export type FeeAccountExportMetric =
+  | "receivable"
+  | "collected"
+  | "pending"
+  | "overdue";
+
+export interface FeeAccountExportParams {
+  serviceType: ServiceType;
+  academicYearId: string;
+  branch: "all" | string;
+  metric: FeeAccountExportMetric;
+}
+
+// Backs the stat-card Excel exports (Total receivable/collected/pending/
+// overdue) -- a separate function from getAllFeeAccountRecords rather than
+// forcing "collected" into RecordTableSearchParams.status, since that enum
+// is the Students-page filter chips (all/overdue/pending/paid) and adding
+// a fifth "has any collection" option there isn't something that page
+// asked for. Every metric still shares the same active-student, in-scope
+// base query.
+export async function getFeeAccountRecordsForExport(
+  supabase: SupabaseClient<Database>,
+  { serviceType, academicYearId, branch, metric }: FeeAccountExportParams,
+): Promise<FeeAccountRecordRow[]> {
+  let query = supabase
+    .from("fee_account_record")
+    .select("*")
+    .eq("service_type", serviceType)
+    .eq("academic_year_id", academicYearId)
+    .eq("student_status", "active");
+
+  if (branch !== "all") {
+    query = query.eq("branch_code", branch);
+  }
+
+  if (metric === "collected") {
+    query = query.gt("collected_paise", 0);
+  } else if (metric === "pending") {
+    query = query.gt("pending_paise", 0);
+  } else if (metric === "overdue") {
+    query = query.gt("pending_paise", 0).lt("due_date", todayIso());
+  }
+  // "receivable" gets no extra condition -- every fee account in scope has
+  // a receivable amount by definition.
+
+  const { data, error } = await query.order("student_full_name", {
+    ascending: true,
+  });
+
+  if (error) {
+    throw new Error("Could not load records for export.");
+  }
+
+  return data.map((row) => mapFeeAccountRecordRow(row, serviceType));
+}
+
 export async function getFeeAccountRecordById(
   supabase: SupabaseClient<Database>,
   feeAccountId: string,

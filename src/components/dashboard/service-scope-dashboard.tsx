@@ -145,6 +145,7 @@ export async function ServiceScopeDashboard({
       <StatCards
         summary={displaySummary}
         collectedFiguresUnavailable={selectedMonthsHaveNoData}
+        exportScope={{ serviceType, academicYearId: year.id, branch }}
       />
 
       {branchSplit ? (

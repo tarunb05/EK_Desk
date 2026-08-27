@@ -106,7 +106,11 @@ export default async function ExpensesPage({
         </Link>
       </div>
 
-      <TotalExpensesCard totalPaise={breakdown.totalPaise} />
+      <TotalExpensesCard
+        totalPaise={breakdown.totalPaise}
+        academicYearId={year.id}
+        branch={effectiveBranch}
+      />
 
       <div className="flex flex-col gap-2">
         <h2 className="text-2xs font-medium uppercase tracking-wide text-ink-muted">

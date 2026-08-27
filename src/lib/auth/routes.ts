@@ -19,6 +19,10 @@ export const ROUTE_ACCESS: Record<string, readonly Role[]> = {
   // route, branched by role in the page itself, since RLS already scopes
   // a teacher's own submission reads to just theirs.
   "/approvals": ["admin", "teacher"],
+  // The two stat-card Excel exports (Route Handlers, not pages) -- same
+  // role split as the dashboards/expenses page each one's data comes from.
+  "/api/export/fee-accounts": ["admin"],
+  "/api/export/expenses": ["admin", "teacher"],
 };
 
 export function isRouteAllowed(pathname: string, role: Role): boolean {
