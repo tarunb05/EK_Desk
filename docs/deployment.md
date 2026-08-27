@@ -160,6 +160,24 @@ Fix it through the app itself, no SQL needed:
 
 ## 10. Ongoing
 
+- **Shipping a normal code change does not auto-deploy.** This project is on
+  Vercel's **Hobby plan**, which blocks GitHub-triggered deployments on a
+  private repo unless the pushing commit's author is a recognized Vercel
+  collaborator — a plain `git push origin main` creates a deployment that
+  sits at `readyState: BLOCKED` forever (dashboard shows "Deployment
+  Blocked — The Hobby Plan does not support collaboration for private
+  repositories"), and the production domain silently keeps serving whatever
+  was deployed before. It fails quietly: no error email, no red X anywhere
+  obvious — the domain just doesn't update. After pushing, deploy for real
+  with:
+  ```bash
+  npx vercel --prod
+  ```
+  run from your own terminal (it needs your logged-in Vercel CLI session).
+  This deploys directly as you and skips the GitHub-author check entirely —
+  it's how every deployment that has actually gone live so far got there.
+  The alternative is upgrading to Vercel Pro, which lifts the restriction
+  and makes `git push` alone enough.
 - Schema changes ship as new files in `supabase/migrations/`, applied with
   `supabase db push` after merging to `main` — no automatic
   migration-on-deploy step, so this is a manual action per release that
