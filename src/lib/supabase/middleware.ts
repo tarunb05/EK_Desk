@@ -85,8 +85,12 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isLoginRoute = request.nextUrl.pathname.startsWith("/login");
+  // The marketing landing page -- reachable signed out or signed in (a
+  // signed-in visitor isn't forced off it the way /login forces them
+  // onward; the page itself just changes its own button/copy for them).
+  const isPublicRoute = request.nextUrl.pathname === "/" || isLoginRoute;
 
-  if (!user && !isLoginRoute) {
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     const response = NextResponse.redirect(url);
@@ -107,7 +111,7 @@ export async function updateSession(request: NextRequest) {
   // Authenticated but no resolvable role: a deactivated user, or a stale
   // session that predates their profile row. Treat identically to
   // unauthenticated rather than letting them through with no route check.
-  if (user && !role && !isLoginRoute) {
+  if (user && !role && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     const response = NextResponse.redirect(url);
@@ -126,7 +130,7 @@ export async function updateSession(request: NextRequest) {
   if (
     user &&
     role &&
-    !isLoginRoute &&
+    !isPublicRoute &&
     !isRouteAllowed(request.nextUrl.pathname, role)
   ) {
     const url = request.nextUrl.clone();
