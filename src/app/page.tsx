@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { createClient } from "@/lib/supabase/server";
-import { defaultRouteFor, type Role } from "@/lib/auth/routes";
 import {
   ApprovalsIcon,
   StatusIcon,
@@ -13,21 +11,6 @@ import {
 export const metadata: Metadata = {
   title: "EK Desk — Fee tracking for EuroKids transport & daycare",
 };
-
-// Deliberately not requireAuth() -- this page is reachable signed out (see
-// middleware.ts's isPublicRoute), so it resolves the role, if any, only to
-// decide what the button up top says and where it goes; it never redirects
-// either way, unlike every other page in the app.
-async function getSignedInRole(): Promise<Role | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: role } = await supabase.rpc("auth_role");
-  return (role as Role | null) ?? null;
-}
 
 const FEATURES: {
   title: string;
@@ -74,10 +57,9 @@ const SCREENSHOTS: { src: string; alt: string; caption: string }[] = [
   },
 ];
 
-export default async function LandingPage() {
-  const role = await getSignedInRole();
-  const ctaHref = role ? defaultRouteFor(role) : "/login";
-  const ctaLabel = role ? "Go to dashboard" : "Sign in";
+export default function LandingPage() {
+  const ctaHref = "/login";
+  const ctaLabel = "Sign in";
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
@@ -104,12 +86,6 @@ export default async function LandingPage() {
             branch and academic year, with an approval workflow for what
             teachers submit.
           </p>
-          <Link
-            href={ctaHref}
-            className="mt-8 inline-flex h-10 items-center rounded-md bg-accent px-5 text-sm font-medium text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
-          >
-            {ctaLabel}
-          </Link>
         </section>
 
         <section className="border-y border-hairline bg-surface">
