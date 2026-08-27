@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDownIcon, FilterIcon } from "@/components/shell/nav-icons";
 
@@ -44,6 +44,35 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Missing entirely before -- every other popover in the app (Select,
+  // FilterMenu, ActionMenu) closes on an outside click or Escape; this one
+  // only ever toggled from its own trigger, so it stayed open no matter
+  // where else on the page you clicked.
+  useEffect(() => {
+    if (!open) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
 
   const selected = new Set(
     (searchParams.get("months") ?? "").split(",").filter(Boolean),
@@ -81,7 +110,7 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
   }
 
   return (
-    <div className="relative w-full">
+    <div ref={containerRef} className="relative w-full">
       <button
         type="button"
         onClick={() => setOpen((wasOpen) => !wasOpen)}
