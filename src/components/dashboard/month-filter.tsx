@@ -81,60 +81,59 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
   }
 
   return (
-    <div className="flex items-center gap-1.5 text-sm text-ink-secondary">
-      <FilterIcon size={14} />
-      Months
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setOpen((wasOpen) => !wasOpen)}
-          aria-expanded={open}
-          aria-label="Filter collected figures by month"
-          className="flex h-8 w-40 items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none transition-colors focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent"
-        >
-          <span className="truncate">{label}</span>
-          <ChevronDownIcon
-            size={14}
-            className={`shrink-0 text-ink-muted transition-transform ${open ? "rotate-180" : ""}`}
-          />
-        </button>
+    <div className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setOpen((wasOpen) => !wasOpen)}
+        aria-expanded={open}
+        aria-label="Filter collected figures by month"
+        className="flex h-9 w-full items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none transition-colors focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent"
+      >
+        <span className="flex items-center gap-1.5 truncate">
+          <FilterIcon size={14} />
+          {label}
+        </span>
+        <ChevronDownIcon
+          size={14}
+          className={`shrink-0 text-ink-muted transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
 
-        {open ? (
-          <div className="animate-pop-in absolute right-0 z-10 mt-1 w-48 origin-top-right rounded-md border border-border bg-surface p-2 shadow-[0_1px_2px_rgba(0,0,0,.05)]">
-            <div className="mb-1 flex justify-between border-b border-hairline pb-1 text-2xs">
-              <button
-                type="button"
-                onClick={() => applySelection(new Set())}
-                className="text-accent hover:underline"
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                onClick={() => applySelection(new Set(availableMonths))}
-                className="text-accent hover:underline"
-              >
-                Select all
-              </button>
-            </div>
-            <div className="flex max-h-48 flex-col gap-0.5 overflow-y-auto">
-              {[...availableMonths].sort(byCalendarMonth).map((month) => (
-                <label
-                  key={month}
-                  className="flex items-center gap-2 rounded px-1 py-1 text-sm text-ink hover:bg-surface-accent"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected.has(month)}
-                    onChange={() => toggleMonth(month)}
-                  />
-                  {monthName(month)}
-                </label>
-              ))}
-            </div>
+      {open ? (
+        <div className="animate-pop-in absolute right-0 z-10 mt-1 w-48 origin-top-right rounded-md border border-border bg-surface p-2 shadow-[0_1px_2px_rgba(0,0,0,.05)]">
+          <div className="mb-1 flex justify-between border-b border-hairline pb-1 text-2xs">
+            <button
+              type="button"
+              onClick={() => applySelection(new Set())}
+              className="text-accent hover:underline"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() => applySelection(new Set(availableMonths))}
+              className="text-accent hover:underline"
+            >
+              Select all
+            </button>
           </div>
-        ) : null}
-      </div>
+          <div className="flex max-h-48 flex-col gap-0.5 overflow-y-auto">
+            {[...availableMonths].sort(byCalendarMonth).map((month) => (
+              <label
+                key={month}
+                className="flex items-center gap-2 rounded px-1 py-1 text-sm text-ink hover:bg-surface-accent"
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.has(month)}
+                  onChange={() => toggleMonth(month)}
+                />
+                {monthName(month)}
+              </label>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

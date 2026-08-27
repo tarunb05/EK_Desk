@@ -12,7 +12,7 @@ import { StatCards } from "@/components/dashboard/stat-cards";
 import { BranchSplitTable } from "@/components/dashboard/branch-split-table";
 import { MonthFilter } from "@/components/dashboard/month-filter";
 import { ScopeSelectors } from "@/components/shell/scope-selectors";
-import { Toolbar } from "@/components/shell/toolbar";
+import { FilterMenu } from "@/components/shell/filter-menu";
 
 interface ServiceScopeDashboardProps {
   serviceType: ServiceType;
@@ -129,19 +129,18 @@ export async function ServiceScopeDashboard({
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-medium text-ink">{title}</h1>
 
-      <Toolbar
-        actions={
-          <Link
-            href={`/${serviceType}/new`}
-            className="inline-block h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
-          >
-            Add student
-          </Link>
-        }
-      >
-        <ScopeSelectors years={years} branches={branches} />
-        <MonthFilter availableMonths={allTwelveMonths} />
-      </Toolbar>
+      <div className="flex items-center justify-end gap-2">
+        <FilterMenu>
+          <ScopeSelectors years={years} branches={branches} />
+          <MonthFilter availableMonths={allTwelveMonths} />
+        </FilterMenu>
+        <Link
+          href={`/${serviceType}/new`}
+          className="inline-block h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
+        >
+          Add student
+        </Link>
+      </div>
 
       <StatCards
         summary={displaySummary}

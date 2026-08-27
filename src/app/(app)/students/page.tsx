@@ -16,7 +16,8 @@ import {
 import { StudentDirectoryFilters } from "@/components/students/student-directory-filters";
 import { StudentDirectoryTable } from "@/components/students/student-directory-table";
 import { ScopeSelectors } from "@/components/shell/scope-selectors";
-import { Toolbar } from "@/components/shell/toolbar";
+import { FilterMenu } from "@/components/shell/filter-menu";
+import { SearchField } from "@/components/shell/search-field";
 
 const PAGE_SIZE = 20;
 
@@ -78,22 +79,25 @@ export default async function StudentsPage({
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-medium text-ink">Students</h1>
 
-      <Toolbar
-        actions={
-          <Link
-            href="/students/new"
-            className="inline-block h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
-          >
-            Add student
-          </Link>
-        }
-      >
-        <ScopeSelectors branches={branches} compact />
-        <StudentDirectoryFilters
-          classSections={classSections}
-          academicYears={academicYears}
+      <div className="flex items-center justify-end gap-2">
+        <SearchField
+          ariaLabel="Search by name or admission number"
+          placeholder="Search"
         />
-      </Toolbar>
+        <FilterMenu>
+          <ScopeSelectors branches={branches} />
+          <StudentDirectoryFilters
+            classSections={classSections}
+            academicYears={academicYears}
+          />
+        </FilterMenu>
+        <Link
+          href="/students/new"
+          className="inline-block h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
+        >
+          Add student
+        </Link>
+      </div>
 
       <StudentDirectoryTable
         rows={rows}

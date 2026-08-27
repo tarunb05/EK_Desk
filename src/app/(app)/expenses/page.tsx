@@ -16,7 +16,9 @@ import { ExpenseFilters } from "@/components/expenses/expense-filters";
 import { TotalExpensesCard } from "@/components/expenses/total-expenses-card";
 import { CategoryBreakdownChart } from "@/components/expenses/category-breakdown-chart";
 import { ScopeSelectors } from "@/components/shell/scope-selectors";
-import { Toolbar } from "@/components/shell/toolbar";
+import { FilterMenu } from "@/components/shell/filter-menu";
+import { SearchField } from "@/components/shell/search-field";
+import { CalendarIcon } from "@/components/shell/nav-icons";
 
 const PAGE_SIZE = 20;
 
@@ -78,26 +80,31 @@ export default async function ExpensesPage({
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-medium text-ink">Expenses</h1>
 
-      <Toolbar
-        actions={
-          <Link
-            href="/expenses/new"
-            className="inline-block h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
-          >
-            Record expense
-          </Link>
-        }
-      >
-        {authed.role === "admin" ? (
-          <ScopeSelectors years={years} branches={branches} compact />
-        ) : (
-          <div className="flex items-center gap-1.5 text-sm text-ink-secondary">
-            <span>Year</span>
-            <span className="text-ink">{year.label}</span>
-          </div>
-        )}
-        <ExpenseFilters categories={categories} />
-      </Toolbar>
+      <div className="flex items-center justify-end gap-2">
+        <SearchField
+          ariaLabel="Search by category, reference, or note"
+          placeholder="Search"
+          className="w-56"
+        />
+        <FilterMenu>
+          {authed.role === "admin" ? (
+            <ScopeSelectors years={years} branches={branches} />
+          ) : (
+            <div className="flex h-9 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm text-ink-secondary">
+              <CalendarIcon size={14} />
+              Year
+              <span className="text-ink">{year.label}</span>
+            </div>
+          )}
+          <ExpenseFilters categories={categories} />
+        </FilterMenu>
+        <Link
+          href="/expenses/new"
+          className="inline-block h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
+        >
+          Record expense
+        </Link>
+      </div>
 
       <TotalExpensesCard totalPaise={breakdown.totalPaise} />
 

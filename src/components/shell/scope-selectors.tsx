@@ -14,20 +14,14 @@ interface ScopeSelectorsProps {
   // there would imply a filter that doesn't actually do anything.
   years?: AcademicYearOption[];
   branches: BranchOption[];
-  // The dashboards render Year/Branch as a labeled "icon + text + select"
-  // pair (they're the one scope that applies to the whole page). On the
-  // Students page, Branch sits alongside a row of ordinary filters
-  // (Status/Service/Class/Year) that all use the icon-in-trigger style
-  // instead -- compact matches that so Branch doesn't look like a
-  // different kind of control.
-  compact?: boolean;
 }
 
-export function ScopeSelectors({
-  years,
-  branches,
-  compact = false,
-}: ScopeSelectorsProps) {
+// Same icon-in-trigger pill style as every other filter in the panel
+// (Status/Service/Class/Year on Students, Category/Method on Expenses) --
+// Year/Branch used to render as a separate "icon + label text + select"
+// row, which made them look like a different kind of control from
+// everything else in the same panel.
+export function ScopeSelectors({ years, branches }: ScopeSelectorsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -45,27 +39,25 @@ export function ScopeSelectors({
     router.push(`${pathname}?${params.toString()}`);
   }
 
-  const branchSelect = compact ? (
-    <Select
-      ariaLabel="Filter by branch"
-      icon={<BranchIcon size={14} />}
-      value={currentBranch}
-      onChange={(next) => updateParam("branch", next)}
-      options={[
-        { value: "all", label: "All branches" },
-        ...branches.map((branch) => ({
-          value: branch.code,
-          label: branch.name,
-        })),
-      ]}
-      className="w-36"
-    />
-  ) : (
-    <div className="flex items-center gap-1.5 text-sm text-ink-secondary">
-      <BranchIcon size={14} />
-      Branch
+  return (
+    <>
+      {years ? (
+        <Select
+          ariaLabel="Filter by academic year"
+          icon={<CalendarIcon size={14} />}
+          value={currentYearLabel}
+          onChange={(next) => updateParam("year", next)}
+          options={years.map((year) => ({
+            value: year.label,
+            label: year.label,
+          }))}
+          className="w-full"
+        />
+      ) : null}
+
       <Select
-        ariaLabel="Branch"
+        ariaLabel="Filter by branch"
+        icon={<BranchIcon size={14} />}
         value={currentBranch}
         onChange={(next) => updateParam("branch", next)}
         options={[
@@ -75,33 +67,8 @@ export function ScopeSelectors({
             label: branch.name,
           })),
         ]}
-        className="w-36"
-        triggerClassName="h-8"
+        className="w-full"
       />
-    </div>
-  );
-
-  return (
-    <>
-      {years ? (
-        <div className="flex items-center gap-1.5 text-sm text-ink-secondary">
-          <CalendarIcon size={14} />
-          Year
-          <Select
-            ariaLabel="Year"
-            value={currentYearLabel}
-            onChange={(next) => updateParam("year", next)}
-            options={years.map((year) => ({
-              value: year.label,
-              label: year.label,
-            }))}
-            className="w-28"
-            triggerClassName="h-8"
-          />
-        </div>
-      ) : null}
-
-      {branchSelect}
     </>
   );
 }

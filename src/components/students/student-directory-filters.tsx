@@ -9,7 +9,6 @@ import type { AcademicYearOption } from "@/lib/shell/resolve-year-branch";
 import {
   CalendarIcon,
   ClassIcon,
-  SearchIcon,
   ServiceIcon,
   StatusIcon,
 } from "@/components/shell/nav-icons";
@@ -36,16 +35,10 @@ const SERVICE_LABELS: Record<(typeof STUDENT_SERVICE_FILTERS)[number], string> =
     daycare: "Daycare only",
   };
 
-const controlClassName =
-  "h-9 rounded-md border border-border bg-surface pl-8 pr-3 text-sm text-ink outline-none transition-colors focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent";
-
-// Native <select>/<input> elements can't take a child node, so the leading
-// icon is an absolutely-positioned overlay in a relative wrapper instead —
-// aria-hidden, purely decorative; the accessible name still comes from
-// each control's own aria-label/placeholder.
-const iconWrapperClassName =
-  "pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-muted";
-
+// Search lives outside this panel now (see SearchField, rendered to the
+// left of the Filters button) -- everything left here is a plain
+// icon-in-trigger Select, an occasional-use filter rather than the
+// every-visit control search is.
 export function StudentDirectoryFilters({
   classSections,
   academicYears,
@@ -67,20 +60,6 @@ export function StudentDirectoryFilters({
 
   return (
     <>
-      <div className="relative w-72">
-        <span className={iconWrapperClassName}>
-          <SearchIcon size={14} />
-        </span>
-        <input
-          type="search"
-          aria-label="Search by name or admission number"
-          placeholder="Search by name or admission number"
-          defaultValue={searchParams.get("q") ?? ""}
-          onChange={(event) => updateParam("q", event.target.value)}
-          className={`w-full ${controlClassName}`}
-        />
-      </div>
-
       <Select
         ariaLabel="Filter by status"
         icon={<StatusIcon size={14} />}
@@ -90,7 +69,7 @@ export function StudentDirectoryFilters({
           value: status,
           label: STATUS_LABELS[status],
         }))}
-        className="w-44"
+        className="w-full"
       />
 
       <Select
@@ -102,7 +81,7 @@ export function StudentDirectoryFilters({
           value: service,
           label: SERVICE_LABELS[service],
         }))}
-        className="w-44"
+        className="w-full"
       />
 
       <Select
@@ -117,7 +96,7 @@ export function StudentDirectoryFilters({
             label: classSection,
           })),
         ]}
-        className="w-40"
+        className="w-full"
       />
 
       <Select
@@ -136,7 +115,7 @@ export function StudentDirectoryFilters({
             label: year.label,
           })),
         ]}
-        className="w-36"
+        className="w-full"
       />
     </>
   );

@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MONEY_METHODS } from "@/lib/domain/money";
-import { FilterIcon, SearchIcon, WalletIcon } from "@/components/shell/nav-icons";
+import { FilterIcon, WalletIcon } from "@/components/shell/nav-icons";
 import { Select } from "@/components/forms/select";
 import type { ExpenseCategoryOption } from "@/lib/records/expense-directory";
 
@@ -16,9 +16,10 @@ const METHOD_LABELS: Record<string, string> = {
 
 const inputClassName =
   "h-9 rounded-md border border-border bg-surface pl-8 pr-3 text-sm text-ink outline-none transition-colors focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent";
-const iconWrapperClassName =
-  "pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-muted";
 
+// Search lives outside this panel now (see SearchField, rendered to the
+// left of the Filters button) -- everything left here is a plain
+// icon-in-trigger Select or a plain date input.
 export function ExpenseFilters({
   categories,
 }: {
@@ -41,20 +42,6 @@ export function ExpenseFilters({
 
   return (
     <>
-      <div className="relative w-56">
-        <span className={iconWrapperClassName}>
-          <SearchIcon size={14} />
-        </span>
-        <input
-          type="search"
-          aria-label="Search by category, reference, or note"
-          placeholder="Search"
-          defaultValue={searchParams.get("q") ?? ""}
-          onChange={(event) => updateParam("q", event.target.value)}
-          className={`w-full ${inputClassName}`}
-        />
-      </div>
-
       <Select
         ariaLabel="Filter by category"
         icon={<FilterIcon size={14} />}
@@ -67,7 +54,7 @@ export function ExpenseFilters({
             label: category.name,
           })),
         ]}
-        className="w-44"
+        className="w-full"
       />
 
       <Select
@@ -79,23 +66,25 @@ export function ExpenseFilters({
           value: method,
           label: METHOD_LABELS[method] ?? method,
         }))}
-        className="w-40"
+        className="w-full"
       />
 
-      <input
-        type="date"
-        aria-label="From date"
-        defaultValue={searchParams.get("from") ?? ""}
-        onChange={(event) => updateParam("from", event.target.value)}
-        className={`${inputClassName} pl-3 w-36`}
-      />
-      <input
-        type="date"
-        aria-label="To date"
-        defaultValue={searchParams.get("to") ?? ""}
-        onChange={(event) => updateParam("to", event.target.value)}
-        className={`${inputClassName} pl-3 w-36`}
-      />
+      <div className="flex gap-2">
+        <input
+          type="date"
+          aria-label="From date"
+          defaultValue={searchParams.get("from") ?? ""}
+          onChange={(event) => updateParam("from", event.target.value)}
+          className={`${inputClassName} min-w-0 flex-1 pl-3`}
+        />
+        <input
+          type="date"
+          aria-label="To date"
+          defaultValue={searchParams.get("to") ?? ""}
+          onChange={(event) => updateParam("to", event.target.value)}
+          className={`${inputClassName} min-w-0 flex-1 pl-3`}
+        />
+      </div>
     </>
   );
 }
