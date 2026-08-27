@@ -51,7 +51,7 @@ export function CategoryBreakdownChart({
             </span>
             <div className="h-6 flex-1 rounded-md bg-canvas">
               <div
-                className="h-6 rounded-md bg-accent-fill"
+                className="h-6 rounded-md bg-accent"
                 style={{ width: `${widthPercent}%` }}
               />
             </div>
