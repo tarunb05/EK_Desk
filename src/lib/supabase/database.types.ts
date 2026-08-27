@@ -216,6 +216,55 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_delete_log: {
+        Row: {
+          actor: string
+          amount_paise: number
+          category_id: string
+          created_at: string
+          expense_id: string
+          id: string
+        }
+        Insert: {
+          actor: string
+          amount_paise: number
+          category_id: string
+          created_at?: string
+          expense_id: string
+          id?: string
+        }
+        Update: {
+          actor?: string
+          amount_paise?: number
+          category_id?: string
+          created_at?: string
+          expense_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_delete_log_actor_fkey"
+            columns: ["actor"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_delete_log_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_delete_log_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_category_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_account: {
         Row: {
           academic_year_id: string
@@ -1370,4 +1419,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

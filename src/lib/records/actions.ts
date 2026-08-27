@@ -17,6 +17,7 @@ import {
   approveSubmissionSchema,
   archiveStudentSchema,
   createStudentWithFeeAccountSchema,
+  deleteExpenseSchema,
   permanentlyDeleteStudentSchema,
   recordExpenseSchema,
   recordPaymentSchema,
@@ -852,7 +853,64 @@ export async function updateExpense(
 
   revalidatePath("/expenses", "page");
   redirect("/expenses");
+}
 
-  revalidatePath("/approvals");
-  redirect("/approvals");
+// No approval queue, unlike a student delete -- per CLAUDE.md rule 10, an
+// expense creates no receivable and settles no account, so gating this
+// behind approval would be ceremony, not safety. Admin and teacher (own
+// branch, enforced by RLS below) both delete directly; the
+// expense_delete_log row is the audit trail rule 8 calls for, since
+// there's no soft-delete flag or shadow history table to look at after.
+export async function deleteExpense(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = deleteExpenseSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: "Could not find that expense." };
+  }
+  const { expenseId } = parsed.data;
+  const authed = await requireAuth();
+  const supabase = await createClient();
+
+  const { data: existing, error: fetchError } = await supabase
+    .from("expense")
+    .select("branch_id, category_id, amount_paise")
+    .eq("id", expenseId)
+    .single();
+
+  if (fetchError || !existing) {
+    return { error: "Could not find that expense." };
+  }
+
+  // Same shape as updateExpense's own check -- RLS would block the delete
+  // regardless, this just turns it into a readable error instead of a
+  // silent "0 rows affected."
+  if (authed.role === "teacher") {
+    if (!authed.branchId || existing.branch_id !== authed.branchId) {
+      return { error: "You can only delete expenses in your own branch." };
+    }
+  }
+
+  // Logged before the delete, not after -- if the delete then fails, an
+  // orphaned log entry for a still-existing expense is a harmless no-op
+  // to notice; a successful delete with no log entry at all is the actual
+  // hole in the audit trail this exists to prevent.
+  const { error: logError } = await supabase.from("expense_delete_log").insert({
+    expense_id: expenseId,
+    category_id: existing.category_id,
+    amount_paise: existing.amount_paise,
+    actor: authed.userId,
+  });
+  if (logError) {
+    return { error: "Could not delete this expense." };
+  }
+
+  const { error } = await supabase.from("expense").delete().eq("id", expenseId);
+  if (error) {
+    return { error: "Could not delete this expense." };
+  }
+
+  revalidatePath("/expenses", "page");
+  return { error: null };
 }

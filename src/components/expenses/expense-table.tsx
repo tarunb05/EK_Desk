@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { formatPaise } from "@/lib/domain/money";
 import type { ExpenseDirectoryRow } from "@/lib/records/expense-directory";
 import type { ExpenseSortKey } from "@/lib/shell/expense-table-params";
 import type { Role } from "@/lib/auth/routes";
 import { SortableHeader } from "@/components/records/sortable-header";
 import { PaginationControls } from "@/components/records/pagination-controls";
+import { ExpenseRowActions } from "@/components/expenses/expense-row-actions";
 
 const METHOD_LABEL: Record<string, string> = {
   cash: "Cash",
@@ -132,12 +132,7 @@ export function ExpenseTable({
                   ) : null}
                 </td>
                 <td className="px-3">
-                  <Link
-                    href={`/expenses/${row.id}/edit`}
-                    className="text-2xs text-accent hover:underline"
-                  >
-                    Edit
-                  </Link>
+                  <ExpenseRowActions expenseId={row.id} />
                 </td>
               </tr>
             ))}

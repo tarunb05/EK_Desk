@@ -178,3 +178,7 @@ export const recordExpenseSchema = z.object({
 export const updateExpenseSchema = recordExpenseSchema.extend({
   expenseId: z.string().uuid(),
 });
+
+export const deleteExpenseSchema = z.object({
+  expenseId: z.string().uuid(),
+});
