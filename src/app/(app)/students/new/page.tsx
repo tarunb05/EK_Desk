@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { BackLink } from "@/components/shell/back-link";
+
+export const metadata: Metadata = {
+  title: "Add Student",
+};
 
 export default function NewStudentPage() {
   return (

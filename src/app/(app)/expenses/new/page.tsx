@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getBranches } from "@/lib/supabase/queries";
 import { getCurrentScope } from "@/lib/shell/get-current-scope";
@@ -6,6 +7,10 @@ import { requireAuth } from "@/lib/auth/require-role";
 import { getActiveExpenseCategoryOptions } from "@/lib/records/expense-directory";
 import { ExpenseForm } from "@/components/expenses/expense-form";
 import { BackLink } from "@/components/shell/back-link";
+
+export const metadata: Metadata = {
+  title: "Record Expense",
+};
 
 export default async function NewExpensePage({
   searchParams,

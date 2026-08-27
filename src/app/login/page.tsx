@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
-  title: "Sign in — EuroKids Fee Tracker",
+  title: "Sign in",
 };
 
 export default function LoginPage() {
@@ -16,14 +16,13 @@ export default function LoginPage() {
             every other surface would be if it used a shadow at all. */}
         {/* Scoped CLAUDE.md exception: the login page is the one screen with
             no data on it, so its wordmark can carry the brand at a size the
-            dashboards can't afford. Font-family is font-sans (Inter),
-            overriding the global h1->serif rule for this element only, at
-            bold weight -- matching the "Sign In" header treatment from the
+            dashboards can't afford — still Inter (the app's one typeface),
+            just bold, matching the "Sign In" header treatment from the
             pasted card reference. Nowhere else in the app sets an h1 to
-            Inter or to bold; the sidebar/top bar wordmark stays on Source
-            Serif 4. Color stays --ink. */}
-        <h1 className="text-login-wordmark font-sans font-bold mb-6 tracking-[-0.02em] text-ink">
-          EuroKids Fee Tracker
+            bold; every other page title keeps its own (lighter) weight.
+            Color stays --ink. */}
+        <h1 className="text-login-wordmark font-bold mb-6 tracking-[-0.02em] text-ink">
+          EK Desk
         </h1>
         <LoginForm />
       </div>

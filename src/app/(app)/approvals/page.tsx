@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth/require-role";
 import { getPendingSubmissions } from "@/lib/records/approvals";
 import { ApprovalRow } from "@/components/records/approval-row";
+
+// Static rather than "My requests" for a teacher (which the on-page <h1>
+// does show) -- that distinction isn't worth a second requireAuth() round
+// trip (getUser + two RPCs) just for the browser tab title.
+export const metadata: Metadata = {
+  title: "Approvals",
+};
 
 export default async function ApprovalsPage() {
   // Same route for both roles -- RLS scopes what getPendingSubmissions can

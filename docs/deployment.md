@@ -13,7 +13,7 @@ the obvious thing is wrong.
 
 1. Go to [supabase.com/dashboard](https://supabase.com/dashboard), sign in,
    click **New Project**.
-2. Name it something like `eurokids-fee-tracker-prod`, pick the region
+2. Name it something like `ek-desk-prod`, pick the region
    closest to the branches, let it generate a database password (save it —
    you likely won't need it for anything below, but keep it somewhere safe
    regardless).

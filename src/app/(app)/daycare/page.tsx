@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import { ServiceScopeDashboard } from "@/components/dashboard/service-scope-dashboard";
+
+export const metadata: Metadata = {
+  title: "Daycare",
+};
 
 export default function DaycarePage({
   searchParams,

@@ -52,9 +52,9 @@ export function Sidebar({
       >
         <div className="mb-6 flex items-center justify-between px-3">
           <span
-            className={`font-serif text-sm font-medium text-ink ${collapsed ? "md:hidden" : ""}`}
+            className={`text-sm font-medium text-ink ${collapsed ? "md:hidden" : ""}`}
           >
-            EuroKids Fee Tracker
+            EK Desk
           </span>
 
           <button

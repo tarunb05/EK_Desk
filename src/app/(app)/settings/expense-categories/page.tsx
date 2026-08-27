@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { getExpenseCategoriesWithStats } from "@/lib/settings/queries";
 import { AddExpenseCategoryForm } from "@/components/settings/add-expense-category-form";
 import { ExpenseCategoryRow } from "@/components/settings/expense-category-row";
+
+export const metadata: Metadata = {
+  title: "Expense Categories",
+};
 
 export default async function ExpenseCategoriesPage() {
   await requireRole("admin");

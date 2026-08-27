@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getFeeAccountRecordById } from "@/lib/records/queries";
 import { EditFeeAccountForm } from "@/components/records/edit-fee-account-form";
 import { BackLink } from "@/components/shell/back-link";
+
+export const metadata: Metadata = {
+  title: "Edit Student",
+};
 
 export default async function StudentsEditFeeAccountPage({
   params,

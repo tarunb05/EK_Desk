@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentScope } from "@/lib/shell/get-current-scope";
@@ -18,6 +19,10 @@ import { ScopeSelectors } from "@/components/shell/scope-selectors";
 import { Toolbar } from "@/components/shell/toolbar";
 
 const PAGE_SIZE = 20;
+
+export const metadata: Metadata = {
+  title: "Expenses",
+};
 
 export default async function ExpensesPage({
   searchParams,

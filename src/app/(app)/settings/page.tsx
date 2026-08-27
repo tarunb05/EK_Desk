@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getAcademicYears, getBranches } from "@/lib/supabase/queries";
@@ -10,6 +11,10 @@ import { AddBranchForm } from "@/components/settings/add-branch-form";
 import { AddTeacherForm } from "@/components/settings/add-teacher-form";
 import { TeacherRow } from "@/components/settings/teacher-row";
 import { MyCredentialsForm } from "@/components/settings/my-credentials-form";
+
+export const metadata: Metadata = {
+  title: "Settings",
+};
 
 export default async function SettingsPage() {
   await requireRole("admin");

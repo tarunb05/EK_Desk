@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStudentDetail } from "@/lib/records/student-detail";
 import { StudentDetailBody } from "@/components/records/student-detail-body";
 import { BackLink } from "@/components/shell/back-link";
 import { requireRole } from "@/lib/auth/require-role";
+
+// Static rather than the student's own name -- see the transport variant of
+// this page for why (avoids a second getStudentDetail() call).
+export const metadata: Metadata = {
+  title: "Student",
+};
 
 export default async function StudentDetailPage({
   params,

@@ -26,9 +26,7 @@ export function TopBar({ username }: TopBarProps) {
         >
           <MenuIcon />
         </button>
-        <span className="font-serif text-sm font-medium text-ink">
-          EuroKids Fee Tracker
-        </span>
+        <span className="text-sm font-medium text-ink">EK Desk</span>
       </div>
 
       <div className="flex items-center gap-3">

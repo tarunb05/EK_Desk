@@ -1,4 +1,4 @@
-# CLAUDE.md — EuroKids Fee Management
+# CLAUDE.md — EK Desk
 
 This file contains the non-negotiable constraints for this project. These rules survive context compaction — re-read this file if unsure.
 
@@ -70,7 +70,7 @@ Tokens (all text colours contrast-checked against white at 4.5:1 or better):
 
 Chart series order: `--accent-fill` → `--positive-fill` → `--attention-fill` → `--border`. Never encode meaning by colour alone; overdue rows also get a left rule and a text label.
 
-Typography: Inter via `next/font` for body text, labels, and every numeral (tabular-nums support, legible at small sizes). Source Serif 4 via `next/font` for page titles (`<h1>`) and the app wordmark only — the "bank statement" character, never on data — **except the login page's own `<h1>` wordmark**, a scoped Phase 11 exception: Inter at bold weight (`font-sans font-bold`, overriding the global h1→serif rule for this element only), at `--text-login-wordmark` (36px, `tracking-[-0.02em]`), still `--ink`. This is the one `<h1>` in the app that isn't Source Serif 4, and the one bold `<h1>` — the login page has no data on it and can carry the brand at a size and weight the dashboards can't afford; the sidebar and top bar keep the same wordmark on Source Serif 4 at 13px, unchanged. Scale 11/12/13/14/16/20/28px, same exception as above for the login wordmark's 36px. Body 13–14px, not 16px. `font-variant-numeric: tabular-nums` on every element containing a number. Section labels 11px uppercase with `letter-spacing: 0.06em` in `--ink-muted`.
+Typography: Inter via `next/font` for everything — body text, labels, every numeral (tabular-nums support, legible at small sizes), and every page title (`<h1>`). One typeface app-wide, including the "EK Desk" wordmark in the sidebar/top bar (13px, `font-medium`) — there's no second typeface layered on for titles. Each `<h1>` keeps its own (usually `font-medium`) weight, **except the login page's own `<h1>` wordmark**, a scoped Phase 11 exception: bold weight at `--text-login-wordmark` (36px, `tracking-[-0.02em]`), still `--ink` — the login page has no data on it and can carry the brand at a size and weight the dashboards can't afford. Scale 11/12/13/14/16/20/28px, same exception as above for the login wordmark's 36px. Body 13–14px, not 16px. `font-variant-numeric: tabular-nums` on every element containing a number. Section labels 11px uppercase with `letter-spacing: 0.06em` in `--ink-muted`.
 
 **Banned:** gradients, `backdrop-filter`/glassmorphism, purple or indigo, emoji, shadows larger than `0 1px 2px rgba(0,0,0,.05)`, border-radius above 6px — **except `--radius-field` (10px), used only by the login page's inputs and its submit button, matched to each other so neither reads as unfinished against the other; nowhere else** —, hero sections, decorative illustrations, animated counters, a second accent colour, centre-aligned body text, icon-only buttons without a label or `aria-label`.
 

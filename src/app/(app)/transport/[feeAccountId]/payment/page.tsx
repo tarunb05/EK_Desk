@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getFeeAccountRecordById } from "@/lib/records/queries";
 import { formatPaise } from "@/lib/domain/money";
 import { RecordPaymentForm } from "@/components/records/record-payment-form";
 import { BackLink } from "@/components/shell/back-link";
+
+export const metadata: Metadata = {
+  title: "Record Payment",
+};
 
 export default async function RecordPaymentPage({
   params,

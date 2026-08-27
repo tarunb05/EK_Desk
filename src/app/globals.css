@@ -40,7 +40,6 @@
   --color-attention-fill: var(--attention-fill);
 
   --font-sans: var(--font-inter);
-  --font-serif: var(--font-serif);
 
   --text-2xs: 11px;
   --text-xs: 12px;
@@ -70,23 +69,16 @@
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  /* --font-inter directly, not --font-sans -- `@theme inline` (needed since
+     --font-inter is a runtime custom property next/font sets on <body>, not
+     a plain :root value) makes Tailwind bake --font-sans straight into the
+     utility classes IT generates (e.g. a used `font-sans` class), but never
+     actually registers --font-sans as a real custom property anywhere. A
+     hand-written rule that references var(--font-sans) literally, like this
+     one, resolves to nothing -- an invalid var() that was silently falling
+     back to the browser's own default sans stack instead of Inter. */
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
   font-size: var(--text-sm);
-}
-
-/* Every page title in the app is an <h1>; data/numerals stay on Inter
-   everywhere else (tabular-nums, small-size legibility). A single rule here
-   covers all of them instead of touching each page.
-   In `@layer base`, not left unlayered — Tailwind wraps every utility class
-   in `@layer utilities`, and an unlayered rule always beats a layered one
-   regardless of specificity, class or not. Left unlayered, this rule would
-   permanently win over any utility (e.g. font-sans on the login wordmark)
-   trying to override font-family on a specific <h1>, which is exactly the
-   silent bug that shipped here once before. */
-@layer base {
-  h1 {
-    font-family: var(--font-serif), Georgia, serif;
-  }
 }
 
 /* Subtle entrance for popovers/dropdowns (e.g. the month filter) — a plain

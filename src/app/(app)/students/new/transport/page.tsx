@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getBranches } from "@/lib/supabase/queries";
 import { getCurrentScope } from "@/lib/shell/get-current-scope";
@@ -5,6 +6,10 @@ import { shellSearchParamsSchema } from "@/lib/shell/search-params";
 import { requireAuth } from "@/lib/auth/require-role";
 import { AddStudentForm } from "@/components/records/add-student-form";
 import { BackLink } from "@/components/shell/back-link";
+
+export const metadata: Metadata = {
+  title: "Add Transport Student",
+};
 
 export default async function NewTransportStudentFromStudentsPage({
   searchParams,

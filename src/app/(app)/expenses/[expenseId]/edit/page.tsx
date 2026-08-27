@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getBranches } from "@/lib/supabase/queries";
@@ -6,6 +7,10 @@ import { getActiveExpenseCategoryOptions } from "@/lib/records/expense-directory
 import { paiseToRupeesInputString } from "@/lib/domain/money";
 import { ExpenseForm } from "@/components/expenses/expense-form";
 import { BackLink } from "@/components/shell/back-link";
+
+export const metadata: Metadata = {
+  title: "Edit Expense",
+};
 
 export default async function EditExpensePage({
   params,

@@ -1,4 +1,4 @@
-# EuroKids Fee Tracker
+# EK Desk
 
 Internal fee-management app for a EuroKids preschool group with two branches, covering school transport and daycare fee accounts.
 
