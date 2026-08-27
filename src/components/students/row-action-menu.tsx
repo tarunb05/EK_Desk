@@ -7,12 +7,8 @@ import {
   requestStudentDelete,
 } from "@/lib/records/actions";
 import { DeleteConfirmDialog } from "./delete-confirm-dialog";
+import { ActionMenu, type ActionMenuItem } from "@/components/shell/action-menu";
 import type { Role } from "@/lib/auth/routes";
-
-const selectClassName =
-  "h-7 rounded-md border border-border bg-surface px-1.5 text-2xs text-ink-secondary outline-none transition-colors focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60";
-
-const DELETE_VALUE = "__delete";
 
 // A navigation-and-actions menu, not a form control -- Edit/Record payment
 // push to that route; the delete option opens the confirm dialog, then
@@ -53,44 +49,32 @@ export function RowActionMenu({
     });
   }
 
+  function openDeleteDialog() {
+    setError(null);
+    // Deferring past this tick avoids the confirm dialog's showModal()
+    // racing the menu's own portal-unmount from the same click -- both
+    // want to touch the DOM in the same event, and the dialog needs to
+    // win second.
+    setTimeout(() => dialogRef.current?.showModal(), 0);
+  }
+
+  const items: ActionMenuItem[] = [
+    ...(editHref
+      ? [{ label: "Edit", onSelect: () => router.push(editHref) }]
+      : []),
+    ...(paymentHref
+      ? [{ label: "Record payment", onSelect: () => router.push(paymentHref) }]
+      : []),
+    {
+      label: role === "admin" ? "Delete permanently" : "Request deletion",
+      onSelect: openDeleteDialog,
+      destructive: true,
+    },
+  ];
+
   return (
     <div className="inline-flex flex-col gap-1">
-      <select
-        aria-label="Actions"
-        defaultValue=""
-        disabled={isPending}
-        onChange={(event) => {
-          const value = event.target.value;
-          event.target.value = "";
-          setError(null);
-
-          if (value === DELETE_VALUE) {
-            // Opening a <dialog> synchronously inside a <select>'s change
-            // handler can be swallowed in some browsers -- the native
-            // dropdown is still mid-way through closing its own UI at that
-            // point. Deferring past this tick avoids the conflict (the same
-            // fix window.confirm() needed here before this was replaced).
-            setTimeout(() => dialogRef.current?.showModal(), 0);
-            return;
-          }
-
-          if (value) {
-            router.push(value);
-          }
-        }}
-        className={selectClassName}
-      >
-        <option value="" disabled>
-          Actions
-        </option>
-        {editHref ? <option value={editHref}>Edit</option> : null}
-        {paymentHref ? (
-          <option value={paymentHref}>Record payment</option>
-        ) : null}
-        <option value={DELETE_VALUE}>
-          {role === "admin" ? "Delete permanently" : "Request deletion"}
-        </option>
-      </select>
+      <ActionMenu items={items} disabled={isPending} />
       {error ? (
         <span className="text-2xs text-attention" role="alert">
           {error}
