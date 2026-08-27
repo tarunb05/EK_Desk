@@ -1,17 +1,20 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { deleteExpense } from "@/lib/records/actions";
 import { DeleteConfirmDialog } from "@/components/students/delete-confirm-dialog";
+import { ActionMenu, type ActionMenuItem } from "@/components/shell/action-menu";
 
-// Plain "Edit | Delete" links, not a dropdown -- unlike the student
-// directory's per-row Actions menu, there are only ever these two, so a
-// popover (and the overflow-clipping problem ActionMenu exists to solve)
-// isn't a concern here. Admin and teacher (own branch, enforced by RLS)
-// both delete directly -- per CLAUDE.md rule 10, an expense creates no
-// receivable, so there's no approval queue to route through either way.
+// Same Actions-menu pattern as the student directory's RowActionMenu, for
+// the same reason: the expense table lives inside an overflow-x-auto
+// wrapper too, so a plain absolutely-positioned popover risks the same
+// clipping ActionMenu's portal exists to avoid. Admin and teacher (own
+// branch, enforced by RLS) both delete directly -- per CLAUDE.md rule 10,
+// an expense creates no receivable, so there's no approval queue to route
+// through either way.
 export function ExpenseRowActions({ expenseId }: { expenseId: string }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -27,24 +30,22 @@ export function ExpenseRowActions({ expenseId }: { expenseId: string }) {
     });
   }
 
+  function openDeleteDialog() {
+    setError(null);
+    // Same deferral RowActionMenu uses -- the confirm dialog's showModal()
+    // would otherwise race the menu's own portal-unmount from the same
+    // click.
+    setTimeout(() => dialogRef.current?.showModal(), 0);
+  }
+
+  const items: ActionMenuItem[] = [
+    { label: "Edit", onSelect: () => router.push(`/expenses/${expenseId}/edit`) },
+    { label: "Delete", onSelect: openDeleteDialog, destructive: true },
+  ];
+
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-3">
-        <Link
-          href={`/expenses/${expenseId}/edit`}
-          className="text-2xs text-accent hover:underline"
-        >
-          Edit
-        </Link>
-        <button
-          type="button"
-          disabled={isPending}
-          onClick={() => dialogRef.current?.showModal()}
-          className="text-2xs text-attention hover:underline disabled:opacity-60"
-        >
-          Delete
-        </button>
-      </div>
+    <div className="inline-flex flex-col gap-1">
+      <ActionMenu items={items} disabled={isPending} />
       {error ? (
         <span className="text-2xs text-attention" role="alert">
           {error}
