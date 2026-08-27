@@ -46,7 +46,7 @@ export function Sidebar({
       />
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-hairline bg-surface px-3 py-6 transition-transform duration-150 md:relative md:z-0 md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col overflow-hidden border-r border-hairline bg-surface px-3 py-6 transition-[transform,width] duration-150 md:relative md:z-0 md:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         } ${collapsed ? "md:w-16" : "md:w-56"}`}
       >
