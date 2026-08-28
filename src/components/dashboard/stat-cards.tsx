@@ -113,21 +113,29 @@ export function StatCards({
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
       {cards.map((card) => {
-        const cardClassName =
-          "rounded-md border border-hairline bg-surface p-4 transition-colors hover:border-border";
+        // Only the four export cards are actually clickable (they download
+        // an Excel file) -- a hover effect on the plain divs would be a
+        // false affordance. Scale, not translate/shadow: same "give it a
+        // little weight" idea as the category-breakdown bars' hover grow,
+        // for the same reason -- these numbers aren't a dimension anything
+        // else encodes, so growing them slightly can't misrepresent data.
+        const cardClassName = card.exportHref
+          ? "rounded-md border border-hairline bg-surface p-4 transition-[border-color,transform] duration-150 hover:scale-[1.03] hover:border-accent active:scale-[0.98]"
+          : "rounded-md border border-hairline bg-surface p-4";
         const content = (
           <>
-            <div className="flex items-center justify-between">
-              <span className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
+            <div className="flex items-center justify-between gap-2">
+              <span className="min-w-0 flex-1 truncate text-2xs font-medium uppercase tracking-wide text-ink-muted">
                 {card.label}
               </span>
               <span
                 className={
-                  card.tone === "positive"
+                  "shrink-0 " +
+                  (card.tone === "positive"
                     ? "text-positive-fill"
                     : card.tone === "attention"
                       ? "text-attention"
-                      : "text-ink-muted"
+                      : "text-ink-muted")
                 }
               >
                 <card.Icon size={15} />
