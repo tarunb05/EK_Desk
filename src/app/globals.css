@@ -215,3 +215,61 @@ dialog[open]::backdrop {
     animation: none;
   }
 }
+
+/* Category breakdown bars (expenses) grow in from the left on mount instead
+   of appearing pre-filled -- transform (scaleX), not width, is what
+   animates here: a single keyframe works uniformly no matter what each
+   bar's own final width happens to be, and transform is the cheap property
+   to animate (no per-frame layout). animation-fill-mode: backwards holds
+   each bar invisible during its own staggered delay instead of flashing
+   full-width before its turn. */
+@keyframes bar-grow-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-bar-grow-in {
+  transform-origin: left;
+  animation: bar-grow-in 450ms var(--ease-flowy) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-bar-grow-in {
+    animation: none;
+  }
+}
+
+/* Hovering one category row dims its siblings, same "emphasize one, mute
+   the rest" idea the pie-chart reference used on slice hover -- :has()
+   does it without any JS or per-row event handlers. */
+.category-breakdown:has(.category-breakdown-row:hover)
+  .category-breakdown-row:not(:hover) {
+  opacity: 0.5;
+}
+
+.category-breakdown-row {
+  transition: opacity 150ms var(--ease-flowy);
+}
+
+/* Hovered row's own bar grows slightly -- scaleY (thickness), never scaleX
+   (length): length is the data (proportional to the category's amount), so
+   growing it sideways on hover would visually misrepresent the value.
+   Thickness has no such meaning, so it's the safe axis for "give this one
+   a little weight." */
+.category-breakdown-row .animate-bar-grow-in {
+  transition: transform 150ms var(--ease-flowy);
+}
+
+.category-breakdown-row:hover .animate-bar-grow-in {
+  transform: scaleY(1.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-breakdown-row .animate-bar-grow-in {
+    transition-duration: 1ms;
+  }
+}
