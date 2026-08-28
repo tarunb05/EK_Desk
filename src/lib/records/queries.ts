@@ -1,21 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import type {
-  RecordTableSearchParams,
-  SortKey,
-} from "@/lib/shell/table-params";
 import type { FeeAccountRecordRow, ServiceType } from "@/lib/records/types";
 
 type FeeAccountRecordDbRow =
   Database["public"]["Views"]["fee_account_record"]["Row"];
-
-const SORT_COLUMN: Record<SortKey, string> = {
-  full_name: "student_full_name",
-  pending_paise: "pending_paise",
-  collected_paise: "collected_paise",
-  total_receivable_paise: "total_receivable_paise",
-  due_date: "due_date",
-};
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -51,45 +39,6 @@ function mapFeeAccountRecordRow(
   };
 }
 
-export interface RecordScopeParams {
-  serviceType: ServiceType;
-  academicYearId: string;
-  branch: "all" | string;
-  table: RecordTableSearchParams;
-}
-
-function applyFilters(
-  supabase: SupabaseClient<Database>,
-  { serviceType, academicYearId, branch, table }: RecordScopeParams,
-  { head }: { head: boolean },
-) {
-  let query = supabase
-    .from("fee_account_record")
-    .select("*", { count: "exact", head })
-    .eq("service_type", serviceType)
-    .eq("academic_year_id", academicYearId)
-    .eq("student_status", "active");
-
-  if (branch !== "all") {
-    query = query.eq("branch_code", branch);
-  }
-  if (table.classSection) {
-    query = query.eq("class_section", table.classSection);
-  }
-  if (table.q) {
-    query = query.ilike("student_full_name", `%${table.q}%`);
-  }
-  if (table.status === "overdue") {
-    query = query.gt("pending_paise", 0).lt("due_date", todayIso());
-  } else if (table.status === "pending") {
-    query = query.gt("pending_paise", 0);
-  } else if (table.status === "paid") {
-    query = query.lte("pending_paise", 0);
-  }
-
-  return query;
-}
-
 export type FeeAccountExportMetric =
   | "receivable"
   | "collected"
@@ -104,12 +53,10 @@ export interface FeeAccountExportParams {
 }
 
 // Backs the stat-card Excel exports (Total receivable/collected/pending/
-// overdue) -- a separate function from getAllFeeAccountRecords rather than
-// forcing "collected" into RecordTableSearchParams.status, since that enum
-// is the Students-page filter chips (all/overdue/pending/paid) and adding
-// a fifth "has any collection" option there isn't something that page
-// asked for. Every metric still shares the same active-student, in-scope
-// base query.
+// overdue). Its own metric enum rather than the Students-page status filter
+// chips (all/overdue/pending/paid) -- "collected" isn't one of those, and
+// adding a fifth option there isn't something that page asked for. Every
+// metric still shares the same active-student, in-scope base query.
 export async function getFeeAccountRecordsForExport(
   supabase: SupabaseClient<Database>,
   { serviceType, academicYearId, branch, metric }: FeeAccountExportParams,
