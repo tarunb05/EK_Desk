@@ -52,13 +52,13 @@ export function ErrorCard({
           <button
             type="button"
             onClick={() => router.back()}
-            className={primaryButtonClassName}
+            className={`${primaryButtonClassName} px-4`}
           >
             Try again
           </button>
           <a
             href={backHref}
-            className="flex h-10 items-center rounded-md border border-border px-4 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+            className="flex h-10 items-center rounded-md border border-border px-4 text-sm text-ink-secondary transition-[background-color,color,transform] duration-150 hover:bg-surface-accent hover:text-ink active:scale-[0.98]"
           >
             Back to dashboard
           </a>
