@@ -8,6 +8,7 @@ import {
 } from "@/lib/records/actions";
 import { DeleteConfirmDialog } from "./delete-confirm-dialog";
 import { ActionMenu, type ActionMenuItem } from "@/components/shell/action-menu";
+import { FormError } from "@/components/forms/field";
 import type { Role } from "@/lib/auth/routes";
 
 // A navigation-and-actions menu, not a form control -- Edit/Record payment
@@ -75,11 +76,7 @@ export function RowActionMenu({
   return (
     <div className="inline-flex flex-col gap-1">
       <ActionMenu items={items} disabled={isPending} />
-      {error ? (
-        <span className="text-2xs text-attention" role="alert">
-          {error}
-        </span>
-      ) : null}
+      <FormError error={error} size="2xs" />
       {submitted ? (
         <span className="text-2xs text-ink-secondary">
           Submitted for admin approval.

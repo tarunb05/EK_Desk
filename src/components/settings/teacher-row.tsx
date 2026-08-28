@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import {
   Field,
+  FormError,
   inputClassName,
   primaryButtonClassName,
   dangerButtonClassName,
@@ -101,11 +102,7 @@ export function TeacherRow({
             />
           </Field>
 
-          {updateState.error ? (
-            <p className="text-xs text-attention" role="alert">
-              {updateState.error}
-            </p>
-          ) : null}
+          <FormError error={updateState.error} />
 
           <div className="flex gap-2">
             <button
@@ -180,11 +177,7 @@ export function TeacherRow({
           </>
         )}
       </div>
-      {deleteState.error ? (
-        <p className="mt-1 w-full text-xs text-attention" role="alert">
-          {deleteState.error}
-        </p>
-      ) : null}
+      <FormError error={deleteState.error} className="mt-1 w-full" />
     </li>
   );
 }

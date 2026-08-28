@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { signIn, type SignInState } from "./actions";
 import {
+  FormError,
   inputClassName,
   primaryButtonClassName,
 } from "@/components/forms/field";
@@ -20,7 +21,7 @@ export function LoginForm() {
             Username
           </label>
           {state.fieldErrors?.username ? (
-            <span className="text-xs text-attention" role="alert">
+            <span className="animate-alert-in text-xs text-attention" role="alert">
               {state.fieldErrors.username}
             </span>
           ) : null}
@@ -41,7 +42,7 @@ export function LoginForm() {
             Password
           </label>
           {state.fieldErrors?.password ? (
-            <span className="text-xs text-attention" role="alert">
+            <span className="animate-alert-in text-xs text-attention" role="alert">
               {state.fieldErrors.password}
             </span>
           ) : null}
@@ -69,11 +70,7 @@ export function LoginForm() {
         </label>
       </div>
 
-      {state.error ? (
-        <p className="text-xs text-attention" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <FormError error={state.error} />
 
       <button
         type="submit"

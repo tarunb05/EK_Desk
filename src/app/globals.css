@@ -123,3 +123,95 @@ body {
     animation: none;
   }
 }
+
+/* Every <dialog> in the app (DeleteConfirmDialog, and any future confirm
+   modal) — previously relied on the browser's own instant show/hide for a
+   top-layer element, which snapped open/closed with no transition at all.
+   @starting-style + allow-discrete is the standard platform way to animate
+   an element while it's moving in/out of the top layer; `overlay` is
+   Chrome/Edge-only today (no Firefox/Safari support yet), so those browsers
+   fall back to the old instant snap rather than a broken transition —
+   acceptable degradation, not a real gap, for an internal tool.
+
+   `margin: auto` here is a separate, pre-existing bug this surfaced, not
+   part of the animation: a modal <dialog> is normally self-centering (the
+   UA stylesheet gives dialog:modal `position: fixed; inset: 0; margin:
+   auto`, which centers it in the leftover space), but Tailwind's preflight
+   resets `margin: 0` on every element. With the centering margin zeroed out
+   and inset pinned to all four edges, the box collapses to the top-left
+   corner instead of the middle of the screen -- true regardless of this
+   animation, on every delete-confirm dialog in the app before this fix. */
+dialog {
+  opacity: 0;
+  transform: scale(0.97);
+  margin: auto;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 150ms;
+  transition-timing-function: var(--ease-flowy);
+  transition-behavior: allow-discrete;
+}
+
+dialog[open] {
+  opacity: 1;
+  transform: scale(1);
+
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+dialog::backdrop {
+  background-color: rgb(28 27 25 / 0);
+  transition:
+    display 150ms allow-discrete,
+    overlay 150ms allow-discrete,
+    background-color 150ms var(--ease-flowy);
+}
+
+dialog[open]::backdrop {
+  background-color: rgb(28 27 25 / 0.3);
+
+  @starting-style {
+    background-color: rgb(28 27 25 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog {
+    transform: none;
+    transition-duration: 1ms;
+  }
+
+  dialog[open] {
+    @starting-style {
+      transform: none;
+    }
+  }
+}
+
+/* Server Action error text (role="alert" spans across forms and row
+   actions) previously appeared with no transition at all — the message
+   just materialized. A quick fade + small settle gives it the same weight
+   as every other state change in the app without calling attention to
+   itself. */
+@keyframes alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-alert-in {
+  animation: alert-in 150ms var(--ease-flowy);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-alert-in {
+    animation: none;
+  }
+}

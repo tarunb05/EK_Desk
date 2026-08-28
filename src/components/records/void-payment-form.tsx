@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import {
   Field,
+  FormError,
   inputClassName,
   dangerButtonClassName,
 } from "@/components/forms/field";
@@ -24,11 +25,7 @@ export function VoidPaymentForm({ paymentId }: { paymentId: string }) {
         <input name="voidReason" required className={inputClassName} />
       </Field>
 
-      {state.error ? (
-        <p className="text-xs text-attention" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <FormError error={state.error} />
 
       <button
         type="submit"

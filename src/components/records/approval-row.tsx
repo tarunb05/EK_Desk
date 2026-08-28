@@ -7,6 +7,7 @@ import {
   type ActionState,
 } from "@/lib/records/actions";
 import {
+  FormError,
   inputClassName,
   primaryButtonClassName,
   dangerButtonClassName,
@@ -165,16 +166,8 @@ export function ApprovalRow({
             )}
           </div>
 
-          {approveState.error ? (
-            <p className="mt-2 text-xs text-attention" role="alert">
-              {approveState.error}
-            </p>
-          ) : null}
-          {rejectState.error ? (
-            <p className="mt-2 text-xs text-attention" role="alert">
-              {rejectState.error}
-            </p>
-          ) : null}
+          <FormError error={approveState.error} className="mt-2" />
+          <FormError error={rejectState.error} className="mt-2" />
         </>
       )}
     </div>

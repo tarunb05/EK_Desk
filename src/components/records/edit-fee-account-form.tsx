@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import {
   Field,
+  FormError,
   inputClassName,
   primaryButtonClassName,
 } from "@/components/forms/field";
@@ -178,11 +179,7 @@ export function EditFeeAccountForm({
         </Field>
       )}
 
-      {state.error ? (
-        <p className="text-xs text-attention" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <FormError error={state.error} />
 
       <button
         type="submit"

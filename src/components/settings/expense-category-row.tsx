@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import {
   Field,
+  FormError,
   inputClassName,
   primaryButtonClassName,
   dangerButtonClassName,
@@ -77,11 +78,7 @@ export function ExpenseCategoryRow({
           <p className="text-2xs text-ink-muted">
             Renaming updates every past expense to show the new name.
           </p>
-          {renameState.error ? (
-            <p className="text-xs text-attention" role="alert">
-              {renameState.error}
-            </p>
-          ) : null}
+          <FormError error={renameState.error} />
           <div className="flex gap-2">
             <button
               type="submit"
@@ -203,21 +200,9 @@ export function ExpenseCategoryRow({
         · {formatPaise(category.totalSpentPaise)} total
       </span>
 
-      {activeState.error ? (
-        <p className="text-xs text-attention" role="alert">
-          {activeState.error}
-        </p>
-      ) : null}
-      {reorderState.error ? (
-        <p className="text-xs text-attention" role="alert">
-          {reorderState.error}
-        </p>
-      ) : null}
-      {deleteState.error ? (
-        <p className="text-xs text-attention" role="alert">
-          {deleteState.error}
-        </p>
-      ) : null}
+      <FormError error={activeState.error} />
+      <FormError error={reorderState.error} />
+      <FormError error={deleteState.error} />
     </li>
   );
 }

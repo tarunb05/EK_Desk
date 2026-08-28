@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import {
   Field,
+  FormError,
   inputClassName,
   primaryButtonClassName,
 } from "@/components/forms/field";
@@ -59,11 +60,7 @@ export function AddAcademicYearForm() {
         Make this the current year
       </label>
 
-      {state.error ? (
-        <p className="text-xs text-attention" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <FormError error={state.error} />
 
       <button
         type="submit"

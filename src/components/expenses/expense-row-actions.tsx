@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { deleteExpense } from "@/lib/records/actions";
 import { DeleteConfirmDialog } from "@/components/students/delete-confirm-dialog";
 import { ActionMenu, type ActionMenuItem } from "@/components/shell/action-menu";
+import { FormError } from "@/components/forms/field";
 
 // Same Actions-menu pattern as the student directory's RowActionMenu, for
 // the same reason: the expense table lives inside an overflow-x-auto
@@ -46,11 +47,7 @@ export function ExpenseRowActions({ expenseId }: { expenseId: string }) {
   return (
     <div className="inline-flex flex-col gap-1">
       <ActionMenu items={items} disabled={isPending} />
-      {error ? (
-        <span className="text-2xs text-attention" role="alert">
-          {error}
-        </span>
-      ) : null}
+      <FormError error={error} size="2xs" />
       <DeleteConfirmDialog
         dialogRef={dialogRef}
         title="Delete this expense?"
