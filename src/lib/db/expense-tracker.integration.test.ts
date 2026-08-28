@@ -168,7 +168,14 @@ describe("expense tracker (phase 10.1 -- schema and authorization)", () => {
     });
   });
 
-  it("a teacher's delete matches zero rows -- no grant, not just a false RLS policy", async () => {
+  // "teacher deletes own branch" (20260827000000_expense_delete_permission_
+  // and_log.sql) was added after this describe block's other tests -- it
+  // used to be true that a teacher's delete matched zero rows (no grant at
+  // all), but that's what the migration deliberately changed. Same
+  // branch-scoping shape as the edit policy just above: own branch
+  // succeeds regardless of who entered it, another branch matches zero
+  // rows even though the row exists.
+  it("a teacher can delete an expense in their own branch, including one a colleague entered", async () => {
     await withRollback(client, async () => {
       await seedProfiles(client);
       await impersonate(client, TEACHER_A_ID);
@@ -177,6 +184,26 @@ describe("expense tracker (phase 10.1 -- schema and authorization)", () => {
         createdBy: TEACHER_A_ID,
       });
 
+      await client.query("reset role");
+      await impersonate(client, TEACHER_A2_ID);
+      const result = await client.query("delete from expense where id = $1", [
+        created.rows[0]!.id,
+      ]);
+      expect(result.rowCount).toBe(1);
+    });
+  });
+
+  it("a teacher cannot delete an expense in another branch", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      await impersonate(client, ADMIN_ID);
+      const created = await insertExpense(client, {
+        branchId: branchBId,
+        createdBy: ADMIN_ID,
+      });
+
+      await client.query("reset role");
+      await impersonate(client, TEACHER_A_ID);
       const result = await client.query("delete from expense where id = $1", [
         created.rows[0]!.id,
       ]);
