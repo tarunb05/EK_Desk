@@ -121,12 +121,13 @@ export function DateField({
       </button>
 
       {open ? (
-        <div className="absolute left-0 z-20 mt-1">
-          <Calendar
-            selected={selectedDate}
-            onSelect={handleSelect}
-            size="sm"
-          />
+        // Calendar's own w-full needs a concrete width to fill -- an
+        // absolutely positioned parent with no width set collapses to its
+        // content's intrinsic size, which left the 7-column day grid
+        // squeezed narrower than its own fixed-size day buttons (they
+        // don't shrink, so they overlapped instead).
+        <div className="absolute left-0 z-20 mt-1 w-80">
+          <Calendar selected={selectedDate} onSelect={handleSelect} />
         </div>
       ) : null}
     </div>
