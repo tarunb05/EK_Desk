@@ -95,9 +95,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Pinned, not "latest" -- "latest" makes the action call GitHub's API
+      # to resolve what that is on every run, unauthenticated (no token
+      # passed here), which is exactly what just hit a rate limit and
+      # failed the job outright. Pinning also means an unrelated new
+      # Supabase CLI release can't break this job on its own; bump this
+      # deliberately instead.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.115.0
 
       # Starts the full local stack (Postgres, GoTrue, PostgREST, Kong) and
       # applies every migration from empty — the same environment Playwright
