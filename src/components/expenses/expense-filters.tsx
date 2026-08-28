@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MONEY_METHODS } from "@/lib/domain/money";
 import { FilterIcon, WalletIcon } from "@/components/shell/nav-icons";
 import { Select } from "@/components/forms/select";
+import { DateField } from "@/components/forms/date-field";
 import type { ExpenseCategoryOption } from "@/lib/records/expense-directory";
 
 const METHOD_LABELS: Record<string, string> = {
@@ -14,12 +15,9 @@ const METHOD_LABELS: Record<string, string> = {
   bank_transfer: "Bank transfer",
 };
 
-const inputClassName =
-  "h-9 rounded-md border border-border bg-surface pl-8 pr-3 text-sm text-ink outline-none transition-colors focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent";
-
 // Search lives outside this panel now (see SearchField, rendered to the
 // left of the Filters button) -- everything left here is a plain
-// icon-in-trigger Select or a plain date input.
+// icon-in-trigger Select or a DateField.
 export function ExpenseFilters({
   categories,
 }: {
@@ -70,19 +68,17 @@ export function ExpenseFilters({
       />
 
       <div className="flex gap-2">
-        <input
-          type="date"
-          aria-label="From date"
-          defaultValue={searchParams.get("from") ?? ""}
-          onChange={(event) => updateParam("from", event.target.value)}
-          className={`${inputClassName} min-w-0 flex-1 pl-3`}
+        <DateField
+          ariaLabel="From date"
+          value={searchParams.get("from") ?? ""}
+          onChange={(iso) => updateParam("from", iso)}
+          className="min-w-0 flex-1"
         />
-        <input
-          type="date"
-          aria-label="To date"
-          defaultValue={searchParams.get("to") ?? ""}
-          onChange={(event) => updateParam("to", event.target.value)}
-          className={`${inputClassName} min-w-0 flex-1 pl-3`}
+        <DateField
+          ariaLabel="To date"
+          value={searchParams.get("to") ?? ""}
+          onChange={(iso) => updateParam("to", iso)}
+          className="min-w-0 flex-1"
         />
       </div>
     </>

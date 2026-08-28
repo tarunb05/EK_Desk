@@ -8,6 +8,7 @@ import {
   primaryButtonClassName,
 } from "@/components/forms/field";
 import { createAcademicYear, type ActionState } from "@/lib/settings/actions";
+import { DateField } from "@/components/forms/date-field";
 
 const initialState: ActionState = { error: null };
 
@@ -34,20 +35,10 @@ export function AddAcademicYearForm() {
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Starts on" error={state.fieldErrors?.startsOn}>
-          <input
-            name="startsOn"
-            type="date"
-            required
-            className={inputClassName}
-          />
+          <DateField name="startsOn" required ariaLabel="Starts on" />
         </Field>
         <Field label="Ends on" error={state.fieldErrors?.endsOn}>
-          <input
-            name="endsOn"
-            type="date"
-            required
-            className={inputClassName}
-          />
+          <DateField name="endsOn" required ariaLabel="Ends on" />
         </Field>
       </div>
 

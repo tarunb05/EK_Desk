@@ -8,6 +8,7 @@ import {
   primaryButtonClassName,
 } from "@/components/forms/field";
 import { Select } from "@/components/forms/select";
+import { DateField } from "@/components/forms/date-field";
 import { type ActionState, updateFeeAccount } from "@/lib/records/actions";
 import { paiseToRupees } from "@/lib/domain/money";
 import type { FeeAccountRecordRow } from "@/lib/records/types";
@@ -107,32 +108,29 @@ export function EditFeeAccountForm({
       </Field>
 
       <Field label="Due date" error={state.fieldErrors?.dueDate}>
-        <input
+        <DateField
           name="dueDate"
-          type="date"
           required
+          ariaLabel="Due date"
           defaultValue={record.dueDate}
-          className={inputClassName}
         />
       </Field>
 
       <Field label="Starts on" error={state.fieldErrors?.startsOn}>
-        <input
+        <DateField
           name="startsOn"
-          type="date"
           required
+          ariaLabel="Starts on"
           defaultValue={record.startsOn}
-          className={inputClassName}
         />
       </Field>
 
       <Field label="Ends on" error={state.fieldErrors?.endsOn}>
-        <input
+        <DateField
           name="endsOn"
-          type="date"
           required
+          ariaLabel="Ends on"
           defaultValue={record.endsOn}
-          className={inputClassName}
         />
       </Field>
 

@@ -8,6 +8,7 @@ import {
   primaryButtonClassName,
 } from "@/components/forms/field";
 import { Select } from "@/components/forms/select";
+import { DateField } from "@/components/forms/date-field";
 import { type ActionState, recordPayment } from "@/lib/records/actions";
 
 const initialState: ActionState = { error: null };
@@ -51,7 +52,7 @@ export function RecordPaymentForm({ feeAccountId }: { feeAccountId: string }) {
       </Field>
 
       <Field label="Paid on" error={state.fieldErrors?.paidOn}>
-        <input name="paidOn" type="date" required className={inputClassName} />
+        <DateField name="paidOn" required ariaLabel="Paid on" />
       </Field>
 
       <Field label="Method" error={state.fieldErrors?.method}>

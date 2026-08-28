@@ -8,6 +8,7 @@ import {
   primaryButtonClassName,
 } from "@/components/forms/field";
 import { Select } from "@/components/forms/select";
+import { DateField } from "@/components/forms/date-field";
 import {
   EXPENSE_SANITY_CEILING_PAISE,
   formatPaise,
@@ -134,12 +135,11 @@ export function ExpenseForm({
       </Field>
 
       <Field label="Date" error={state.fieldErrors?.spentOn}>
-        <input
+        <DateField
           name="spentOn"
-          type="date"
           required
+          ariaLabel="Date"
           defaultValue={defaultValues?.spentOn}
-          className={inputClassName}
         />
       </Field>
 

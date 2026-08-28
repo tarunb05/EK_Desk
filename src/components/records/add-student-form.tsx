@@ -8,6 +8,7 @@ import {
   primaryButtonClassName,
 } from "@/components/forms/field";
 import { Select } from "@/components/forms/select";
+import { DateField } from "@/components/forms/date-field";
 import {
   createStudentWithFeeAccount,
   type ActionState,
@@ -120,20 +121,15 @@ export function AddStudentForm({
       </Field>
 
       <Field label="Due date" error={state.fieldErrors?.dueDate}>
-        <input name="dueDate" type="date" required className={inputClassName} />
+        <DateField name="dueDate" required ariaLabel="Due date" />
       </Field>
 
       <Field label="Starts on" error={state.fieldErrors?.startsOn}>
-        <input
-          name="startsOn"
-          type="date"
-          required
-          className={inputClassName}
-        />
+        <DateField name="startsOn" required ariaLabel="Starts on" />
       </Field>
 
       <Field label="Ends on" error={state.fieldErrors?.endsOn}>
-        <input name="endsOn" type="date" required className={inputClassName} />
+        <DateField name="endsOn" required ariaLabel="Ends on" />
       </Field>
 
       <FormError error={state.error} />
