@@ -79,9 +79,14 @@ function RowActions({ row, role }: { row: StudentDirectoryRow; role: Role }) {
         return (
           <div
             key={account.feeAccountId}
-            className="flex flex-wrap items-center gap-1.5 whitespace-nowrap"
+            className="flex items-center gap-1.5 whitespace-nowrap"
           >
-            <span className="text-2xs text-ink-muted">
+            {/* Fixed width, not just gap-1.5 after an inline label -- with
+                a student that has both a Transport and a Daycare account,
+                "Transport" and "Daycare (2026-27)" are different lengths,
+                which pushed each row's own Actions button to a different
+                x position instead of lining up in a column. */}
+            <span className="w-28 shrink-0 truncate text-2xs text-ink-muted">
               {SERVICE_LABEL[account.serviceType] ?? account.serviceType}
               {row.feeAccounts.length > 1
                 ? ` (${account.academicYearLabel})`
