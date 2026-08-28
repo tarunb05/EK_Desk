@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LoginForm } from "./login-form";
+import { WavesBackground } from "./waves-background";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -7,8 +8,9 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-canvas px-4">
-      <div className="w-full max-w-md rounded-md border border-border bg-surface p-8 shadow-xs">
+    <main className="relative flex min-h-screen items-center justify-center bg-canvas px-4">
+      <WavesBackground />
+      <div className="relative z-10 w-full max-w-md rounded-md border border-border bg-surface p-8 shadow-xs">
         {/* shadow-xs (0 1px 2px rgba(0,0,0,.05)) is the exact boundary
             CLAUDE.md allows -- the login card is the one place in the app
             that leans on it instead of a hairline alone, for the lifted
