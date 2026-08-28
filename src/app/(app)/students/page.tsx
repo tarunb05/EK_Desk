@@ -5,10 +5,8 @@ import { getAcademicYears, getBranches } from "@/lib/supabase/queries";
 import { getCurrentScope } from "@/lib/shell/get-current-scope";
 import { shellSearchParamsSchema } from "@/lib/shell/search-params";
 import { requireAuth } from "@/lib/auth/require-role";
-import {
-  studentDirectorySearchParamsSchema,
-  type StudentSortKey,
-} from "@/lib/shell/student-table-params";
+import type { StudentSortKey } from "@/lib/shell/student-table-params";
+import { studentDirectorySearchParamsSchema } from "@/lib/shell/student-search-params";
 import {
   getStudentClassSections,
   getStudentDirectory,

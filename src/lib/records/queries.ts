@@ -90,25 +90,6 @@ function applyFilters(
   return query;
 }
 
-// Every matching row for the given scope — used by the PDF export, where
-// "the report" means the whole result, not a page of it.
-export async function getAllFeeAccountRecords(
-  supabase: SupabaseClient<Database>,
-  params: RecordScopeParams,
-): Promise<FeeAccountRecordRow[]> {
-  const { data, error } = await applyFilters(supabase, params, {
-    head: false,
-  }).order(SORT_COLUMN[params.table.sort], {
-    ascending: params.table.dir === "asc",
-  });
-
-  if (error) {
-    throw new Error("Could not load records.");
-  }
-
-  return data.map((row) => mapFeeAccountRecordRow(row, params.serviceType));
-}
-
 export type FeeAccountExportMetric =
   | "receivable"
   | "collected"

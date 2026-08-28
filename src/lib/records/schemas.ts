@@ -121,22 +121,12 @@ export const archiveStudentSchema = z.object({
   redirectTo: z.enum(["/transport", "/daycare", "/students"]),
 });
 
-export const updateStudentStatusSchema = z.object({
-  studentId: z.string().uuid(),
-  status: z.enum(["active", "inactive", "withdrawn"]),
-});
-
 export const permanentlyDeleteStudentSchema = z.object({
   studentId: z.string().uuid(),
 });
 
 export const requestStudentDeleteSchema = z.object({
   studentId: z.string().uuid(),
-});
-
-export const updateFeeAccountStatusSchema = z.object({
-  feeAccountId: z.string().uuid(),
-  status: z.enum(["active", "discontinued"]),
 });
 
 export const SUBMISSION_TABLES = [

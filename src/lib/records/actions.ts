@@ -8,9 +8,7 @@ import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
 import { EXPENSE_SANITY_CEILING_PAISE } from "@/lib/domain/money";
 import { isWithinAcademicYear } from "@/lib/domain/academic-year";
 import {
-  canTransitionFeeAccountStatus,
   canTransitionStudentStatus,
-  type FeeAccountStatus,
   type StudentStatus,
 } from "@/lib/domain/student-status";
 import {
@@ -25,8 +23,6 @@ import {
   requestStudentDeleteSchema,
   updateExpenseSchema,
   updateFeeAccountSchema,
-  updateFeeAccountStatusSchema,
-  updateStudentStatusSchema,
   voidPaymentSchema,
 } from "@/lib/records/schemas";
 
@@ -515,111 +511,6 @@ export async function requestStudentDelete(
   revalidatePath("/students", "page");
   revalidatePath("/approvals");
   return { error: null, submitted: true };
-}
-
-export async function updateStudentStatus(
-  _prevState: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const parsed = updateStudentStatusSchema.safeParse(formEntries(formData));
-  if (!parsed.success) {
-    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
-  }
-  const value = parsed.data;
-  const authed = await requireAuth();
-  const supabase = await createClient();
-
-  // Re-read the row's current status server-side rather than trust a
-  // client-supplied "current" value -- a hidden form field would be a
-  // spoofing surface for the transition check below.
-  const { data: current, error: readError } = await supabase
-    .from("student")
-    .select("status, branch_id")
-    .eq("id", value.studentId)
-    .single();
-
-  if (readError || !current) {
-    return { error: "Could not find this student." };
-  }
-
-  if (authed.role === "teacher") {
-    if (current.branch_id !== authed.branchId) {
-      return { error: "You can only change students in your own branch." };
-    }
-    if (value.status === "withdrawn") {
-      return { error: "Only an admin can withdraw a student." };
-    }
-  }
-
-  if (
-    !canTransitionStudentStatus(current.status as StudentStatus, value.status)
-  ) {
-    return {
-      error: `A student can't move from ${current.status} to ${value.status} directly.`,
-    };
-  }
-
-  const { error } = await supabase
-    .from("student")
-    .update({ status: value.status })
-    .eq("id", value.studentId);
-
-  if (error) {
-    return { error: "Could not update this student's status." };
-  }
-
-  revalidatePath("/students", "page");
-  return { error: null };
-}
-
-export async function updateFeeAccountStatus(
-  _prevState: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  await requireRole("admin");
-
-  const parsed = updateFeeAccountStatusSchema.safeParse(
-    formEntries(formData),
-  );
-  if (!parsed.success) {
-    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
-  }
-  const value = parsed.data;
-  const supabase = await createClient();
-
-  const { data: current, error: readError } = await supabase
-    .from("fee_account")
-    .select("status, service_type")
-    .eq("id", value.feeAccountId)
-    .single();
-
-  if (readError || !current) {
-    return { error: "Could not find this fee account." };
-  }
-
-  if (
-    !canTransitionFeeAccountStatus(
-      current.status as FeeAccountStatus,
-      value.status,
-    )
-  ) {
-    return {
-      error: `A fee account can't move from ${current.status} to ${value.status} directly.`,
-    };
-  }
-
-  const { error } = await supabase
-    .from("fee_account")
-    .update({ status: value.status })
-    .eq("id", value.feeAccountId);
-
-  if (error) {
-    return { error: "Could not update this fee account's status." };
-  }
-
-  revalidatePath("/students", "page");
-  revalidatePath(`/${current.service_type}`, "page");
-  return { error: null };
 }
 
 const APPROVE_RPC = {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { studentDirectorySearchParamsSchema } from "./student-table-params";
+import { studentDirectorySearchParamsSchema } from "./student-search-params";
 
 describe("studentDirectorySearchParamsSchema", () => {
   it("applies defaults when nothing is provided", () => {

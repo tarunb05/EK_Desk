@@ -1,4 +1,10 @@
-import { z } from "zod";
+// Plain constants and types only, deliberately zod-free -- this file is
+// imported by StudentDirectoryFilters ("use client"), and a module-level
+// zod schema living here would ship the whole zod runtime (plus its locale
+// data) to the browser just because one export from the same file is used
+// client-side. The URL search-params schema that actually needs zod lives
+// in ./student-search-params.ts instead, imported only by the server side
+// (page.tsx and the query layer).
 
 export const STUDENT_SORT_KEYS = [
   "created_at",
@@ -26,30 +32,3 @@ export type StudentStatusFilter = (typeof STUDENT_STATUS_FILTERS)[number];
 
 export const STUDENT_SERVICE_FILTERS = ["all", "transport", "daycare"] as const;
 export type StudentServiceFilter = (typeof STUDENT_SERVICE_FILTERS)[number];
-
-const pageParam = z
-  .string()
-  .optional()
-  .transform((value) => {
-    const parsed = Number(value);
-    return Number.isInteger(parsed) && parsed >= 1 ? parsed : 1;
-  });
-
-export const studentDirectorySearchParamsSchema = z.object({
-  page: pageParam,
-  status: z.enum(STUDENT_STATUS_FILTERS).catch("active"),
-  service: z.enum(STUDENT_SERVICE_FILTERS).catch("all"),
-  classSection: z.string().optional(),
-  // The academic year's label, not id -- matches the URL-as-state
-  // convention every other filter here uses. Absent/unmatched means "all
-  // years", not the current year -- this filter narrows an otherwise
-  // year-agnostic directory, it doesn't default to scoping it.
-  academicYear: z.string().optional(),
-  q: z.string().optional(),
-  sort: z.enum(STUDENT_SORT_KEYS).catch("created_at"),
-  dir: z.enum(["asc", "desc"]).catch("desc"),
-});
-
-export type StudentDirectorySearchParams = z.infer<
-  typeof studentDirectorySearchParamsSchema
->;

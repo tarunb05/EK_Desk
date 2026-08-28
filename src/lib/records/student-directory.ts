@@ -1,10 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import type {
-  StudentDirectorySearchParams,
   StudentServiceFilter,
   STUDENT_SORT_KEYS,
 } from "@/lib/shell/student-table-params";
+import type { StudentDirectorySearchParams } from "@/lib/shell/student-search-params";
 import { resolvePagination, type Pagination } from "@/lib/shell/pagination";
 import type { ServiceType } from "@/lib/records/types";
 
