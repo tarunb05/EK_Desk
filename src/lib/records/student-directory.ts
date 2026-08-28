@@ -112,6 +112,22 @@ function applyFilters(
   if (table.classSection) {
     query = query.eq("class_section", table.classSection);
   }
+  if (table.dateFrom) {
+    query = query.gte("created_at", table.dateFrom);
+  }
+  if (table.dateTo) {
+    // created_at is a full timestamp, not a bare date -- a straight lte on
+    // the date string would exclude every row from that day after
+    // midnight. Bumping to the start of the next day makes "to" inclusive
+    // of its whole day, matching what picking that day in the calendar
+    // implies. Plain UTC arithmetic on the parsed components, not
+    // new Date("YYYY-MM-DD") + local setDate() -- mixing a UTC-parsed date
+    // with local-timezone mutation is exactly the kind of off-by-one this
+    // codebase already hit once (date-field.tsx's fromIso).
+    const [y, m, d] = table.dateTo.split("-").map(Number);
+    const nextDay = new Date(Date.UTC(y!, m! - 1, d! + 1));
+    query = query.lt("created_at", nextDay.toISOString().slice(0, 10));
+  }
   if (table.q) {
     const q = escapePostgrestFilterValue(table.q);
     query = query.or(`full_name.ilike."%${q}%",admission_no.ilike."%${q}%"`);

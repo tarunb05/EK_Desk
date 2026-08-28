@@ -13,6 +13,7 @@ import {
   StatusIcon,
 } from "@/components/shell/nav-icons";
 import { Select } from "@/components/forms/select";
+import { DateField } from "@/components/forms/date-field";
 
 interface StudentDirectoryFiltersProps {
   classSections: string[];
@@ -117,6 +118,24 @@ export function StudentDirectoryFilters({
         ]}
         className="w-full"
       />
+
+      {/* Date added (created_at) -- the one date field a student itself
+          has; due dates live on the fee account, not the student. Same
+          from/to DateField pair as the expenses filter panel. */}
+      <div className="flex gap-2">
+        <DateField
+          ariaLabel="Added from"
+          value={searchParams.get("dateFrom") ?? ""}
+          onChange={(iso) => updateParam("dateFrom", iso)}
+          className="w-full"
+        />
+        <DateField
+          ariaLabel="Added to"
+          value={searchParams.get("dateTo") ?? ""}
+          onChange={(iso) => updateParam("dateTo", iso)}
+          className="w-full"
+        />
+      </div>
     </>
   );
 }
