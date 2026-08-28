@@ -223,6 +223,16 @@ export function Calendar({
     }
   }
 
+  // Day buttons showed only the bare number ("1", "2"...) with nothing
+  // distinguishing e.g. an outside-month "1" from the current month's own
+  // "1" -- a screen reader announced them identically, and nothing let a
+  // test target an exact date without first inspecting which grid position
+  // was which. A real date in the label fixes both at once.
+  function dayAriaLabel(day: number, monthOffset = 0): string {
+    const date = new Date(currentYear, currentMonth + monthOffset, day);
+    return `${MONTHS[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  }
+
   function getDayVariant(day: number, monthOffset = 0): DayVariant {
     const date = new Date(currentYear, currentMonth + monthOffset, day);
     if (isDateDisabled(date)) return "disabled";
@@ -285,7 +295,10 @@ export function Calendar({
               </Select>
             </div>
           ) : (
-            <span className="text-sm font-medium text-ink">
+            <span
+              data-testid="calendar-month-year"
+              className="text-sm font-medium text-ink"
+            >
               {MONTHS[currentMonth]} {currentYear}
             </span>
           )}
@@ -332,6 +345,7 @@ export function Calendar({
                   type="button"
                   onClick={() => handleDateClick(day, -1)}
                   disabled={isDateDisabled(new Date(currentYear, currentMonth - 1, day))}
+                  aria-label={dayAriaLabel(day, -1)}
                   className={dayVariants({ variant: getDayVariant(day, -1), size })}
                 >
                   {day}
@@ -343,6 +357,7 @@ export function Calendar({
                 type="button"
                 onClick={() => handleDateClick(day)}
                 disabled={isDateDisabled(new Date(currentYear, currentMonth, day))}
+                aria-label={dayAriaLabel(day)}
                 className={dayVariants({ variant: getDayVariant(day), size })}
               >
                 {day}
@@ -355,6 +370,7 @@ export function Calendar({
                   type="button"
                   onClick={() => handleDateClick(day, 1)}
                   disabled={isDateDisabled(new Date(currentYear, currentMonth + 1, day))}
+                  aria-label={dayAriaLabel(day, 1)}
                   className={dayVariants({ variant: getDayVariant(day, 1), size })}
                 >
                   {day}

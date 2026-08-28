@@ -3,6 +3,7 @@ import {
   TEST_ADMIN_USERNAME,
   TEST_ADMIN_PASSWORD,
 } from "../scripts/test-credentials";
+import { pickDate } from "./helpers";
 
 function parseRupees(text: string): number {
   return Number(text.replace(/[₹,]/g, ""));
@@ -16,6 +17,14 @@ test.describe("transport spine", () => {
   test("add student, record payment, void it, and confirm scope isolation", async ({
     page,
   }) => {
+    // Default 30s budget assumed every date field was one .fill() call;
+    // the calendar popover replacing <input type="date"> makes each of
+    // this test's 4 date fields a multi-click interaction (open, navigate
+    // months, click the day) instead, which is slower by design, not a
+    // stall -- give the whole real-work flow (add student, record
+    // payment, void it, check two dashboards) proper headroom.
+    test.setTimeout(60_000);
+
     await page.goto("/login");
     await page.getByLabel("Username").fill(TEST_ADMIN_USERNAME);
     await page.getByLabel("Password").fill(TEST_ADMIN_PASSWORD);
@@ -57,9 +66,9 @@ test.describe("transport spine", () => {
     await page.getByRole("option", { name: "Nursery", exact: true }).click();
     await addStudentForm.getByLabel("Pickup point").fill("Main Gate");
     await addStudentForm.getByLabel("Total receivable (₹)").fill("10000");
-    await addStudentForm.getByLabel("Due date").fill("2026-06-01");
-    await addStudentForm.getByLabel("Starts on").fill("2026-04-01");
-    await addStudentForm.getByLabel("Ends on").fill("2027-03-31");
+    await pickDate(addStudentForm, "Due date", "2026-06-01");
+    await pickDate(addStudentForm, "Starts on", "2026-04-01");
+    await pickDate(addStudentForm, "Ends on", "2027-03-31");
     await addStudentForm.getByRole("button", { name: "Add student" }).click();
     await expect(page).toHaveURL(/\/transport$/);
 
@@ -75,9 +84,10 @@ test.describe("transport spine", () => {
     // Record a part payment — found via the Students directory now that
     // the per-service dashboards no longer list students, just figures.
     await page.goto("/students?q=Playwright+Spine");
-    await page.getByRole("link", { name: "Record payment" }).click();
+    await page.getByRole("button", { name: "Actions" }).click();
+    await page.getByRole("menuitem", { name: "Record payment" }).click();
     await page.getByLabel("Amount (₹)").fill("4000");
-    await page.getByLabel("Paid on").fill("2026-05-01");
+    await pickDate(page, "Paid on", "2026-05-01");
     await page.getByLabel("Recorded by").fill("front_office");
     await page.getByRole("button", { name: "Record payment" }).click();
     await expect(page).toHaveURL(/\/transport$/);
