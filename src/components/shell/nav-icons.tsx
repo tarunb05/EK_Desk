@@ -245,3 +245,14 @@ export function AlertIcon(props: IconProps = {}) {
     </IconBase>
   );
 }
+
+// Plain checkmark, no enclosing circle -- StatusIcon already covers the
+// "circle + check" badge look used for Paid status; this is just the mark
+// itself, sized for small controls like a checkbox.
+export function CheckIcon(props: IconProps = {}) {
+  return (
+    <IconBase {...props}>
+      <path d="M4.5 10.5 8 14l7.5-8" />
+    </IconBase>
+  );
+}
