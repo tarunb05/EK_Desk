@@ -170,7 +170,22 @@ export function Select({
               role="option"
               aria-selected={option.value === value}
               onMouseEnter={() => setHighlighted(index)}
-              onClick={() => commit(index)}
+              onClick={(event) => {
+                // Field wraps every input in a real <label> (for the normal,
+                // wanted behavior where clicking the label text opens this
+                // control). A plain <li> isn't itself a native labelable
+                // element, so clicking one *inside* that label makes the
+                // browser ALSO fire a synthetic click on the label's
+                // associated control -- this trigger button -- right after
+                // this handler runs. That forwarded click toggled `open`
+                // back to true the instant commit() had just closed it,
+                // which is why picking an option looked like it never
+                // closed the list. preventDefault() on this click is what
+                // suppresses that forwarding (it's the label's default
+                // action for the click, not a separate event).
+                event.preventDefault();
+                commit(index);
+              }}
               className={`cursor-pointer whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors ${
                 index === highlighted
                   ? "bg-surface-accent text-ink"
