@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  ActivityLogIcon,
   ApprovalsIcon,
   DaycareIcon,
   SettingsIcon,
@@ -23,6 +24,10 @@ export const NAV_LINKS = [
   { href: "/students", label: "Students", Icon: StudentsIcon },
   { href: "/expenses", label: "Expenses", Icon: WalletIcon },
   { href: "/approvals", label: "Approvals", Icon: ApprovalsIcon },
+  // Admin-only (see ROUTE_ACCESS) -- sits right before Settings, after
+  // every screen with work to action, since this one has nothing to
+  // action, only to read.
+  { href: "/logs", label: "Activity log", Icon: ActivityLogIcon },
   { href: "/settings", label: "Settings", Icon: SettingsIcon },
 ];
 
@@ -75,12 +80,18 @@ export function NavLinks({
             }`}
           >
             <Icon />
-            <span className={collapsed ? "md:hidden" : ""}>
+            <span
+              className={`overflow-hidden whitespace-nowrap transition-[opacity,max-width] duration-200 ${
+                collapsed ? "md:max-w-0 md:opacity-0" : "md:max-w-[160px] md:opacity-100"
+              }`}
+            >
               {displayLabel}
             </span>
             {href === "/approvals" && pendingApprovalsCount > 0 ? (
               <span
-                className={`ml-auto rounded-md bg-attention px-1.5 py-0.5 text-2xs font-medium text-surface ${collapsed ? "md:hidden" : ""}`}
+                className={`ml-auto shrink-0 overflow-hidden whitespace-nowrap rounded-md bg-attention px-1.5 py-0.5 text-2xs font-medium text-surface transition-[opacity,max-width] duration-200 ${
+                  collapsed ? "md:max-w-0 md:px-0 md:opacity-0" : "md:max-w-6 md:opacity-100"
+                }`}
               >
                 {pendingApprovalsCount}
               </span>

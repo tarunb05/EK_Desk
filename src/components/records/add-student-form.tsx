@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import {
   Field,
   FormError,
@@ -16,6 +16,7 @@ import {
 import type { ServiceType } from "@/lib/records/types";
 import type { BranchOption } from "@/lib/shell/resolve-year-branch";
 import { CLASS_SECTIONS } from "@/lib/records/class-sections";
+import { useToast } from "@/components/shell/toast-context";
 
 const initialState: ActionState = { error: null };
 
@@ -36,6 +37,15 @@ export function AddStudentForm({
   );
   const [branchId, setBranchId] = useState(branches[0]?.id ?? "");
   const [classSection, setClassSection] = useState("");
+  const { showToast } = useToast();
+
+  // The admin path redirects on success (see actions.ts's setToastNotice +
+  // ToastNoticeReader for that toast) -- a teacher's request-add doesn't
+  // navigate anywhere, so this is the only toast trigger for that path,
+  // fired once when submitted flips true rather than on every render.
+  useEffect(() => {
+    if (state.submitted) showToast("Submitted for approval.");
+  }, [state.submitted, showToast]);
 
   if (state.submitted) {
     return (
@@ -137,9 +147,22 @@ export function AddStudentForm({
       <button
         type="submit"
         disabled={isPending}
-        className={primaryButtonClassName}
+        className={`${primaryButtonClassName} flex items-center justify-center gap-2`}
       >
-        {isPending ? "Saving…" : "Add student"}
+        {isPending ? (
+          <>
+            {/* Same loading-ring pattern as the Sign in button (login-form.tsx)
+                -- border-surface since this sits on the same dark --accent
+                background. */}
+            <span
+              aria-hidden="true"
+              className="animate-loading-ring h-4 w-4 rounded-full border-2 border-surface/30 border-t-surface"
+            />
+            Saving…
+          </>
+        ) : (
+          "Add student"
+        )}
       </button>
     </form>
   );

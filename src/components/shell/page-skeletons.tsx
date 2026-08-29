@@ -126,6 +126,17 @@ export function SettingsLoadingSkeleton() {
   );
 }
 
+// Activity log: title + a dense five-column row list, no toolbar yet
+// (phase 12.2 has no search/filter panel -- that's 12.3).
+export function ActivityLogLoadingSkeleton() {
+  return (
+    <SkeletonPage>
+      <Skeleton className="h-6 w-32" />
+      <TableSkeleton columns={5} rows={10} />
+    </SkeletonPage>
+  );
+}
+
 // The (app)-level fallback -- every real route now has its own
 // specifically-shaped loading.tsx (see the files next to each page.tsx),
 // so this only fires for a route that doesn't yet. A generic list-page

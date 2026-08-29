@@ -23,6 +23,18 @@
   --ease-flowy: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Opt-in for animating to/from an intrinsic size (block-size: auto), per
+   modern-web-guidance's animate-to-intrinsic-sizes guide -- disabled by
+   default everywhere for backwards compatibility, so this has to be turned
+   on explicitly before .activity-log-row below (or anything else that
+   later needs the same trick) can transition to `auto` instead of
+   snapping. Chrome/Edge 129+ only; Firefox and Safari fall back to an
+   instant snap open, which is a real degradation but not a broken one --
+   <details> still opens and closes natively either way. */
+:root {
+  interpolate-size: allow-keywords;
+}
+
 @theme inline {
   --color-ink: var(--ink);
   --color-ink-secondary: var(--ink-secondary);
@@ -271,5 +283,95 @@ dialog[open]::backdrop {
 @media (prefers-reduced-motion: reduce) {
   .category-breakdown-row .animate-bar-grow-in {
     transition-duration: 1ms;
+  }
+}
+
+/* Skeleton shimmer -- a sweeping highlight, not the plain animate-pulse
+   opacity fade every loading.tsx used before. Still no color gradient:
+   the swept layer is a single solid color (--surface, already the
+   lightest token in the palette); a linear-gradient is used only as a
+   *mask* (soft-edged alpha, transparent-black-transparent) to fade the
+   sweep's own edges, never as a background/color treatment. Nothing new
+   is added to what's on screen, so this doesn't run into CLAUDE.md's
+   gradient ban -- that's about decorative color treatments, not this
+   technique for revealing a solid highlight. */
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-color: var(--surface);
+  opacity: 0.6;
+  -webkit-mask-image: linear-gradient(90deg, transparent, black, transparent);
+  mask-image: linear-gradient(90deg, transparent, black, transparent);
+  animation: shimmer-sweep 1.8s ease-in-out infinite;
+}
+
+@keyframes shimmer-sweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer::after {
+    animation: none;
+    display: none;
+  }
+}
+
+/* Table rows (students, expenses) fade + settle in on load instead of just
+   appearing, staggered per-row the same way the category-breakdown bars
+   are -- animation-fill-mode: backwards holds each row invisible during its
+   own delay instead of flashing in full before its turn. Each table caps
+   the per-row delay itself (see StudentDirectoryTable/ExpenseTable) so a
+   long page doesn't drag the last rows in noticeably late. */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-row-in {
+  animation: row-in 250ms var(--ease-flowy) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-row-in {
+    animation: none;
+  }
+}
+
+/* Activity log row expansion (phase 12.3) -- <details>/<summary> animated
+   via ::details-content and interpolate-size (opted in on :root above)
+   instead of a hand-rolled height/max-height hack or a second modal
+   pattern. This list deliberately has NO entrance stagger the way
+   Students/Expenses do (.animate-row-in above) -- an admin opening this
+   page is looking for one specific line, and animating fifty rows in one
+   at a time in front of them is decoration, not information; rows appear
+   when the page does. */
+.activity-log-row::details-content {
+  block-size: 0;
+  overflow-y: clip;
+  transition: block-size 150ms var(--ease-flowy);
+}
+
+.activity-log-row[open]::details-content {
+  block-size: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-log-row::details-content {
+    transition: none;
   }
 }

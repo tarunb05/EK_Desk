@@ -5,14 +5,18 @@
 // of the actual page underneath, so the transition reads as "this page is
 // arriving" rather than a generic wait.
 //
-// Tailwind's built-in `animate-pulse` (an opacity fade, not a moving
-// gradient sweep) is deliberate -- CLAUDE.md's design system bans
-// gradients outright, which rules out the classic shimmer-highlight-sweep
-// effect. A pulse is the compliant way to signal "this is a placeholder."
+// A sweeping shimmer (globals.css's .animate-shimmer), not Tailwind's
+// plain animate-pulse opacity fade -- see that class's own comment for why
+// this still doesn't run into CLAUDE.md's gradient ban (the swept layer is
+// a solid color; a gradient is used only as an alpha mask on it, never as
+// a visible color treatment).
 
 export function Skeleton({ className = "" }: { className?: string }) {
   return (
-    <div aria-hidden="true" className={`animate-pulse rounded-md bg-hairline ${className}`} />
+    <div
+      aria-hidden="true"
+      className={`animate-shimmer rounded-md bg-hairline ${className}`}
+    />
   );
 }
 

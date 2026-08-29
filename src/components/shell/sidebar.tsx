@@ -17,6 +17,13 @@ export function Sidebar({
 }) {
   const { mobileOpen, setMobileOpen } = useSidebarContext();
   const [collapsed, setCollapsed] = useState(false);
+  // Separate from `collapsed` on purpose: `collapsed` is the persisted
+  // preference the toggle button and localStorage deal in, `hovering` is a
+  // transient visual override -- hovering a collapsed rail expands it to
+  // full width/labels without touching (or even reading back) the stored
+  // preference, and it reverts the instant the pointer leaves.
+  const [hovering, setHovering] = useState(false);
+  const visuallyCollapsed = collapsed && !hovering;
 
   // Read the persisted preference after mount only, so the server-rendered
   // and first-client-render markup match (avoids a hydration mismatch) —
@@ -46,13 +53,17 @@ export function Sidebar({
       />
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col overflow-hidden border-r border-hairline bg-surface px-3 py-6 transition-[transform,width] duration-150 md:relative md:z-0 md:translate-x-0 ${
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col overflow-hidden border-r border-hairline bg-surface px-3 py-6 transition-[transform,width] duration-200 md:relative md:z-0 md:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
-        } ${collapsed ? "md:w-16" : "md:w-56"}`}
+        } ${visuallyCollapsed ? "md:w-16" : "md:w-56"}`}
       >
         <div className="mb-6 flex items-center justify-between px-3">
           <span
-            className={`text-sm font-medium text-ink ${collapsed ? "md:hidden" : ""}`}
+            className={`overflow-hidden whitespace-nowrap text-sm font-medium text-ink transition-[opacity,max-width] duration-200 ${
+              visuallyCollapsed ? "md:max-w-0 md:opacity-0" : "md:max-w-[140px] md:opacity-100"
+            }`}
           >
             EK Desk
           </span>
@@ -77,7 +88,7 @@ export function Sidebar({
         </div>
 
         <NavLinks
-          collapsed={collapsed}
+          collapsed={visuallyCollapsed}
           role={role}
           pendingApprovalsCount={pendingApprovalsCount}
         />

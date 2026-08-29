@@ -191,10 +191,11 @@ export function StudentDirectoryTable({
             {rows.map((row, index) => (
               <tr
                 key={row.id}
-                className={`h-10 border-b border-hairline transition-colors last:border-0 ${
+                style={{ animationDelay: `${Math.min(index, 12) * 20}ms` }}
+                className={`animate-row-in h-10 border-b border-hairline transition-colors last:border-0 ${
                   row.hasOverdue
                     ? "border-l-2 border-l-attention bg-attention-fill/20"
-                    : "hover:bg-surface-accent"
+                    : "border-l-2 border-l-transparent hover:border-l-accent hover:bg-surface-accent"
                 }`}
               >
                 <td className="px-3 text-ink-secondary tabular-nums">

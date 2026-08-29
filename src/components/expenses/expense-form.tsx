@@ -207,15 +207,26 @@ export function ExpenseForm({
       <button
         type="submit"
         disabled={isPending}
-        className={primaryButtonClassName}
+        className={`${primaryButtonClassName} flex items-center justify-center gap-2`}
       >
-        {isPending
-          ? "Saving…"
-          : showConfirm || confirmAmountPaise
-            ? "Confirm and record"
-            : mode === "create"
-              ? "Record expense"
-              : "Save changes"}
+        {isPending ? (
+          <>
+            {/* Same loading-ring pattern as the Sign in button (login-form.tsx)
+                -- border-surface since this sits on the same dark --accent
+                background. */}
+            <span
+              aria-hidden="true"
+              className="animate-loading-ring h-4 w-4 rounded-full border-2 border-surface/30 border-t-surface"
+            />
+            Saving…
+          </>
+        ) : showConfirm || confirmAmountPaise ? (
+          "Confirm and record"
+        ) : mode === "create" ? (
+          "Record expense"
+        ) : (
+          "Save changes"
+        )}
       </button>
     </form>
   );
