@@ -218,6 +218,130 @@ describe("submission and approval flow", () => {
     });
   });
 
+  it("approving a second service for the same admission number reuses the existing student row", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      await impersonate(client, TEACHER_A_ID);
+
+      const transportSubmission = await client.query<{ id: string }>(
+        `insert into student_submission
+           (branch_id, submitted_by, admission_no, full_name, guardian_name, phone, class_section,
+            academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, pickup_point)
+         values ($1, $2, 'SUB-DUAL-1', 'Dual Service Kid', 'Guardian', '9000000010', 'Nursery-A',
+                 $3, 'transport', 1000000, '2026-06-01', '2026-04-01', '2027-03-31', 'Gate')
+         returning id`,
+        [branchAId, TEACHER_A_ID, academicYearId],
+      );
+
+      await impersonate(client, ADMIN_ID);
+      const first = await client.query<{ approve_student_submission: string }>(
+        "select approve_student_submission($1)",
+        [transportSubmission.rows[0]!.id],
+      );
+
+      // Only submitted (and approved) after the transport submission is no
+      // longer pending -- student_submission_one_pending_admission (a
+      // partial unique index, unrelated to this fix) blocks two PENDING
+      // submissions for the same admission number regardless of service,
+      // by design ("two teachers can't queue the same admission number at
+      // once"). That's orthogonal to what's under test here: whether
+      // approving a second, different-service submission for an
+      // already-approved admission number reuses the student row.
+      await impersonate(client, TEACHER_A_ID);
+      const daycareSubmission = await client.query<{ id: string }>(
+        `insert into student_submission
+           (branch_id, submitted_by, admission_no, full_name, guardian_name, phone, class_section,
+            academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, slot)
+         values ($1, $2, 'SUB-DUAL-1', 'Dual Service Kid', 'Guardian', '9000000010', 'Nursery-A',
+                 $3, 'daycare', 800000, '2026-06-01', '2026-04-01', '2027-03-31', 'Morning')
+         returning id`,
+        [branchAId, TEACHER_A_ID, academicYearId],
+      );
+
+      await impersonate(client, ADMIN_ID);
+      const second = await client.query<{ approve_student_submission: string }>(
+        "select approve_student_submission($1)",
+        [daycareSubmission.rows[0]!.id],
+      );
+
+      // Same student id both times -- one `student` row carrying both
+      // services, not two rows that would have tripped
+      // student_admission_no_unique_per_branch.
+      expect(second.rows[0]!.approve_student_submission).toBe(
+        first.rows[0]!.approve_student_submission,
+      );
+
+      const students = await client.query(
+        "select id from student where admission_no = 'SUB-DUAL-1'",
+      );
+      expect(students.rows).toHaveLength(1);
+
+      const feeAccounts = await client.query(
+        "select service_type from fee_account where student_id = $1 order by service_type",
+        [first.rows[0]!.approve_student_submission],
+      );
+      expect(feeAccounts.rows.map((r) => r.service_type)).toEqual([
+        "daycare",
+        "transport",
+      ]);
+    });
+  });
+
+  it("approve_student_submission rejects a second active submission in the same service for the same admission number", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      await impersonate(client, TEACHER_A_ID);
+
+      const firstSubmission = await client.query<{ id: string }>(
+        `insert into student_submission
+           (branch_id, submitted_by, admission_no, full_name, guardian_name, phone, class_section,
+            academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, pickup_point)
+         values ($1, $2, 'SUB-DUPE-1', 'Duplicate Kid', 'Guardian', '9000000011', 'Nursery-A',
+                 $3, 'transport', 1000000, '2026-06-01', '2026-04-01', '2027-03-31', 'Gate')
+         returning id`,
+        [branchAId, TEACHER_A_ID, academicYearId],
+      );
+
+      await impersonate(client, ADMIN_ID);
+      await client.query("select approve_student_submission($1)", [
+        firstSubmission.rows[0]!.id,
+      ]);
+
+      // Only submitted once the first is no longer pending -- see the
+      // comment on the previous test for why (an unrelated existing
+      // constraint would otherwise reject this insert outright).
+      await impersonate(client, TEACHER_A_ID);
+      const secondSubmission = await client.query<{ id: string }>(
+        `insert into student_submission
+           (branch_id, submitted_by, admission_no, full_name, guardian_name, phone, class_section,
+            academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, pickup_point)
+         values ($1, $2, 'SUB-DUPE-1', 'Duplicate Kid', 'Guardian', '9000000011', 'Nursery-A',
+                 $3, 'transport', 1000000, '2026-06-01', '2026-04-01', '2027-03-31', 'Gate')
+         returning id`,
+        [branchAId, TEACHER_A_ID, academicYearId],
+      );
+
+      await impersonate(client, ADMIN_ID);
+      // A savepoint isolates the expected failure, same as the concurrent
+      // double-approve test above -- Postgres aborts the whole transaction
+      // on an unhandled error otherwise.
+      await client.query("savepoint before_duplicate_approve");
+      await expect(
+        client.query("select approve_student_submission($1)", [
+          secondSubmission.rows[0]!.id,
+        ]),
+      ).rejects.toThrow(/already has an active transport student/);
+      await client.query("rollback to savepoint before_duplicate_approve");
+
+      const activeTransportAccounts = await client.query(
+        `select fa.id from fee_account fa
+         join student s on s.id = fa.student_id
+         where s.admission_no = 'SUB-DUPE-1' and fa.service_type = 'transport' and fa.status = 'active'`,
+      );
+      expect(activeTransportAccounts.rows).toHaveLength(1);
+    });
+  });
+
   it("rejecting a submission creates nothing and records the reason", async () => {
     await withRollback(client, async () => {
       await seedProfiles(client);

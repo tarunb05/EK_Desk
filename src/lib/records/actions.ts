@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth, requireRole } from "@/lib/auth/require-role";
+import { setToastNotice } from "@/lib/shell/toast-cookie";
 import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
 import { EXPENSE_SANITY_CEILING_PAISE } from "@/lib/domain/money";
 import { isWithinAcademicYear } from "@/lib/domain/academic-year";
@@ -50,6 +51,68 @@ function formEntries(formData: FormData): Record<string, string> {
   );
 }
 
+// A student is one `student` row that can carry both a transport AND a
+// daycare `fee_account` (CLAUDE.md rule 5) -- the same admission number is
+// allowed to appear once per service, never twice in the same one. Looks up
+// the existing student for this branch+admission number (if any) and, when
+// found, whether they already have an active fee_account in the service
+// being submitted. Shared by both the admin's direct-insert path and the
+// teacher's submission path so the same admission number can't queue a
+// second active transport (or daycare) account either.
+async function findExistingStudentForAdmissionNo(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  branchId: string,
+  admissionNo: string,
+): Promise<
+  | { error: string }
+  | { student: null }
+  | { student: { id: string; activeServiceTypes: string[] } }
+> {
+  const { data: student, error: studentLookupError } = await supabase
+    .from("student")
+    .select("id")
+    .eq("branch_id", branchId)
+    .eq("admission_no", admissionNo)
+    .maybeSingle();
+
+  if (studentLookupError) {
+    return { error: "Could not check the admission number." };
+  }
+  if (!student) {
+    return { student: null };
+  }
+
+  const { data: activeFeeAccounts, error: feeAccountLookupError } =
+    await supabase
+      .from("fee_account")
+      .select("service_type")
+      .eq("student_id", student.id)
+      .eq("status", "active");
+
+  if (feeAccountLookupError) {
+    return { error: "Could not check the admission number." };
+  }
+
+  return {
+    student: {
+      id: student.id,
+      activeServiceTypes: activeFeeAccounts.map((fa) => fa.service_type),
+    },
+  };
+}
+
+function duplicateServiceError(
+  admissionNo: string,
+  serviceType: string,
+): ActionState {
+  return {
+    error: null,
+    fieldErrors: {
+      admissionNo: `Admission number ${admissionNo} already has an active ${serviceType} student.`,
+    },
+  };
+}
+
 export async function createStudentWithFeeAccount(
   _prevState: ActionState,
   formData: FormData,
@@ -63,6 +126,21 @@ export async function createStudentWithFeeAccount(
   const value = parsed.data;
   const authed = await requireAuth();
   const supabase = await createClient();
+
+  const existingLookup = await findExistingStudentForAdmissionNo(
+    supabase,
+    value.branchId,
+    value.admissionNo,
+  );
+  if ("error" in existingLookup) {
+    return { error: existingLookup.error };
+  }
+  if (
+    existingLookup.student &&
+    existingLookup.student.activeServiceTypes.includes(value.serviceType)
+  ) {
+    return duplicateServiceError(value.admissionNo, value.serviceType);
+  }
 
   if (authed.role === "teacher") {
     // Never trust the submitted branchId over the caller's own profile,
@@ -104,28 +182,41 @@ export async function createStudentWithFeeAccount(
     return { error: null, submitted: true };
   }
 
-  const { data: student, error: studentError } = await supabase
-    .from("student")
-    .insert({
-      branch_id: value.branchId,
-      admission_no: value.admissionNo,
-      full_name: value.fullName,
-      guardian_name: value.guardianName,
-      phone: value.phone,
-      class_section: value.classSection,
-    })
-    .select("id")
-    .single();
+  // Reuse the existing student row for this admission number if one exists
+  // (already confirmed above to have no active fee_account in this service)
+  // rather than inserting a second one -- a second row with the same
+  // (branch_id, admission_no) would trip the DB's own
+  // student_admission_no_unique_per_branch constraint, which is exactly the
+  // case a student legitimately being enrolled in both transport and
+  // daycare needs to succeed. The existing row's own name/guardian/phone
+  // are left untouched here; this form isn't an edit of those fields.
+  let studentId = existingLookup.student?.id;
 
-  if (studentError || !student) {
-    return {
-      error:
-        "Could not save the student — check the admission number isn't already used.",
-    };
+  if (!studentId) {
+    const { data: student, error: studentError } = await supabase
+      .from("student")
+      .insert({
+        branch_id: value.branchId,
+        admission_no: value.admissionNo,
+        full_name: value.fullName,
+        guardian_name: value.guardianName,
+        phone: value.phone,
+        class_section: value.classSection,
+      })
+      .select("id")
+      .single();
+
+    if (studentError || !student) {
+      return {
+        error:
+          "Could not save the student — check the admission number isn't already used.",
+      };
+    }
+    studentId = student.id;
   }
 
   const { error: feeAccountError } = await supabase.from("fee_account").insert({
-    student_id: student.id,
+    student_id: studentId,
     academic_year_id: value.academicYearId,
     service_type: value.serviceType,
     total_receivable_paise: Number(value.totalReceivable),
@@ -145,6 +236,7 @@ export async function createStudentWithFeeAccount(
 
   revalidatePath(`/${value.serviceType}`);
   revalidatePath("/students");
+  await setToastNotice(`${value.fullName} added.`);
   redirect(`/${value.serviceType}`);
 }
 
@@ -670,6 +762,7 @@ export async function recordExpense(
   }
 
   revalidatePath("/expenses", "page");
+  await setToastNotice("Expense recorded.");
   redirect("/expenses");
 }
 
