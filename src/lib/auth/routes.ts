@@ -14,15 +14,21 @@ export const ROUTE_ACCESS: Record<string, readonly Role[]> = {
   "/settings/expense-categories": ["admin"],
   "/settings": ["admin"],
   "/expenses": ["admin", "teacher"],
+  // The activity log carries both branches' names, every expense amount
+  // and every receivable change -- Phase 8's blackout stands here the way
+  // it does for /transport and /daycare, not the Phase 10 exception that
+  // opened /expenses to a teacher's own branch.
+  "/logs": ["admin"],
   // Admin sees the full review queue (approve/reject everyone's pending
   // submissions); a teacher sees a read-only list of their own -- same
   // route, branched by role in the page itself, since RLS already scopes
   // a teacher's own submission reads to just theirs.
   "/approvals": ["admin", "teacher"],
-  // The two stat-card Excel exports (Route Handlers, not pages) -- same
-  // role split as the dashboards/expenses page each one's data comes from.
+  // The three Excel exports (Route Handlers, not pages) -- same role split
+  // as the dashboard/expenses/log page each one's data comes from.
   "/api/export/fee-accounts": ["admin"],
   "/api/export/expenses": ["admin", "teacher"],
+  "/api/export/logs": ["admin"],
 };
 
 export function isRouteAllowed(pathname: string, role: Role): boolean {

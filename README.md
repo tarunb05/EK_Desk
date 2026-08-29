@@ -111,6 +111,27 @@ npm run db:seed    # generate ~60 fake students, fee accounts, and payments
 npm run test:integration
 ```
 
+## Permissions
+
+Two roles, `admin` and `teacher` (`profile.role`), enforced in three layers per
+`CLAUDE.md` rule 6 — RLS, `requireRole`/`requireAuth`, and `ROUTE_ACCESS`
+(`src/lib/auth/routes.ts`), which is the single source both middleware and the
+sidebar nav read. This table covers routes only; a teacher's *row-level* access
+to their own branch's students/fee accounts/payments/expenses is separate and
+is granted regardless of which routes below they can reach.
+
+| Route | Admin | Teacher | Notes |
+|---|---|---|---|
+| `/transport`, `/daycare` | ✅ | ❌ | Dashboard aggregates stay admin-only; a teacher's own-branch figures are still visible on `/students`. |
+| `/students` | ✅ | ✅ | A teacher's writes (add/edit/delete) go through a `*_submission` queue, never directly. |
+| `/expenses` | ✅ | ✅ | Deliberately open to both, unlike the fee dashboards — see `CLAUDE.md` rule 9. |
+| `/approvals` | ✅ | ✅ | Same route, branched in the page: admin reviews everyone's queue, a teacher reads their own. |
+| `/logs` (Activity log) | ✅ | ❌ | Admin-only, same reasoning as `/transport`/`/daycare` — every branch's names, every expense amount, every receivable change in one place. Nobody, including admin, can write to `activity_log` directly; it's populated only by `log_activity()`, a `security definer` trigger (`CLAUDE.md` rule 12). |
+| `/settings`, `/settings/expense-categories` | ✅ | ❌ | |
+| `/api/export/fee-accounts` | ✅ | ❌ | |
+| `/api/export/expenses` | ✅ | ✅ | Clamped to the teacher's own branch server-side, regardless of the query string. |
+| `/api/export/logs` | ✅ | ❌ | |
+
 ## Deploying
 
 See [`docs/deployment.md`](./docs/deployment.md) for the one-time production

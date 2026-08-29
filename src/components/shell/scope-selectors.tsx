@@ -14,6 +14,11 @@ interface ScopeSelectorsProps {
   // there would imply a filter that doesn't actually do anything.
   years?: AcademicYearOption[];
   branches: BranchOption[];
+  // See SearchField's identical prop -- the activity log (phase 12.3)
+  // paginates with ?cursor=, not ?page=, and a stale cursor left in place
+  // after changing year/branch would silently apply the old position to
+  // the newly-scoped query instead of starting from the top.
+  paginationParam?: "page" | "cursor";
 }
 
 // Same icon-in-trigger pill style as every other filter in the panel
@@ -21,7 +26,11 @@ interface ScopeSelectorsProps {
 // Year/Branch used to render as a separate "icon + label text + select"
 // row, which made them look like a different kind of control from
 // everything else in the same panel.
-export function ScopeSelectors({ years, branches }: ScopeSelectorsProps) {
+export function ScopeSelectors({
+  years,
+  branches,
+  paginationParam = "page",
+}: ScopeSelectorsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -36,6 +45,13 @@ export function ScopeSelectors({ years, branches }: ScopeSelectorsProps) {
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set(key, value);
+    // Unchanged from before this prop existed: every current caller
+    // (Transport, Daycare, Expenses, Students) never reset pagination
+    // here, only the activity log's ?cursor= needs to be, since a stale
+    // one would otherwise apply silently to the newly-scoped query.
+    if (paginationParam === "cursor") {
+      params.delete("cursor");
+    }
     router.push(`${pathname}?${params.toString()}`);
   }
 

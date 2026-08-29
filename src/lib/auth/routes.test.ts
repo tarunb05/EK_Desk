@@ -58,6 +58,8 @@ describe("ROUTE_ACCESS", () => {
     expect(isRouteAllowed("/settings/expense-categories", "admin")).toBe(
       true,
     );
+    expect(isRouteAllowed("/logs", "teacher")).toBe(false);
+    expect(isRouteAllowed("/logs", "admin")).toBe(true);
   });
 
   it("has no opinion on an unmapped path", () => {

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAcademicYears, getBranches } from "@/lib/supabase/queries";
 import { getCurrentScope } from "@/lib/shell/get-current-scope";
 import { shellSearchParamsSchema } from "@/lib/shell/search-params";
+import { generateTwelveMonths } from "@/lib/domain/academic-year";
 import {
   getCollectionByMonth,
   getDashboardSummary,
@@ -18,21 +19,6 @@ interface ServiceScopeDashboardProps {
   serviceType: ServiceType;
   title: string;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
-}
-
-// Produces the 12 "YYYY-MM" keys spanning one academic year starting on
-// startsOn (e.g. "2026-04-01" -> Apr 2026 .. Mar 2027), matching the key
-// format used by collectionByMonth and the months URL param.
-function generateTwelveMonths(startsOn: string): string[] {
-  const [startYear, startMonth] = startsOn.split("-").map(Number);
-  if (!startYear || !startMonth) return [];
-
-  return Array.from({ length: 12 }, (_, i) => {
-    const monthIndex = startMonth - 1 + i;
-    const year = startYear + Math.floor(monthIndex / 12);
-    const month = (monthIndex % 12) + 1;
-    return `${year}-${String(month).padStart(2, "0")}`;
-  });
 }
 
 // One dashboard, reused by /transport and /daycare with a different

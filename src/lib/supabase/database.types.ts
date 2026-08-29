@@ -64,6 +64,92 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_log: {
+        Row: {
+          academic_year_id: string | null
+          action: string
+          actor_id: string | null
+          actor_label: string
+          actor_role: string | null
+          after_amount_paise: number | null
+          before_amount_paise: number | null
+          branch_id: string | null
+          changed_fields: string[] | null
+          entity: string
+          entity_id: string | null
+          entity_label: string
+          id: number
+          occurred_at: string
+          summary: string
+          txid: number
+        }
+        Insert: {
+          academic_year_id?: string | null
+          action: string
+          actor_id?: string | null
+          actor_label: string
+          actor_role?: string | null
+          after_amount_paise?: number | null
+          before_amount_paise?: number | null
+          branch_id?: string | null
+          changed_fields?: string[] | null
+          entity: string
+          entity_id?: string | null
+          entity_label: string
+          id?: never
+          occurred_at?: string
+          summary: string
+          txid?: number
+        }
+        Update: {
+          academic_year_id?: string | null
+          action?: string
+          actor_id?: string | null
+          actor_label?: string
+          actor_role?: string | null
+          after_amount_paise?: number | null
+          before_amount_paise?: number | null
+          branch_id?: string | null
+          changed_fields?: string[] | null
+          entity?: string
+          entity_id?: string | null
+          entity_label?: string
+          id?: never
+          occurred_at?: string
+          summary?: string
+          txid?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_year"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+        ]
+      }
       branch: {
         Row: {
           code: string
@@ -1419,3 +1505,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

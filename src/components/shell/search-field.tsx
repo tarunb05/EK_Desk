@@ -7,6 +7,13 @@ interface SearchFieldProps {
   ariaLabel: string;
   placeholder: string;
   className?: string;
+  // Every existing caller (Students, Expenses) paginates with a page
+  // number and expects a new search to reset it to 1 -- the activity log
+  // (phase 12.3) paginates with a keyset ?cursor= instead, which a stale
+  // value would silently apply on top of the new search rather than
+  // starting from the top. Defaulting to the original behavior keeps every
+  // other caller unchanged.
+  paginationParam?: "page" | "cursor";
 }
 
 // Search sits outside the FilterMenu popover, immediately to its left --
@@ -17,6 +24,7 @@ export function SearchField({
   ariaLabel,
   placeholder,
   className = "w-64",
+  paginationParam = "page",
 }: SearchFieldProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -29,7 +37,11 @@ export function SearchField({
     } else {
       params.delete("q");
     }
-    params.set("page", "1");
+    if (paginationParam === "page") {
+      params.set("page", "1");
+    } else {
+      params.delete("cursor");
+    }
     router.push(`${pathname}?${params.toString()}`);
   }
 

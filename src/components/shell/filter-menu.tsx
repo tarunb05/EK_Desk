@@ -14,7 +14,18 @@ import { FilterIcon } from "./nav-icons";
 // SearchField) since it's reached for far more often than the rest.
 // Follows the same outside-click/Escape-to-close pattern as Select and
 // MonthFilter.
-export function FilterMenu({ children }: { children: React.ReactNode }) {
+export function FilterMenu({
+  children,
+  activeCount,
+}: {
+  children: React.ReactNode;
+  // Shown as a small count next to the label -- "the right affordance"
+  // for a panel holding several filters at once (the activity log, phase
+  // 12.3), so it's clear at a glance whether anything is narrowing the
+  // list without opening the panel to check. Omitted (not zero) on every
+  // other page's FilterMenu, which never asked for one.
+  activeCount?: number;
+}) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -55,6 +66,11 @@ export function FilterMenu({ children }: { children: React.ReactNode }) {
       >
         <FilterIcon size={14} />
         Filters
+        {activeCount ? (
+          <span className="flex h-4 min-w-4 items-center justify-center rounded-md bg-accent px-1 text-2xs font-medium text-surface">
+            {activeCount}
+          </span>
+        ) : null}
       </button>
 
       {open ? (
