@@ -102,7 +102,7 @@ export default async function ActivityLogPage({
         </FilterMenu>
         <a
           href={`/api/export/logs?${exportParams.toString()}`}
-          className="flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+          className="flex h-9 items-center gap-1.5 rounded-md bg-accent px-3 text-sm font-medium text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
         >
           Download
         </a>
