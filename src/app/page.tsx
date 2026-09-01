@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import {
   ActivityLogIcon,
   ApprovalsIcon,
@@ -8,6 +7,10 @@ import {
   WalletIcon,
 } from "@/components/shell/nav-icons";
 import { IrisCurtainLink } from "@/components/shell/iris-curtain-link";
+import {
+  CoverflowCarousel,
+  type CoverflowSlide,
+} from "@/components/ui/coverflow-carousel";
 
 export const metadata: Metadata = {
   title: "EK Desk — Fee tracking for EuroKids transport & daycare",
@@ -45,26 +48,30 @@ const FEATURES: {
   },
 ];
 
-const SCREENSHOTS: { src: string; alt: string; caption: string }[] = [
+const SCREENSHOTS: CoverflowSlide[] = [
   {
     src: "/screenshots/transport.png",
     alt: "Transport dashboard showing total receivable, collected, pending, and overdue figures, plus a by-branch split",
-    caption: "The Transport dashboard — receivable, collected, pending, and overdue, per branch",
+    title: "Transport",
+    subtitle: "Receivable, collected, pending, and overdue, per branch",
   },
   {
     src: "/screenshots/students.png",
     alt: "Student directory listing students across both branches with payment status and per-row actions",
-    caption: "The student directory — every student, both services, searchable and filterable",
+    title: "Students",
+    subtitle: "Every student, both services, searchable and filterable",
   },
   {
     src: "/screenshots/expenses.png",
     alt: "Expenses dashboard showing a total, a category breakdown chart, and a filterable expense list",
-    caption: "Expense tracking — a category breakdown and the full, filterable record",
+    title: "Expenses",
+    subtitle: "A category breakdown and the full, filterable record",
   },
   {
     src: "/screenshots/logs.png",
     alt: "Activity log listing every create, edit, and delete across the app with who did it and when",
-    caption: "The activity log — an unforgeable audit trail of every change, admin-only",
+    title: "Activity log",
+    subtitle: "An unforgeable audit trail of every change, admin-only",
   },
 ];
 
@@ -128,36 +135,32 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="screenshots" className="mx-auto max-w-6xl px-4 py-16 md:px-6">
+        <section
+          id="screenshots"
+          className="scroll-reveal mx-auto max-w-5xl px-4 py-16 md:px-6"
+        >
           <h2 className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
             What it looks like
           </h2>
-          {/* A gallery, not a scrolling list of full-size shots -- these are
-              previews meant to be scanned at a glance (every real number is
-              a click away once signed in), so two per row reads as "here's
-              the product" the way a single column reading top to bottom
-              like an article doesn't. */}
-          <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2">
-            {SCREENSHOTS.map((shot) => (
-              <figure
-                key={shot.src}
-                className="gallery-reveal cv-auto-screenshot"
-              >
-                <div className="overflow-hidden rounded-md border border-hairline shadow-xs transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-accent">
-                  <Image
-                    src={shot.src}
-                    alt={shot.alt}
-                    width={1440}
-                    height={900}
-                    className="w-full"
-                  />
-                </div>
-                <figcaption className="mt-2 text-sm text-ink-secondary">
-                  {shot.caption}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+          {/* Drag, arrow keys, or the dots move between screens -- one at a
+              time and full-size, rather than four thumbnails competing for
+              attention in a grid. Tilt/depth are dialled back from a typical
+              coverflow (rotate 30° not 44°, shallower recession) so the
+              neighbours stay a still-readable preview of "there's more
+              here," not a spinning flourish. */}
+          <CoverflowCarousel
+            slides={SCREENSHOTS}
+            label="Product screenshots"
+            cardWidth="clamp(220px, 34vw, 420px)"
+            cardClassName="aspect-[8/5]"
+            rotate={30}
+            depth={0.5}
+            gap={0.08}
+            showCaption
+            showNavigation
+            showPagination
+            className="mt-6"
+          />
         </section>
       </main>
 

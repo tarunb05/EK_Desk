@@ -502,15 +502,7 @@ dialog[open]::backdrop {
    Feature-detected via @supports and, since this is decorative only,
    deliberately has no JS fallback for the browsers it excludes (Firefox
    as of writing) -- those just see the content in place, unanimated, per
-   that guide's own recommendation.
-   Two variants, same mechanism: .scroll-reveal (feature cards -- icon +
-   two lines of text, a plain lift reads as enough motion for that little
-   visual weight) and .gallery-reveal (screenshots -- adds a scale from
-   96%, the extra bit of depth a full product screenshot can carry
-   without tipping into showy; adapted from 21st.dev's "Immersive Scroll
-   Gallery" pattern, hand-rolled on this app's own tokens rather than
-   installed, per this app having no shadcn/Radix dependency chain to
-   begin with). */
+   that guide's own recommendation. */
 @media (prefers-reduced-motion: no-preference) {
   @supports ((animation-timeline: view()) and (animation-range: entry)) {
     @keyframes scroll-reveal-in {
@@ -525,41 +517,7 @@ dialog[open]::backdrop {
       animation-timeline: view();
       animation-range: entry 0% entry 40%;
     }
-
-    @keyframes gallery-reveal-in {
-      from {
-        opacity: 0;
-        transform: translateY(24px) scale(0.96);
-      }
-    }
-
-    .gallery-reveal {
-      animation: gallery-reveal-in linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 45%;
-    }
   }
-}
-
-/* Each screenshot figure skips layout/paint work until it scrolls near
-   the viewport (modern-web-guidance's defer-rendering-heavy-content) --
-   "only loads what's on screen" is literally this property, not
-   something scroll-reveal's animation alone provides. Screenshots only,
-   not the feature cards above them: those sit close enough to the fold
-   on a short viewport that the guide's own warning applies ("DO NOT
-   apply... within the initial viewport" -- doing so delays first paint
-   instead of speeding it up), and they're cheap to render regardless.
-   contain-intrinsic-size gives the browser a placeholder height so the
-   page doesn't collapse/jump before each figure's real size is known
-   ("auto" lets it remember the real size after first render).
-   content-visibility is Baseline-safe unguarded -- an unsupported
-   browser just ignores it and renders normally, no @supports needed. */
-.cv-auto-screenshot {
-  content-visibility: auto;
-  /* Halved from the original single-column estimate: these sit two to a
-     row now, so each is roughly half as wide and (fixed 1440:900 aspect)
-     roughly half as tall too. */
-  contain-intrinsic-size: auto 340px;
 }
 
 /* The landing page's "Sign in" link plays a solid --accent iris/curtain
