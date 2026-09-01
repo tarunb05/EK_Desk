@@ -8,8 +8,14 @@ const enabledClassName =
 // Keyset pagination only ever moves one direction from a given cursor --
 // there is no "page 3 of 12" to jump around in the way OFFSET's
 // PaginationControls offers, since a cursor only knows "everything before
-// this row." Newer goes back to the top of the *current* filtered view
-// (same params, no cursor); Older steps forward with the next cursor.
+// this row," not a numeric position, and there's no cheap way to turn one
+// into the other without re-deriving the exact insert-during-pagination
+// bug keyset was chosen to avoid (see the migration/integration test this
+// pairs with). Previous goes back to the top of the *current* filtered
+// view (same params, no cursor, i.e. the newest rows); Next steps forward
+// into older rows with the next cursor -- same left-to-right chronological
+// direction and the same Previous/Next wording as PaginationControls, just
+// without the page-number strip that pagination model can't safely offer.
 // Anything in between is the browser's own back button, which already
 // works here since every step is a real URL with its own cursor.
 export function KeysetPaginationControls({
@@ -37,20 +43,20 @@ export function KeysetPaginationControls({
     <div className="flex items-center justify-end gap-2 border-t border-hairline pt-3 text-sm text-ink-secondary">
       {hasCursor ? (
         <Link href={hrefWithCursor(null)} className={enabledClassName}>
-          Newer
+          Previous
         </Link>
       ) : (
         <span aria-disabled="true" className={disabledClassName}>
-          Newer
+          Previous
         </span>
       )}
       {nextCursor ? (
         <Link href={hrefWithCursor(nextCursor)} className={enabledClassName}>
-          Older
+          Next
         </Link>
       ) : (
         <span aria-disabled="true" className={disabledClassName}>
-          Older
+          Next
         </span>
       )}
     </div>
