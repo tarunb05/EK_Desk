@@ -102,7 +102,7 @@ export function ExpenseTable({
               <tr
                 key={row.id}
                 style={{ animationDelay: `${Math.min(index, 12) * 20}ms` }}
-                className="animate-row-in h-10 border-b border-hairline border-l-2 border-l-transparent transition-colors last:border-0 hover:border-l-accent hover:bg-surface-accent"
+                className="animate-row-in h-10 border-b border-hairline border-l-2 border-l-transparent even:bg-hairline/40 transition-colors last:border-0 hover:border-l-accent hover:bg-surface-accent"
               >
                 <td className="px-3 text-ink-secondary tabular-nums">
                   {row.spentOn}

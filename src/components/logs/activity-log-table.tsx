@@ -107,7 +107,7 @@ export function ActivityLogTable({
               key={row.id}
               role="row"
               className={`activity-log-row group border-b border-hairline last:border-0 ${
-                isDelete ? "border-l-2 border-l-attention bg-attention-fill/20" : "border-l-2 border-l-transparent"
+                isDelete ? "border-l-2 border-l-attention bg-attention-fill/20" : "border-l-2 border-l-transparent even:bg-hairline/40"
               }`}
             >
               <summary

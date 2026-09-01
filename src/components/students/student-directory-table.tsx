@@ -195,7 +195,7 @@ export function StudentDirectoryTable({
                 className={`animate-row-in h-10 border-b border-hairline transition-colors last:border-0 ${
                   row.hasOverdue
                     ? "border-l-2 border-l-attention bg-attention-fill/20"
-                    : "border-l-2 border-l-transparent hover:border-l-accent hover:bg-surface-accent"
+                    : "border-l-2 border-l-transparent even:bg-hairline/40 hover:border-l-accent hover:bg-surface-accent"
                 }`}
               >
                 <td className="px-3 text-ink-secondary tabular-nums">
