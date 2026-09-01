@@ -63,31 +63,27 @@ export function ActivityLogFilters({
 
   return (
     <>
-      <label className="flex flex-col gap-1 text-sm text-ink-secondary">
-        <span className="text-2xs uppercase tracking-wide text-ink-muted">
-          Date range
-        </span>
-        {/* Same from/to DateField pair as the Expenses and Students
-            directory filter panels -- see date-field.tsx's placeholder
-            prop for why each side says "Start date"/"End date" rather
-            than the generic "Pick a date" a single date field uses. */}
-        <div className="flex gap-2">
-          <DateField
-            ariaLabel="Filter from date"
-            placeholder="Start date"
-            value={dateFrom}
-            onChange={(iso) => updateParam({ dateFrom: iso })}
-            className="min-w-0 flex-1"
-          />
-          <DateField
-            ariaLabel="Filter to date"
-            placeholder="End date"
-            value={dateTo}
-            onChange={(iso) => updateParam({ dateTo: iso })}
-            className="min-w-0 flex-1"
-          />
-        </div>
-      </label>
+      {/* Same bare from/to DateField pair as the Expenses and Students
+          directory filter panels -- no label above it there either; see
+          date-field.tsx's placeholder prop for why each side says
+          "Start date"/"End date" rather than the generic "Pick a date" a
+          single date field uses. */}
+      <div className="flex gap-2">
+        <DateField
+          ariaLabel="Filter from date"
+          placeholder="Start date"
+          value={dateFrom}
+          onChange={(iso) => updateParam({ dateFrom: iso })}
+          className="min-w-0 flex-1"
+        />
+        <DateField
+          ariaLabel="Filter to date"
+          placeholder="End date"
+          value={dateTo}
+          onChange={(iso) => updateParam({ dateTo: iso })}
+          className="min-w-0 flex-1"
+        />
+      </div>
 
       <Select
         ariaLabel="Filter by who did it"
