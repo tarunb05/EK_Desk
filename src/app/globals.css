@@ -556,7 +556,10 @@ dialog[open]::backdrop {
    browser just ignores it and renders normally, no @supports needed. */
 .cv-auto-screenshot {
   content-visibility: auto;
-  contain-intrinsic-size: auto 620px;
+  /* Halved from the original single-column estimate: these sit two to a
+     row now, so each is roughly half as wide and (fixed 1440:900 aspect)
+     roughly half as tall too. */
+  contain-intrinsic-size: auto 340px;
 }
 
 /* The landing page's "Sign in" link plays a solid --accent iris/curtain

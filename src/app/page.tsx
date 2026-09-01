@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import {
+  ActivityLogIcon,
   ApprovalsIcon,
   StatusIcon,
   StudentsIcon,
@@ -37,6 +38,11 @@ const FEATURES: {
     body: "Record what the office spends — salaries, fuel, repairs, supplies — with a category breakdown and the same per-branch, per-year scoping.",
     Icon: StatusIcon,
   },
+  {
+    title: "Every change, logged automatically",
+    body: "Every student, fee account, payment, and expense edit is captured the moment it happens — who did it, what changed, and when — with nobody able to forget or bypass it.",
+    Icon: ActivityLogIcon,
+  },
 ];
 
 const SCREENSHOTS: { src: string; alt: string; caption: string }[] = [
@@ -54,6 +60,11 @@ const SCREENSHOTS: { src: string; alt: string; caption: string }[] = [
     src: "/screenshots/expenses.png",
     alt: "Expenses dashboard showing a total, a category breakdown chart, and a filterable expense list",
     caption: "Expense tracking — a category breakdown and the full, filterable record",
+  },
+  {
+    src: "/screenshots/logs.png",
+    alt: "Activity log listing every create, edit, and delete across the app with who did it and when",
+    caption: "The activity log — an unforgeable audit trail of every change, admin-only",
   },
 ];
 
@@ -92,36 +103,47 @@ export default function LandingPage() {
         </section>
 
         <section className="border-y border-hairline bg-surface">
-          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 px-4 py-16 sm:grid-cols-2 md:px-6">
+          {/* Five roughly-equal facets of one product, not a hierarchy --
+              a plain grid rather than a bento layout that would imply one
+              of them matters more than the others (it doesn't). 3-up at
+              the widest point so five items settle 3-then-2 instead of an
+              awkward 4-then-1. */}
+          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 px-4 py-16 sm:grid-cols-2 md:px-6 lg:grid-cols-3">
             {FEATURES.map((feature) => (
-              <div key={feature.title} className="scroll-reveal flex gap-3">
-                <span className="mt-0.5 shrink-0 text-accent">
-                  <feature.Icon size={20} />
+              <div
+                key={feature.title}
+                className="scroll-reveal rounded-md border border-hairline bg-canvas p-5 transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-accent"
+              >
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-surface-accent text-accent">
+                  <feature.Icon size={18} />
                 </span>
-                <div>
-                  <h2 className="text-sm font-medium text-ink">
-                    {feature.title}
-                  </h2>
-                  <p className="mt-1 text-sm text-ink-secondary">
-                    {feature.body}
-                  </p>
-                </div>
+                <h2 className="mt-3 text-sm font-medium text-ink">
+                  {feature.title}
+                </h2>
+                <p className="mt-1.5 text-sm text-ink-secondary">
+                  {feature.body}
+                </p>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="mx-auto max-w-5xl px-4 py-16 md:px-6">
+        <section className="mx-auto max-w-6xl px-4 py-16 md:px-6">
           <h2 className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
             What it looks like
           </h2>
-          <div className="mt-6 flex flex-col gap-10">
+          {/* A gallery, not a scrolling list of full-size shots -- these are
+              previews meant to be scanned at a glance (every real number is
+              a click away once signed in), so two per row reads as "here's
+              the product" the way a single column reading top to bottom
+              like an article doesn't. */}
+          <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2">
             {SCREENSHOTS.map((shot) => (
               <figure
                 key={shot.src}
                 className="gallery-reveal cv-auto-screenshot"
               >
-                <div className="overflow-hidden rounded-md border border-hairline shadow-xs">
+                <div className="overflow-hidden rounded-md border border-hairline shadow-xs transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-accent">
                   <Image
                     src={shot.src}
                     alt={shot.alt}
