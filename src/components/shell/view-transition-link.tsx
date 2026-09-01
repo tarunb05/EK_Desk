@@ -11,9 +11,10 @@ import type { AnchorHTMLAttributes, ReactNode } from "react";
 // transitions guides) and prefers-reduced-motion allows it -- everywhere
 // else this is a plain <Link>, since an unsupported browser or a reduced-
 // motion preference should just get the instant navigation Next already
-// gives it, not a broken or unwanted animation. The actual cross-fade is
-// globals.css's ::view-transition-old/new(root) rules; this component's
-// only job is deciding whether to open the transition at all.
+// gives it, not a broken or unwanted animation. The actual iris reveal is
+// globals.css's ::view-transition-old/new(root) rules, keyed off the
+// --iris-x/--iris-y custom properties set below; this component's own job
+// is just deciding whether to open the transition and where it originates.
 export function ViewTransitionLink({
   href,
   children,
@@ -58,6 +59,16 @@ export function ViewTransitionLink({
 
         event.preventDefault();
         transitionInFlight.current = true;
+        // Where the iris opens from. event.detail is 0 for a
+        // keyboard-activated click (Enter/Space on a focused link) --
+        // clientX/clientY are meaningless (usually 0,0) in that case, so
+        // this falls back to the viewport centre instead of always
+        // opening from the top-left corner for keyboard users.
+        const isRealPointerClick = event.detail > 0;
+        const originX = isRealPointerClick ? event.clientX : window.innerWidth / 2;
+        const originY = isRealPointerClick ? event.clientY : window.innerHeight / 2;
+        document.documentElement.style.setProperty("--iris-x", `${originX}px`);
+        document.documentElement.style.setProperty("--iris-y", `${originY}px`);
         // Backstop, independent of whatever startViewTransition's own
         // promises do below: a tab that loses visibility (backgrounded,
         // minimized) right as this fires can starve requestAnimationFrame
@@ -91,15 +102,21 @@ export function ViewTransitionLink({
               new Promise<void>((resolve) => setTimeout(resolve, 500)),
             ]);
           });
-          // .finished rejects if the transition gets aborted (a second
-          // click racing this one, a resize, the tab losing visibility
-          // mid-transition) -- expected in those cases and already
-          // harmless (the navigation itself still went through via
-          // router.push above), so this only needs to clear the flag,
-          // not treat the rejection as a real error. .finally() alone
-          // does NOT do that -- it runs the callback but still lets the
-          // rejection propagate as an unhandled one, which is the actual
-          // "invalid state" error this fixes.
+          // startViewTransition() returns three independent promises
+          // (ready, updateCallbackDone, finished) that all reject the
+          // same way whenever the transition gets skipped -- a second
+          // click racing this one, a resize, the tab losing visibility,
+          // or (in dev) the destination route still compiling on first
+          // visit taking longer than the wait above. That's expected and
+          // already harmless (the navigation itself still went through
+          // via router.push above regardless), but a promise nobody
+          // attaches a rejection handler to still surfaces as "Uncaught
+          // (in promise)" -- this was the actual remaining source of
+          // that error: only .finished had a .catch, so .ready and
+          // .updateCallbackDone rejecting on the exact same skip kept
+          // surfacing unhandled even after .finished was covered.
+          transition.ready.catch(() => {});
+          transition.updateCallbackDone.catch(() => {});
           transition.finished
             .catch(() => {})
             .finally(() => {

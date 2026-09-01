@@ -466,34 +466,33 @@ dialog[open]::backdrop {
 
 /* The landing page's "Sign in" link triggers a same-document View
    Transition (ViewTransitionLink) instead of Next's instant client-side
-   swap. The outgoing page fades; the incoming one fades and settles up
-   slightly, the same opacity+translateY shape as .animate-hero-in, so
-   the transition reads as one continuous motion into the login card
-   rather than a generic cross-fade. Still restraint, not showier than
-   the rest of the app -- the login page's own wave/wordmark carry the
-   visual interest from there. No @supports needed: unsupported browsers
-   just never get a startViewTransition() call (feature-detected in JS)
-   and navigate instantly, so these rules are inert there rather than
-   needed. */
+   swap -- an iris/curtain reveal expanding from wherever the link was
+   actually clicked (--iris-x/--iris-y, set in JS right before the
+   transition opens), rather than a generic cross-fade: the login page
+   grows out from underneath the click itself. The old page needs no
+   animation of its own -- it's simply what shows through the areas the
+   circle hasn't reached yet, which is the whole effect. Still restraint
+   relative to the rest of the app in duration and in NOT layering on
+   anything else (no color, no bounce) -- the login page's own wave/
+   wordmark carry the visual interest from there. No @supports needed:
+   unsupported browsers just never get a startViewTransition() call
+   (feature-detected in JS) and navigate instantly, so these rules are
+   inert there rather than needed. */
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root) {
-    animation: 180ms var(--ease-flowy) both view-transition-fade-out;
+    animation: none;
   }
 
   ::view-transition-new(root) {
-    animation: 240ms var(--ease-flowy) both view-transition-fade-in;
+    animation: 450ms var(--ease-flowy) both view-transition-iris-in;
   }
 
-  @keyframes view-transition-fade-out {
-    to {
-      opacity: 0;
-    }
-  }
-
-  @keyframes view-transition-fade-in {
+  @keyframes view-transition-iris-in {
     from {
-      opacity: 0;
-      transform: translateY(8px);
+      clip-path: circle(0% at var(--iris-x, 50%) var(--iris-y, 50%));
+    }
+    to {
+      clip-path: circle(150% at var(--iris-x, 50%) var(--iris-y, 50%));
     }
   }
 }
