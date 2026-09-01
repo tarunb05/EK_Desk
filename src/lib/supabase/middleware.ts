@@ -85,10 +85,15 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isLoginRoute = request.nextUrl.pathname.startsWith("/login");
-  // The marketing landing page -- reachable signed out or signed in (a
-  // signed-in visitor isn't forced off it the way /login forces them
-  // onward; the page itself just changes its own button/copy for them).
-  const isPublicRoute = request.nextUrl.pathname === "/" || isLoginRoute;
+  // The marketing landing page, and the legal pages linked from its footer
+  // -- all reachable signed out or signed in (a signed-in visitor isn't
+  // forced off them the way /login forces them onward; each page just
+  // renders the same for anyone who lands on it).
+  const isPublicRoute =
+    request.nextUrl.pathname === "/" ||
+    request.nextUrl.pathname === "/privacy" ||
+    request.nextUrl.pathname === "/terms" ||
+    isLoginRoute;
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();

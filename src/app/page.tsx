@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
   ActivityLogIcon,
   ApprovalsIcon,
@@ -205,8 +206,22 @@ export default function LandingPage() {
             </nav>
           </div>
 
-          <div className="mt-8 border-t border-hairline pt-6 text-xs text-ink-muted">
-            © {new Date().getFullYear()} EK Desk. For preschool staff use only.
+          <div className="mt-8 flex flex-col gap-3 border-t border-hairline pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-ink-muted">
+              © {new Date().getFullYear()} EK Desk. For preschool staff use
+              only.
+            </p>
+            <nav
+              aria-label="Legal"
+              className="flex gap-x-4 gap-y-2 text-xs text-ink-muted"
+            >
+              <Link href="/privacy" className="hover:text-ink hover:underline">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="hover:text-ink hover:underline">
+                Terms &amp; Conditions
+              </Link>
+            </nav>
           </div>
         </div>
       </footer>
