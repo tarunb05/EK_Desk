@@ -55,7 +55,7 @@ export function Sidebar({
       <aside
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col overflow-hidden border-r border-hairline bg-surface px-3 py-6 transition-[transform,width] duration-200 md:relative md:z-0 md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col overflow-hidden border-r border-hairline bg-surface px-3 py-6 transition-[transform,width] duration-200 md:sticky md:top-0 md:z-0 md:h-screen md:translate-x-0 md:self-start ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         } ${visuallyCollapsed ? "md:w-16" : "md:w-56"}`}
       >
