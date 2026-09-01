@@ -140,7 +140,7 @@ export default function LandingPage() {
 
         <section
           id="screenshots"
-          className="scroll-reveal mx-auto max-w-6xl px-4 py-16 md:px-6"
+          className="scroll-reveal mx-auto max-w-7xl px-4 py-16 md:px-6"
         >
           <h2 className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
             What it looks like
@@ -150,11 +150,14 @@ export default function LandingPage() {
               thumbnails competing for attention in a grid. Tilt/depth are
               dialled back from a typical coverflow (rotate 30° not 44°,
               shallower recession) so the neighbours stay a still-readable
-              preview of "there's more here," not a spinning flourish. */}
+              preview of "there's more here," not a spinning flourish. The
+              selected card is always exactly centred in the frame (it's a
+              translateX(-50%) off the frame's own midpoint) -- max-w-7xl
+              here just gives that centred card more room to grow into. */}
           <CoverflowCarousel
             slides={SCREENSHOTS}
             label="Product screenshots"
-            cardWidth="clamp(320px, 46vw, 620px)"
+            cardWidth="clamp(360px, 50vw, 760px)"
             cardClassName="aspect-[8/5]"
             rotate={30}
             depth={0.5}

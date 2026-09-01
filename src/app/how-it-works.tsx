@@ -31,7 +31,7 @@ const STEPS: { title: string; body: string }[] = [
 export function HowItWorks() {
   return (
     <section className="scroll-reveal border-b border-hairline bg-surface">
-      <div className="mx-auto max-w-5xl px-4 py-16 md:px-6">
+      <div className="mx-auto max-w-6xl px-4 py-16 md:px-6">
         <div className="grid md:grid-cols-2 md:gap-12">
           <div className="md:sticky md:top-24 md:h-fit">
             <h2 className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
@@ -43,20 +43,26 @@ export function HowItWorks() {
             </p>
           </div>
 
-          <ContainerScroll className="mt-12 min-h-[220vh] space-y-6 md:mt-0">
+          {/* Tuned down twice from a first pass at 220vh/16px increments --
+              these are short text cards, not full-screen panels, so that
+              much scroll room left a long stretch of empty canvas after
+              the 4th card finished stacking and before the next section
+              began. 115vh keeps every card's "hang time" readable without
+              the dead air once the sequence is done. */}
+          <ContainerScroll className="mt-12 min-h-[115vh] space-y-6 md:mt-0">
             {STEPS.map((step, index) => (
               <CardSticky
                 key={step.title}
                 index={index}
                 incrementY={16}
                 incrementZ={10}
-                className="rounded-md border border-hairline bg-canvas p-6 shadow-xs md:p-8"
+                className="rounded-md border border-hairline bg-canvas p-8 shadow-xs md:p-10"
               >
                 <div className="flex items-baseline gap-4">
-                  <span className="text-xl font-medium tabular-nums text-accent">
+                  <span className="text-2xl font-medium tabular-nums text-accent">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <h3 className="text-sm font-medium text-ink">
+                  <h3 className="text-base font-medium text-ink">
                     {step.title}
                   </h3>
                 </div>
