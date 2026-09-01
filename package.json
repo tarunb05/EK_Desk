@@ -22,6 +22,7 @@
     "db:reset": "supabase db reset",
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:empty": "tsx scripts/seed-empty.ts",
+    "db:seed:expenses": "tsx scripts/seed-fake-expenses.ts",
     "auth:seed": "tsx --env-file=.env.local scripts/seed-auth-user.ts",
     "screenshots": "tsx scripts/capture-screenshots.ts"
   },
@@ -46,8 +47,6 @@
     "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^7.0.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.5",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",

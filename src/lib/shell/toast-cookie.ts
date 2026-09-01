@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 // cleared once by ToastProvider on whatever page the redirect lands on. A
 // short expiry keeps a never-read cookie (e.g. the tab closed mid-redirect)
 // harmless.
-export const TOAST_COOKIE_NAME = "toast_notice";
+const TOAST_COOKIE_NAME = "toast_notice";
 
 export async function setToastNotice(message: string): Promise<void> {
   // No manual encodeURIComponent here -- next/headers' cookie serializer

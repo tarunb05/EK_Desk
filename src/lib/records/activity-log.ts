@@ -41,7 +41,7 @@ function dateRange(
   return range;
 }
 
-export const ACTIVITY_LOG_PAGE_SIZE = 50;
+const ACTIVITY_LOG_PAGE_SIZE = 50;
 
 export interface ActivityLogRow {
   id: number;

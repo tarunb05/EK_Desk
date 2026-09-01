@@ -105,9 +105,10 @@ never written to a column.
 To run against local Supabase:
 
 ```bash
-npm run db:start   # supabase start (requires Docker)
-npm run db:reset   # apply all migrations from empty
-npm run db:seed    # generate ~60 fake students, fee accounts, and payments
+npm run db:start          # supabase start (requires Docker)
+npm run db:reset          # apply all migrations from empty
+npm run db:seed           # generate ~60 fake students, fee accounts, and payments
+npm run db:seed:expenses  # optional -- fake expense rows for the current year, for the Expenses dashboard/screenshots
 npm run test:integration
 ```
 
