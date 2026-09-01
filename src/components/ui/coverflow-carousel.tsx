@@ -279,6 +279,64 @@ export function CoverflowCarousel({
     return () => observer.disconnect();
   }, [paint]);
 
+  // Trackpad two-finger swipe (or shift+wheel on a plain mouse) nudges
+  // between slides, tracking the gesture 1:1 the same way onPointerMove
+  // does for a drag. Bound as a native listener with { passive: false } --
+  // React attaches onWheel as a passive listener by default (matching the
+  // browser's own default, for scroll performance), which would silently
+  // swallow the preventDefault() below and let the page itself judder
+  // sideways mid-gesture. A plain vertical scroll is left completely
+  // alone -- no preventDefault, no handling -- so the page still scrolls
+  // normally when the pointer happens to be over the carousel; only a
+  // gesture whose horizontal component dominates (or shift+wheel, the
+  // standard "make this vertical wheel horizontal" modifier) is treated as
+  // carousel input.
+  React.useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+
+    let wheelEndTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const onWheel = (event: WheelEvent) => {
+      const horizontalIntent =
+        event.shiftKey || Math.abs(event.deltaX) > Math.abs(event.deltaY);
+      if (!horizontalIntent) return;
+
+      event.preventDefault();
+
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+
+      const pitch = widthRef.current * (1 + gap);
+      if (!pitch) return;
+
+      const delta = event.shiftKey ? event.deltaY : event.deltaX;
+      posRef.current = clamp(posRef.current + delta / pitch);
+      targetRef.current = posRef.current;
+
+      const index = indexAt(posRef.current);
+      setSelected((current) => (current === index ? current : index));
+      paint();
+
+      // A trackpad swipe fires dozens of small wheel events with no
+      // explicit "end" of its own -- settle to the nearest card once they
+      // stop arriving, same idea as endDrag's throw but with no velocity
+      // to carry (wheel deltas don't expose one usefully).
+      if (wheelEndTimer !== null) clearTimeout(wheelEndTimer);
+      wheelEndTimer = setTimeout(() => {
+        settle(clamp(Math.round(posRef.current)));
+      }, 120);
+    };
+
+    frame.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      frame.removeEventListener("wheel", onWheel);
+      if (wheelEndTimer !== null) clearTimeout(wheelEndTimer);
+    };
+  }, [clamp, gap, indexAt, paint, settle]);
+
   React.useEffect(
     () => () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
@@ -319,6 +377,10 @@ export function CoverflowCarousel({
             perspective: `calc(var(--cf-card) * ${perspective})`,
             // Horizontal drag is ours; the page keeps vertical scrolling.
             touchAction: "pan-y",
+            // Without this, a horizontal trackpad swipe over the carousel
+            // can also trigger the browser's own back/forward navigation
+            // gesture (Chrome/Edge on Windows in particular) underneath it.
+            overscrollBehaviorX: "contain",
           }}
         >
           <div

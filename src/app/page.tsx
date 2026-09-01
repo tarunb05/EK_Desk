@@ -137,21 +137,21 @@ export default function LandingPage() {
 
         <section
           id="screenshots"
-          className="scroll-reveal mx-auto max-w-5xl px-4 py-16 md:px-6"
+          className="scroll-reveal mx-auto max-w-6xl px-4 py-16 md:px-6"
         >
           <h2 className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
             What it looks like
           </h2>
-          {/* Drag, arrow keys, or the dots move between screens -- one at a
-              time and full-size, rather than four thumbnails competing for
-              attention in a grid. Tilt/depth are dialled back from a typical
-              coverflow (rotate 30° not 44°, shallower recession) so the
-              neighbours stay a still-readable preview of "there's more
-              here," not a spinning flourish. */}
+          {/* Drag, a trackpad swipe, arrow keys, or the dots move between
+              screens -- one at a time and full-size, rather than four
+              thumbnails competing for attention in a grid. Tilt/depth are
+              dialled back from a typical coverflow (rotate 30° not 44°,
+              shallower recession) so the neighbours stay a still-readable
+              preview of "there's more here," not a spinning flourish. */}
           <CoverflowCarousel
             slides={SCREENSHOTS}
             label="Product screenshots"
-            cardWidth="clamp(220px, 34vw, 420px)"
+            cardWidth="clamp(320px, 46vw, 620px)"
             cardClassName="aspect-[8/5]"
             rotate={30}
             depth={0.5}
