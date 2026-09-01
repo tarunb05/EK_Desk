@@ -2,8 +2,20 @@ import { describe, expect, it } from "vitest";
 import { resolveYearAndBranch } from "./resolve-year-branch";
 
 const years = [
-  { id: "y2025", label: "2025-26", isCurrent: false, startsOn: "2025-04-01" },
-  { id: "y2026", label: "2026-27", isCurrent: true, startsOn: "2026-04-01" },
+  {
+    id: "y2025",
+    label: "2025-26",
+    isCurrent: false,
+    startsOn: "2025-04-01",
+    endsOn: "2026-03-31",
+  },
+  {
+    id: "y2026",
+    label: "2026-27",
+    isCurrent: true,
+    startsOn: "2026-04-01",
+    endsOn: "2027-03-31",
+  },
 ];
 
 const branches = [
@@ -34,12 +46,14 @@ describe("resolveYearAndBranch", () => {
         label: "2025-26",
         isCurrent: false,
         startsOn: "2025-04-01",
+        endsOn: "2026-03-31",
       },
       {
         id: "y2026",
         label: "2026-27",
         isCurrent: false,
         startsOn: "2026-04-01",
+        endsOn: "2027-03-31",
       },
     ];
     const result = resolveYearAndBranch({}, noCurrentYears, branches);

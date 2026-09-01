@@ -17,6 +17,8 @@ import {
   renameExpenseCategorySchema,
   reorderExpenseCategorySchema,
   setExpenseCategoryActiveSchema,
+  updateAcademicYearSchema,
+  updateBranchSchema,
   updateOwnCredentialsSchema,
   updateTeacherSchema,
 } from "@/lib/settings/schemas";
@@ -84,6 +86,59 @@ export async function createAcademicYear(
   return { error: null };
 }
 
+// Same two-step "unset, then set" as createAcademicYear -- the
+// academic_year_one_current partial unique index (migration
+// 20260822000000) is the actual guarantee, this ordering is just what
+// keeps a normal save from tripping it. Unsetting excludes this row itself
+// so re-saving an already-current year as current is a no-op, not a
+// pointless unset-then-reset. Saving with isCurrent unchecked is allowed
+// to leave zero years current -- the index only forbids more than one,
+// and resolve-year-branch.ts already falls back to the most recent year
+// when none is flagged.
+export async function updateAcademicYear(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = updateAcademicYearSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+  const supabase = await createClient();
+
+  if (value.isCurrent) {
+    const { error: unsetError } = await supabase
+      .from("academic_year")
+      .update({ is_current: false })
+      .eq("is_current", true)
+      .neq("id", value.yearId);
+
+    if (unsetError) {
+      return { error: "Could not update the current academic year." };
+    }
+  }
+
+  const { error } = await supabase
+    .from("academic_year")
+    .update({
+      label: value.label,
+      starts_on: value.startsOn,
+      ends_on: value.endsOn,
+      is_current: value.isCurrent,
+    })
+    .eq("id", value.yearId);
+
+  if (error) {
+    return {
+      error:
+        "Could not save the academic year — check the label isn't already used.",
+    };
+  }
+
+  revalidateScopeDependents();
+  return { error: null };
+}
+
 export async function createBranch(
   _prevState: ActionState,
   formData: FormData,
@@ -99,6 +154,36 @@ export async function createBranch(
     code: value.code,
     name: value.name,
   });
+
+  if (error) {
+    return {
+      error: "Could not save the branch — check the code isn't already used.",
+    };
+  }
+
+  revalidateScopeDependents();
+  return { error: null };
+}
+
+export async function updateBranch(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = updateBranchSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("branch")
+    .update({
+      code: value.code,
+      name: value.name,
+      is_active: value.isActive,
+    })
+    .eq("id", value.branchId);
 
   if (error) {
     return {

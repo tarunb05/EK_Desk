@@ -7,7 +7,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getTeachersWithBranch } from "@/lib/settings/queries";
 import { internalEmailToUsername } from "@/lib/auth/username";
 import { AddAcademicYearForm } from "@/components/settings/add-academic-year-form";
+import { AcademicYearRow } from "@/components/settings/academic-year-row";
 import { AddBranchForm } from "@/components/settings/add-branch-form";
+import { BranchRow } from "@/components/settings/branch-row";
 import { AddTeacherForm } from "@/components/settings/add-teacher-form";
 import { TeacherRow } from "@/components/settings/teacher-row";
 import { MyCredentialsForm } from "@/components/settings/my-credentials-form";
@@ -48,17 +50,7 @@ export default async function SettingsPage() {
           {years.length > 0 ? (
             <ul className="flex flex-col divide-y divide-hairline">
               {years.map((year) => (
-                <li
-                  key={year.id}
-                  className="flex items-center justify-between py-2 text-sm"
-                >
-                  <span className="text-ink">{year.label}</span>
-                  {year.isCurrent ? (
-                    <span className="rounded-md bg-surface-accent px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-accent">
-                      Current
-                    </span>
-                  ) : null}
-                </li>
+                <AcademicYearRow key={year.id} year={year} />
               ))}
             </ul>
           ) : (
@@ -76,13 +68,7 @@ export default async function SettingsPage() {
           {branches.length > 0 ? (
             <ul className="flex flex-col divide-y divide-hairline">
               {branches.map((branch) => (
-                <li
-                  key={branch.id}
-                  className="flex items-center justify-between py-2 text-sm"
-                >
-                  <span className="text-ink">{branch.name}</span>
-                  <span className="text-ink-muted">{branch.code}</span>
-                </li>
+                <BranchRow key={branch.id} branch={branch} />
               ))}
             </ul>
           ) : (

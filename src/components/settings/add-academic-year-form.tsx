@@ -9,6 +9,7 @@ import {
 } from "@/components/forms/field";
 import { createAcademicYear, type ActionState } from "@/lib/settings/actions";
 import { DateField } from "@/components/forms/date-field";
+import { Checkbox } from "@/components/forms/checkbox";
 
 const initialState: ActionState = { error: null };
 
@@ -42,14 +43,12 @@ export function AddAcademicYearForm() {
         </Field>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-ink-secondary">
-        <input
-          type="checkbox"
-          name="isCurrent"
-          className="h-4 w-4 rounded border-border"
-        />
-        Make this the current year
-      </label>
+      <div className="flex items-center gap-2">
+        <Checkbox id="isCurrent" name="isCurrent" />
+        <label htmlFor="isCurrent" className="text-sm text-ink-secondary">
+          Make this the current year
+        </label>
+      </div>
 
       <FormError error={state.error} />
 
