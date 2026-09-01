@@ -464,35 +464,40 @@ dialog[open]::backdrop {
   contain-intrinsic-size: auto 620px;
 }
 
-/* The landing page's "Sign in" link triggers a same-document View
-   Transition (ViewTransitionLink) instead of Next's instant client-side
-   swap -- an iris/curtain reveal expanding from wherever the link was
-   actually clicked (--iris-x/--iris-y, set in JS right before the
-   transition opens), rather than a generic cross-fade: the login page
-   grows out from underneath the click itself. The old page needs no
-   animation of its own -- it's simply what shows through the areas the
-   circle hasn't reached yet, which is the whole effect. Still restraint
-   relative to the rest of the app in duration and in NOT layering on
-   anything else (no color, no bounce) -- the login page's own wave/
-   wordmark carry the visual interest from there. No @supports needed:
-   unsupported browsers just never get a startViewTransition() call
-   (feature-detected in JS) and navigate instantly, so these rules are
-   inert there rather than needed. */
-@media (prefers-reduced-motion: no-preference) {
-  ::view-transition-old(root) {
-    animation: none;
-  }
+/* The landing page's "Sign in" link plays a solid --accent iris/curtain
+   (IrisCurtainLink) instead of Next's instant client-side swap -- a real
+   DOM overlay, not the View Transitions API (that API's pseudo-elements
+   are a live rendering of actual page content, which can't be tinted a
+   solid color; see the component's own comment for the full reasoning).
+   Base state is "closing"/"covered": full coverage, clip-path: circle
+   (150% ...); @starting-style supplies circle(0% ...) as the point this
+   animates FROM the moment the element is first inserted (modern-web-
+   guidance's animate-element-entry-exit) -- no rAF/double-frame trick
+   needed for that half, unlike the timing this replaced. The [data-
+   phase="opening"] override retargets the SAME, already-mounted element
+   back to 0%, which needs no special starting-point handling since it's
+   just an ordinary transition between two live values. */
+.iris-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background-color: var(--accent);
+  clip-path: circle(150% at var(--curtain-x, 50%) var(--curtain-y, 50%));
+  transition: clip-path var(--curtain-duration, 380ms) var(--ease-flowy);
+}
 
-  ::view-transition-new(root) {
-    animation: 450ms var(--ease-flowy) both view-transition-iris-in;
+@starting-style {
+  .iris-curtain {
+    clip-path: circle(0% at var(--curtain-x, 50%) var(--curtain-y, 50%));
   }
+}
 
-  @keyframes view-transition-iris-in {
-    from {
-      clip-path: circle(0% at var(--iris-x, 50%) var(--iris-y, 50%));
-    }
-    to {
-      clip-path: circle(150% at var(--iris-x, 50%) var(--iris-y, 50%));
-    }
+.iris-curtain[data-phase="opening"] {
+  clip-path: circle(0% at var(--curtain-x, 50%) var(--curtain-y, 50%));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iris-curtain {
+    transition: none;
   }
 }

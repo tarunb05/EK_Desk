@@ -6,7 +6,7 @@ import {
   StudentsIcon,
   WalletIcon,
 } from "@/components/shell/nav-icons";
-import { ViewTransitionLink } from "@/components/shell/view-transition-link";
+import { IrisCurtainLink } from "@/components/shell/iris-curtain-link";
 
 export const metadata: Metadata = {
   title: "EK Desk — Fee tracking for EuroKids transport & daycare",
@@ -66,12 +66,12 @@ export default function LandingPage() {
       <header className="border-b border-hairline bg-surface">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 md:px-6">
           <span className="text-lg font-bold text-ink">EK Desk</span>
-          <ViewTransitionLink
+          <IrisCurtainLink
             href={ctaHref}
             className="inline-flex h-9 items-center rounded-md bg-accent px-4 text-sm font-medium text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
           >
             {ctaLabel}
-          </ViewTransitionLink>
+          </IrisCurtainLink>
         </div>
       </header>
 
