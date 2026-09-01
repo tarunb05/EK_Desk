@@ -375,3 +375,68 @@ dialog[open]::backdrop {
     transition: none;
   }
 }
+
+/* Landing page only (CLAUDE.md's one carve-out for hero/motion) -- the
+   hero fades/settles in on load like every other .animate-* entrance
+   here, backwards fill so it's invisible for its own delay rather than
+   flashing full before starting. */
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-hero-in {
+  animation: hero-in 400ms var(--ease-flowy) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-in {
+    animation: none;
+  }
+}
+
+/* Below-the-fold landing sections (feature cards, screenshots) fade+lift
+   in as they cross into view, native scroll-driven animation (per
+   modern-web-guidance's scroll-entry-exit-effects) rather than an
+   IntersectionObserver + JS. Feature-detected via @supports and, since
+   this is decorative only, deliberately has no JS fallback for the
+   browsers it excludes (Firefox as of writing) -- those just see the
+   content in place, unanimated, per that guide's own recommendation. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports ((animation-timeline: view()) and (animation-range: entry)) {
+    @keyframes scroll-reveal-in {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+    }
+
+    .scroll-reveal {
+      animation: scroll-reveal-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+
+/* The landing page's "Sign in" link triggers a same-document View
+   Transition (ViewTransitionLink) instead of Next's instant client-side
+   swap -- a plain cross-fade between the two documents' roots, since
+   this app's whole motion language is restraint (nothing showier, and
+   the login page's own wave/wordmark carry the visual interest already).
+   No @supports needed: unsupported browsers just never get a
+   startViewTransition() call (feature-detected in JS) and navigate
+   instantly, so these rules are inert there rather than needed. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 200ms;
+    animation-timing-function: var(--ease-flowy);
+  }
+}

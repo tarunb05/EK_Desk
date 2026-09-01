@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Image from "next/image";
 import {
   ApprovalsIcon,
@@ -7,6 +6,7 @@ import {
   StudentsIcon,
   WalletIcon,
 } from "@/components/shell/nav-icons";
+import { ViewTransitionLink } from "@/components/shell/view-transition-link";
 
 export const metadata: Metadata = {
   title: "EK Desk — Fee tracking for EuroKids transport & daycare",
@@ -66,21 +66,24 @@ export default function LandingPage() {
       <header className="border-b border-hairline bg-surface">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 md:px-6">
           <span className="text-lg font-bold text-ink">EK Desk</span>
-          <Link
+          <ViewTransitionLink
             href={ctaHref}
             className="inline-flex h-9 items-center rounded-md bg-accent px-4 text-sm font-medium text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
           >
             {ctaLabel}
-          </Link>
+          </ViewTransitionLink>
         </div>
       </header>
 
       <main className="flex-1">
         <section className="mx-auto max-w-5xl px-4 py-16 md:px-6 md:py-24">
-          <h1 className="max-w-2xl text-3xl font-bold leading-tight text-ink md:text-4xl">
+          <h1 className="animate-hero-in max-w-2xl text-3xl font-bold leading-tight text-ink md:text-4xl">
             Fee tracking for EuroKids transport &amp; daycare, in one place.
           </h1>
-          <p className="mt-4 max-w-xl text-base text-ink-secondary">
+          <p
+            className="animate-hero-in mt-4 max-w-xl text-base text-ink-secondary"
+            style={{ animationDelay: "60ms" }}
+          >
             Record payments, see who&apos;s paid, who&apos;s pending, and
             who&apos;s overdue, and track office expenses — across every
             branch and academic year, with an approval workflow for what
@@ -91,7 +94,7 @@ export default function LandingPage() {
         <section className="border-y border-hairline bg-surface">
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 px-4 py-16 sm:grid-cols-2 md:px-6">
             {FEATURES.map((feature) => (
-              <div key={feature.title} className="flex gap-3">
+              <div key={feature.title} className="scroll-reveal flex gap-3">
                 <span className="mt-0.5 shrink-0 text-accent">
                   <feature.Icon size={20} />
                 </span>
@@ -114,7 +117,7 @@ export default function LandingPage() {
           </h2>
           <div className="mt-6 flex flex-col gap-10">
             {SCREENSHOTS.map((shot) => (
-              <figure key={shot.src}>
+              <figure key={shot.src} className="scroll-reveal">
                 <div className="overflow-hidden rounded-md border border-hairline shadow-xs">
                   <Image
                     src={shot.src}
