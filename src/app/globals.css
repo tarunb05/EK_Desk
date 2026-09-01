@@ -73,7 +73,14 @@
      keeps its existing color -- see login-form.tsx's login-field-label
      class for the one exception. */
   --color-glass-fill: var(--glass-fill);
-  --blur-glass: 20px;
+  /* Tried 20px and 8px first -- both smeared the wave background's 0.5px
+     hairlines into an indistinct flat wash with no visible material
+     behind the fill at all, exactly "glass over a flat surface is grey."
+     3px is the difference between a line surviving as a soft, visibly
+     blurred stroke and vanishing outright; a photo background with real
+     tonal regions (not hairlines) could take a heavier blur than this
+     source material can. */
+  --blur-glass: 3px;
 
   --font-sans: var(--font-inter);
 
