@@ -70,12 +70,14 @@ export function ExpenseFilters({
       <div className="flex gap-2">
         <DateField
           ariaLabel="From date"
+          placeholder="Start date"
           value={searchParams.get("from") ?? ""}
           onChange={(iso) => updateParam("from", iso)}
           className="min-w-0 flex-1"
         />
         <DateField
           ariaLabel="To date"
+          placeholder="End date"
           value={searchParams.get("to") ?? ""}
           onChange={(iso) => updateParam("to", iso)}
           className="min-w-0 flex-1"

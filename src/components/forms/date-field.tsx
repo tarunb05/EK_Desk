@@ -19,6 +19,20 @@ interface DateFieldProps {
   onChange?: (isoDate: string) => void;
   ariaLabel?: string;
   className?: string;
+  // Activity log's Day filter: disabled until a month is chosen ("which
+  // day" only means something once "which month" has narrowed the range),
+  // and minDate/maxDate clamp the popover to that month once one is --
+  // real Date bounds rather than the native <input>'s min/max strings,
+  // which this replaces.
+  disabled?: boolean;
+  minDate?: Date;
+  maxDate?: Date;
+  // Every from/to pair (Expenses, the Students directory, the Activity
+  // log) passes this as "Start date"/"End date" so an empty field reads as
+  // which end of the range it is, not a generic "Pick a date" that leaves
+  // that to the field's label alone. Defaults to the old generic copy for
+  // any single, non-range date field (Due date, Starts on, Paid on...).
+  placeholder?: string;
 }
 
 function toIso(date: Date): string {
@@ -59,6 +73,10 @@ export function DateField({
   onChange,
   ariaLabel,
   className = "",
+  disabled = false,
+  minDate,
+  maxDate,
+  placeholder = "Pick a date",
 }: DateFieldProps) {
   const isControlled = value !== undefined;
   const [open, setOpen] = useState(false);
@@ -89,6 +107,12 @@ export function DateField({
     };
   }, [open]);
 
+  // Guards the Activity log's Day field: clearing the Month filter flips
+  // this to disabled while the popover might still be open.
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
+
   function handleSelect(date: Date) {
     const iso = toIso(date);
     if (isControlled) {
@@ -109,25 +133,31 @@ export function DateField({
         aria-label={ariaLabel}
         aria-haspopup="dialog"
         aria-expanded={open}
+        disabled={disabled}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
-        className={`flex w-full items-center gap-2 ${inputClassName} ${
+        className={`flex w-full items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50 ${inputClassName} ${
           selectedDate ? "" : "text-ink-muted"
         }`}
       >
         <CalendarIcon size={14} className="shrink-0 text-ink-muted" />
         <span className="truncate">
-          {selectedDate ? formatDisplay(selectedDate) : "Pick a date"}
+          {selectedDate ? formatDisplay(selectedDate) : placeholder}
         </span>
       </button>
 
-      {open ? (
+      {open && !disabled ? (
         // Calendar's own w-full needs a concrete width to fill -- an
         // absolutely positioned parent with no width set collapses to its
         // content's intrinsic size, which left the 7-column day grid
         // squeezed narrower than its own fixed-size day buttons (they
         // don't shrink, so they overlapped instead).
         <div className="absolute left-0 z-20 mt-1 w-80">
-          <Calendar selected={selectedDate} onSelect={handleSelect} />
+          <Calendar
+            selected={selectedDate}
+            onSelect={handleSelect}
+            minDate={minDate}
+            maxDate={maxDate}
+          />
         </div>
       ) : null}
     </div>

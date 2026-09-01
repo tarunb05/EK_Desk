@@ -125,12 +125,14 @@ export function StudentDirectoryFilters({
       <div className="flex gap-2">
         <DateField
           ariaLabel="Added from"
+          placeholder="Start date"
           value={searchParams.get("dateFrom") ?? ""}
           onChange={(iso) => updateParam("dateFrom", iso)}
           className="w-full"
         />
         <DateField
           ariaLabel="Added to"
+          placeholder="End date"
           value={searchParams.get("dateTo") ?? ""}
           onChange={(iso) => updateParam("dateTo", iso)}
           className="w-full"

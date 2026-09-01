@@ -14,28 +14,19 @@ export const ACTIVITY_LOG_ENTITIES = [
 ] as const;
 export type ActivityLogEntity = (typeof ACTIVITY_LOG_ENTITIES)[number];
 
-const monthParam = z
-  .string()
-  .regex(/^\d{4}-\d{2}$/)
-  .optional()
-  .catch(undefined);
-
 // Deliberately just a shape check, not a real calendar-day check (Zod's
-// regex can't know what a valid day is for a given month) -- the actual
-// clamp to the selected month happens two places: the day <input> itself
-// (min/max, so the browser UI can't offer an out-of-range date to begin
-// with) and getActivityLogPage silently ignoring a day outside month
-// bounds if one still arrives via a hand-edited URL, same "fall back to
-// default rather than 500" convention as every other param here.
-const dayParam = z
+// regex can't accept/reject e.g. day 31 in a 30-day month) -- an invalid
+// but well-shaped date just matches nothing in the query, same "fall back
+// to default rather than 500" convention as every other param here.
+const dateParam = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .optional()
   .catch(undefined);
 
 export const activityLogSearchParamsSchema = z.object({
-  month: monthParam,
-  day: dayParam,
+  dateFrom: dateParam,
+  dateTo: dateParam,
   branch: z.string().optional().catch(undefined),
   actor: z.string().optional().catch(undefined),
   action: z.enum([...ACTIVITY_LOG_ACTIONS, "all"]).catch("all"),
@@ -48,27 +39,12 @@ export type ActivityLogSearchParams = z.infer<
   typeof activityLogSearchParamsSchema
 >;
 
-// A day outside the selected month can only reach the server via a
-// hand-edited URL -- the day <input>'s own min/max already stop the UI
-// from offering one. Falls back to "no day filter" rather than throwing,
-// same convention as every other param in this schema; a full inline
-// "that day isn't in this month" error for a URL nobody would type by hand
-// wasn't worth building.
-export function clampDayToMonth(
-  day: string | undefined,
-  month: string | undefined,
-): string | undefined {
-  if (!day) return undefined;
-  if (!month) return day;
-  return day.startsWith(month) ? day : undefined;
-}
-
 export function activityLogActiveFilterCount(
   params: ActivityLogSearchParams,
 ): number {
   return [
-    params.month,
-    params.day,
+    params.dateFrom,
+    params.dateTo,
     params.branch && params.branch !== "all" ? params.branch : undefined,
     params.actor && params.actor !== "all" ? params.actor : undefined,
     params.action !== "all" ? params.action : undefined,

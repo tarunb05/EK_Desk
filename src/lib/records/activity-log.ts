@@ -4,36 +4,41 @@ import {
   decodeActivityLogCursor,
   encodeActivityLogCursor,
 } from "@/lib/shell/keyset-cursor";
-import {
-  clampDayToMonth,
-  type ActivityLogAction,
-  type ActivityLogEntity,
+import type {
+  ActivityLogAction,
+  ActivityLogEntity,
 } from "@/lib/shell/activity-log-search-params";
 
 // IST, not the query's own timezone -- see datetime.ts's own comment.
 // occurred_at is timestamptz, so appending a fixed offset here (rather
-// than relying on the server's local time) is what makes "August" mean
-// the same calendar month regardless of where this code happens to run.
+// than relying on the server's local time) is what makes "that day" mean
+// the same calendar day regardless of where this code happens to run.
 const IST_OFFSET = "+05:30";
 
-function monthRange(month: string): { gte: string; lt: string } {
-  const [year, monthNum] = month.split("-").map(Number);
-  const nextMonth = monthNum! === 12 ? 1 : monthNum! + 1;
-  const nextYear = monthNum! === 12 ? year! + 1 : year!;
-  return {
-    gte: `${month}-01T00:00:00${IST_OFFSET}`,
-    lt: `${nextYear}-${String(nextMonth).padStart(2, "0")}-01T00:00:00${IST_OFFSET}`,
-  };
-}
-
-function dayRange(day: string): { gte: string; lt: string } {
-  const [year, month, date] = day.split("-").map(Number);
-  const next = new Date(Date.UTC(year!, month! - 1, date! + 1));
-  const nextDay = next.toISOString().slice(0, 10);
-  return {
-    gte: `${day}T00:00:00${IST_OFFSET}`,
-    lt: `${nextDay}T00:00:00${IST_OFFSET}`,
-  };
+// dateTo is inclusive of its whole day -- bumped to the start of the next
+// day rather than compared with lte, same reasoning as
+// student-directory.ts's identical dateTo handling (a straight lte on the
+// date string would exclude everything from that day after midnight).
+// Plain UTC arithmetic on the parsed components, not
+// new Date("YYYY-MM-DD") + local setDate() -- mixing a UTC-parsed date
+// with local-timezone mutation is exactly the kind of off-by-one
+// date-field.tsx's fromIso already hit once.
+function dateRange(
+  dateFrom: string | undefined,
+  dateTo: string | undefined,
+): { gte?: string; lt?: string } {
+  const range: { gte?: string; lt?: string } = {};
+  if (dateFrom) {
+    range.gte = `${dateFrom}T00:00:00${IST_OFFSET}`;
+  }
+  if (dateTo) {
+    const [y, m, d] = dateTo.split("-").map(Number);
+    const nextDay = new Date(Date.UTC(y!, m! - 1, d! + 1))
+      .toISOString()
+      .slice(0, 10);
+    range.lt = `${nextDay}T00:00:00${IST_OFFSET}`;
+  }
+  return range;
 }
 
 export const ACTIVITY_LOG_PAGE_SIZE = 50;
@@ -72,8 +77,8 @@ export interface ActivityLogPage {
 const REAL_ENTITY_FILTER = "system";
 
 export interface ActivityLogFilters {
-  month?: string;
-  day?: string;
+  dateFrom?: string;
+  dateTo?: string;
   branchId?: string;
   actorId?: string;
   action?: ActivityLogAction;
@@ -83,8 +88,8 @@ export interface ActivityLogFilters {
 
 function hasAnyFilter(filters: ActivityLogFilters): boolean {
   return (
-    filters.month !== undefined ||
-    filters.day !== undefined ||
+    filters.dateFrom !== undefined ||
+    filters.dateTo !== undefined ||
     filters.branchId !== undefined ||
     filters.actorId !== undefined ||
     filters.action !== undefined ||
@@ -154,18 +159,9 @@ function applyActivityLogFilters<
 >(query: T, filters: ActivityLogFilters): T {
   let next = query;
 
-  // Day narrows the month, it doesn't replace it -- but a day already
-  // clamped to fall inside the selected month (or with no month at all)
-  // makes its own range a strict subset/equal, so applying just the day's
-  // range when present is equivalent to applying both.
-  const day = clampDayToMonth(filters.day, filters.month);
-  if (day) {
-    const { gte, lt } = dayRange(day);
-    next = next.gte("occurred_at", gte).lt("occurred_at", lt);
-  } else if (filters.month) {
-    const { gte, lt } = monthRange(filters.month);
-    next = next.gte("occurred_at", gte).lt("occurred_at", lt);
-  }
+  const { gte, lt } = dateRange(filters.dateFrom, filters.dateTo);
+  if (gte) next = next.gte("occurred_at", gte);
+  if (lt) next = next.lt("occurred_at", lt);
 
   if (filters.branchId) {
     next = next.eq("branch_id", filters.branchId);

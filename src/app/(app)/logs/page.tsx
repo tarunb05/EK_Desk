@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { getAcademicYears, getBranches } from "@/lib/supabase/queries";
-import { getCurrentScope } from "@/lib/shell/get-current-scope";
-import { shellSearchParamsSchema } from "@/lib/shell/search-params";
 import {
   activityLogActiveFilterCount,
   activityLogSearchParamsSchema,
@@ -34,12 +32,10 @@ export default async function ActivityLogPage({
   await requireRole("admin");
 
   const rawParams = await searchParams;
-  const scopeParams = shellSearchParamsSchema.parse(rawParams);
   const filterParams = activityLogSearchParamsSchema.parse(rawParams);
 
   const supabase = await createClient();
-  const [{ year }, years, branches, actors] = await Promise.all([
-    getCurrentScope(scopeParams),
+  const [years, branches, actors] = await Promise.all([
     getAcademicYears(supabase),
     getBranches(supabase),
     getActivityLogActorOptions(supabase),
@@ -51,8 +47,8 @@ export default async function ActivityLogPage({
     await getActivityLogPage(supabase, {
       cursor: filterParams.cursor,
       filters: {
-        month: filterParams.month,
-        day: filterParams.day,
+        dateFrom: filterParams.dateFrom,
+        dateTo: filterParams.dateTo,
         branchId: selectedBranch?.id,
         actorId: filterParams.actor && filterParams.actor !== "all" ? filterParams.actor : undefined,
         action: filterParams.action === "all" ? undefined : filterParams.action,
@@ -98,7 +94,7 @@ export default async function ActivityLogPage({
         />
         <FilterMenu activeCount={activeCount}>
           <ScopeSelectors years={years} branches={branches} paginationParam="cursor" />
-          <ActivityLogFilters academicYearStartsOn={year.startsOn} actors={actors} />
+          <ActivityLogFilters actors={actors} />
         </FilterMenu>
         <a
           href={`/api/export/logs?${exportParams.toString()}`}

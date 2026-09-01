@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Select } from "@/components/forms/select";
+import { DateField } from "@/components/forms/date-field";
 import { FilterIcon, UserIcon } from "@/components/shell/nav-icons";
 import type { ActivityLogActorOption } from "@/lib/records/activity-log";
 import {
@@ -10,7 +11,6 @@ import {
   type ActivityLogAction,
   type ActivityLogEntity,
 } from "@/lib/shell/activity-log-search-params";
-import { generateTwelveMonths } from "@/lib/domain/academic-year";
 
 const ACTION_OPTIONS: Record<ActivityLogAction | "all", string> = {
   all: "All actions",
@@ -30,34 +30,21 @@ const ENTITY_OPTIONS: Record<ActivityLogEntity | "all", string> = {
   profile: "User",
 };
 
-function monthLabel(monthKey: string): string {
-  const [year, month] = monthKey.split("-").map(Number);
-  if (!year || !month) return monthKey;
-  return new Date(year, month - 1, 1).toLocaleString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
-}
-
 export function ActivityLogFilters({
-  academicYearStartsOn,
   actors,
 }: {
-  academicYearStartsOn: string;
   actors: ActivityLogActorOption[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const month = searchParams.get("month") ?? "";
-  const day = searchParams.get("day") ?? "";
+  const dateFrom = searchParams.get("dateFrom") ?? "";
+  const dateTo = searchParams.get("dateTo") ?? "";
   const branch = searchParams.get("branch") ?? "all";
   const actor = searchParams.get("actor") ?? "all";
   const action = searchParams.get("action") ?? "all";
   const entity = searchParams.get("entity") ?? "all";
-
-  const months = generateTwelveMonths(academicYearStartsOn);
 
   function updateParam(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -74,47 +61,32 @@ export function ActivityLogFilters({
     router.push(`${pathname}?${params.toString()}`);
   }
 
-  function updateMonth(nextMonth: string) {
-    // Changing the month can strand a previously-picked day outside it --
-    // clear the day rather than silently keep a filter that no longer
-    // matches what the month selector shows.
-    updateParam({ month: nextMonth || null, day: null });
-  }
-
   return (
     <>
-      <Select
-        ariaLabel="Filter by month"
-        icon={<FilterIcon size={14} />}
-        value={month}
-        onChange={updateMonth}
-        options={[
-          { value: "", label: "All months" },
-          ...months.map((key) => ({ value: key, label: monthLabel(key) })),
-        ]}
-        className="w-full"
-      />
-
       <label className="flex flex-col gap-1 text-sm text-ink-secondary">
         <span className="text-2xs uppercase tracking-wide text-ink-muted">
-          Day
+          Date range
         </span>
-        {/* Native <input type="date">, deliberately -- not the custom
-            Calendar popover used for form fields elsewhere in this app.
-            min/max clamp it to the selected month so the browser's own UI
-            can't offer an out-of-range day, and it's disabled until a
-            month is chosen, since "which day" only means something once
-            "which month" has narrowed the range. */}
-        <input
-          type="date"
-          aria-label="Filter by day"
-          value={day}
-          min={month ? `${month}-01` : undefined}
-          max={month ? `${month}-31` : undefined}
-          disabled={!month}
-          onChange={(event) => updateParam({ day: event.target.value || null })}
-          className="h-9 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none transition-colors focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
-        />
+        {/* Same from/to DateField pair as the Expenses and Students
+            directory filter panels -- see date-field.tsx's placeholder
+            prop for why each side says "Start date"/"End date" rather
+            than the generic "Pick a date" a single date field uses. */}
+        <div className="flex gap-2">
+          <DateField
+            ariaLabel="Filter from date"
+            placeholder="Start date"
+            value={dateFrom}
+            onChange={(iso) => updateParam({ dateFrom: iso })}
+            className="min-w-0 flex-1"
+          />
+          <DateField
+            ariaLabel="Filter to date"
+            placeholder="End date"
+            value={dateTo}
+            onChange={(iso) => updateParam({ dateTo: iso })}
+            className="min-w-0 flex-1"
+          />
+        </div>
       </label>
 
       <Select
@@ -158,8 +130,8 @@ export function ActivityLogFilters({
         className="w-full"
       />
 
-      {month ||
-      day ||
+      {dateFrom ||
+      dateTo ||
       branch !== "all" ||
       actor !== "all" ||
       action !== "all" ||
@@ -168,8 +140,8 @@ export function ActivityLogFilters({
           type="button"
           onClick={() =>
             updateParam({
-              month: null,
-              day: null,
+              dateFrom: null,
+              dateTo: null,
               branch: null,
               actor: null,
               action: null,

@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
   const selectedBranch = branches.find((b) => b.code === params.branch);
 
   const filters: ActivityLogFilters = {
-    month: params.month,
-    day: params.day,
+    dateFrom: params.dateFrom,
+    dateTo: params.dateTo,
     branchId: selectedBranch?.id,
     actorId: params.actor && params.actor !== "all" ? params.actor : undefined,
     action: params.action === "all" ? undefined : params.action,
@@ -96,10 +96,20 @@ export async function GET(request: NextRequest) {
   // narrowed), never a name or any other PII -- matching the fee-accounts
   // and expenses exports' own filenames, which carry service/metric/year
   // and nothing about a person.
+  const dateScope =
+    params.dateFrom && params.dateTo
+      ? params.dateFrom === params.dateTo
+        ? params.dateFrom
+        : `${params.dateFrom}_to_${params.dateTo}`
+      : params.dateFrom
+        ? `from-${params.dateFrom}`
+        : params.dateTo
+          ? `to-${params.dateTo}`
+          : "all-dates";
   const scopeParts = [
     "activity-log",
     selectedBranch?.code ?? "all-branches",
-    params.month ?? "all-dates",
+    dateScope,
   ];
   const filename = `${scopeParts.join("-")}.xlsx`;
   const generatedAt = formatLogTimestamp(new Date().toISOString());
