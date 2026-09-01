@@ -117,7 +117,10 @@ export default function LandingPage() {
           </h2>
           <div className="mt-6 flex flex-col gap-10">
             {SCREENSHOTS.map((shot) => (
-              <figure key={shot.src} className="scroll-reveal">
+              <figure
+                key={shot.src}
+                className="gallery-reveal cv-auto-screenshot"
+              >
                 <div className="overflow-hidden rounded-md border border-hairline shadow-xs">
                   <Image
                     src={shot.src}
