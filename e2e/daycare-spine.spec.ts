@@ -3,7 +3,7 @@ import {
   TEST_ADMIN_USERNAME,
   TEST_ADMIN_PASSWORD,
 } from "../scripts/test-credentials";
-import { pickDate } from "./helpers";
+import { pickDate, waitForDashboardLoaded } from "./helpers";
 
 function parseRupees(text: string): number {
   return Number(text.replace(/[₹,]/g, ""));
@@ -37,6 +37,7 @@ test.describe("daycare spine", () => {
 
     const baselineTransportText = await (async () => {
       await page.goto("/transport");
+      await waitForDashboardLoaded(page);
       return page.locator("main").innerText();
     })();
 
@@ -110,6 +111,7 @@ test.describe("daycare spine", () => {
 
     // Transport never changed.
     await page.goto("/transport");
+    await waitForDashboardLoaded(page);
     expect(await page.locator("main").innerText()).toBe(baselineTransportText);
   });
 });

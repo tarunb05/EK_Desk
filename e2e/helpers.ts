@@ -46,3 +46,16 @@ export async function pickDate(
     .getByRole("button", { name: `${MONTHS[month! - 1]} ${day}, ${year}`, exact: true })
     .click();
 }
+
+// A ServiceScopeDashboard route (/transport, /daycare) renders
+// loading.tsx's shimmering skeleton (page-skeletons.tsx) while the Server
+// Component's data is still in flight, then swaps to the real content --
+// page.goto() only waits for navigation, not for that swap, so reading
+// main's innerText() right after goto() can race the skeleton and capture
+// "Loading…" instead of the real dashboard (the failure this fixes: a
+// baseline snapshot taken too early, compared later against real content).
+// The "students-enrolled" stat card only exists in the real content, never
+// the skeleton, so waiting for it is a reliable "done loading" signal.
+export async function waitForDashboardLoaded(page: Page): Promise<void> {
+  await page.getByTestId("students-enrolled").waitFor();
+}
