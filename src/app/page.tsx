@@ -102,7 +102,7 @@ export default function LandingPage() {
           </p>
         </section>
 
-        <section className="border-y border-hairline bg-surface">
+        <section id="features" className="border-y border-hairline bg-surface">
           {/* Five roughly-equal facets of one product, not a hierarchy --
               a plain grid rather than a bento layout that would imply one
               of them matters more than the others (it doesn't). 3-up at
@@ -128,7 +128,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-4 py-16 md:px-6">
+        <section id="screenshots" className="mx-auto max-w-6xl px-4 py-16 md:px-6">
           <h2 className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
             What it looks like
           </h2>
@@ -161,9 +161,43 @@ export default function LandingPage() {
         </section>
       </main>
 
+      {/* Every link here is a real, working destination on this exact
+          page/route -- no invented "Resources"/"Company" columns or social
+          icons a checked-out-24/7 back-office tool for two preschool
+          branches has no business pretending to have. Structure borrowed
+          from a standard marketing-site footer shape (brand block, a
+          nav column, a copyright rule below both), content kept entirely
+          honest to what this actually is. */}
       <footer className="border-t border-hairline bg-surface">
-        <div className="mx-auto max-w-5xl px-4 py-6 text-sm text-ink-muted md:px-6">
-          EK Desk — internal fee and expense management.
+        <div className="mx-auto max-w-6xl px-4 py-10 md:px-6">
+          <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <span className="text-sm font-medium text-ink">EK Desk</span>
+              <p className="mt-1.5 max-w-xs text-sm text-ink-muted">
+                Internal fee and expense management for EuroKids transport
+                and daycare.
+              </p>
+            </div>
+
+            <nav
+              aria-label="Footer"
+              className="flex gap-x-6 gap-y-2 text-sm text-ink-secondary"
+            >
+              <a href="#features" className="hover:text-ink hover:underline">
+                Features
+              </a>
+              <a href="#screenshots" className="hover:text-ink hover:underline">
+                Screenshots
+              </a>
+              <IrisCurtainLink href={ctaHref} className="hover:text-ink hover:underline">
+                {ctaLabel}
+              </IrisCurtainLink>
+            </nav>
+          </div>
+
+          <div className="mt-8 border-t border-hairline pt-6 text-xs text-ink-muted">
+            © {new Date().getFullYear()} EK Desk. For EuroKids staff use only.
+          </div>
         </div>
       </footer>
     </div>
