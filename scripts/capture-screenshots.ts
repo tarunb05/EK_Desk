@@ -42,7 +42,17 @@ const SHOTS: Shot[] = [
 
 async function main() {
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  // deviceScaleFactor: 2 -- the landing page's coverflow carousel now
+  // displays these up to 760px wide; a plain 1x capture at 1440px source
+  // width holds up fine at that size on a standard display but goes soft
+  // on any 2x/retina screen. Capturing at 2x (2880x1800 native) costs
+  // nothing here -- these are static marketing assets, not something
+  // shipped to every page load -- and next/image still serves a properly
+  // downscaled variant everywhere else via its own `sizes` handling.
+  const page = await browser.newPage({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 2,
+  });
 
   await page.goto(`${BASE_URL}/login`);
   await page.getByLabel("Username").fill(TEST_ADMIN_USERNAME);

@@ -69,8 +69,20 @@ export interface CoverflowCarouselProps {
   fade?: number;
   /** Any CSS length. Everything else is derived from it, so the rake scales. */
   cardWidth?: string;
+  /** Card aspect ratio as width/height. Defaults to 1 (square), the
+      reference's own assumption. The frame reserves exactly cardWidth /
+      cardAspectRatio of vertical room -- passing e.g. 8/5 for a 16:10
+      screenshot keeps that reservation matched to what actually renders,
+      instead of leaving unused space below a card shorter than a square. */
+  cardAspectRatio?: number;
   /** Space between cards, as a fraction of card width. */
   gap?: number;
+  /** next/image `sizes`, matched to the CSS behind cardWidth so the
+      optimizer doesn't serve a smaller source than the card actually
+      renders at (the reference's own fixed "420px, 260px" was sized for
+      its 260px default cardWidth and went stale/undersized the moment a
+      caller passed a bigger one). */
+  imageSizes?: string;
   loop?: boolean;
   showCaption?: boolean;
   showPagination?: boolean;
@@ -89,7 +101,9 @@ export function CoverflowCarousel({
   falloff = 0.56,
   fade = 0.1,
   cardWidth = "clamp(148px, 22vw, 260px)",
+  cardAspectRatio = 1,
   gap = 0.05,
+  imageSizes = "(min-width: 768px) 22vw, 90vw",
   loop = true,
   showCaption = false,
   showPagination = false,
@@ -386,7 +400,7 @@ export function CoverflowCarousel({
           <div
             className="relative select-none"
             style={{
-              height: "var(--cf-card)",
+              height: `calc(var(--cf-card) / ${cardAspectRatio})`,
               transformStyle: "preserve-3d",
             }}
           >
@@ -400,17 +414,17 @@ export function CoverflowCarousel({
                 aria-roledescription="slide"
                 aria-label={`${index + 1} of ${count}`}
                 className={cn(
-                  "absolute left-1/2 top-0 aspect-square overflow-hidden rounded-md border border-hairline bg-surface-accent shadow-xs will-change-transform",
+                  "absolute left-1/2 top-0 overflow-hidden rounded-md border border-hairline bg-surface-accent shadow-xs will-change-transform",
                   cardClassName,
                 )}
-                style={{ width: "var(--cf-card)" }}
+                style={{ width: "var(--cf-card)", aspectRatio: cardAspectRatio }}
               >
                 <Image
                   src={slide.src}
                   alt={slide.alt}
                   fill
                   draggable={false}
-                  sizes="(min-width: 768px) 420px, 260px"
+                  sizes={imageSizes}
                   className="select-none object-cover"
                 />
               </div>

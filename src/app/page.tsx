@@ -14,7 +14,7 @@ import {
 import { HowItWorks } from "./how-it-works";
 
 export const metadata: Metadata = {
-  title: "EK Desk — Fee tracking for EuroKids transport & daycare",
+  title: "EK Desk — Fee tracking for preschool transport & daycare",
 };
 
 const FEATURES: {
@@ -97,7 +97,7 @@ export default function LandingPage() {
       <main className="flex-1">
         <section className="mx-auto max-w-5xl px-4 py-16 md:px-6 md:py-24">
           <h1 className="animate-hero-in max-w-2xl text-3xl font-bold leading-tight text-ink md:text-4xl">
-            Fee tracking for EuroKids transport &amp; daycare, in one place.
+            Fee tracking for preschool transport &amp; daycare, in one place.
           </h1>
           <p
             className="animate-hero-in mt-4 max-w-xl text-base text-ink-secondary"
@@ -158,7 +158,8 @@ export default function LandingPage() {
             slides={SCREENSHOTS}
             label="Product screenshots"
             cardWidth="clamp(360px, 50vw, 760px)"
-            cardClassName="aspect-[8/5]"
+            cardAspectRatio={8 / 5}
+            imageSizes="(min-width: 1520px) 760px, (min-width: 768px) 50vw, 90vw"
             rotate={30}
             depth={0.5}
             gap={0.08}
@@ -183,7 +184,7 @@ export default function LandingPage() {
             <div>
               <span className="text-sm font-medium text-ink">EK Desk</span>
               <p className="mt-1.5 max-w-xs text-sm text-ink-muted">
-                Internal fee and expense management for EuroKids transport
+                Internal fee and expense management for preschool transport
                 and daycare.
               </p>
             </div>
@@ -205,7 +206,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-8 border-t border-hairline pt-6 text-xs text-ink-muted">
-            © {new Date().getFullYear()} EK Desk. For EuroKids staff use only.
+            © {new Date().getFullYear()} EK Desk. For preschool staff use only.
           </div>
         </div>
       </footer>
