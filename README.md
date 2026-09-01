@@ -142,22 +142,19 @@ for bringing the office's existing real records into this schema.
 
 ## Screenshots
 
-Taken against seed data only — never real student data, per `CLAUDE.md`'s
-PII rule. To capture them yourself:
+`public/screenshots/` holds the four images the landing page (`/`) shows
+under "What it looks like" — taken against seed data only, never real
+student data, per `CLAUDE.md`'s PII rule. To recapture them after a UI
+change:
 
 ```bash
-npm run db:start && npm run db:reset && npm run db:seed && npm run auth:seed
-npm run dev
+npm run db:reset && npm run db:seed && npm run auth:seed
+npm run build && npm run start
+npm run screenshots
 ```
 
-Sign in with the seeded admin (`scripts/test-credentials.ts`), then capture:
-
-- `/transport` and `/daycare` — the dashboard (stat cards, By branch split
-  with `?branch=all`, ageing/collection charts, filterable record table).
-- A student's detail drawer (click any row).
-- `/students` — the cross-service student directory.
-
-_Not yet embedded here — this repo doesn't have a way to save a rendered
-screenshot to a file from the tooling available when this section was
-written. Add the images under `docs/screenshots/` and link them here once
-captured._
+`scripts/capture-screenshots.ts` signs in as the seeded admin
+(`scripts/test-credentials.ts`) and writes each one straight to
+`public/screenshots/` via Playwright's own screenshot API — deliberately
+against a production build (`next start`), not `next dev`, so the dev-mode
+indicator badge never ends up in a shipped image.
