@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import { TableNavLink } from "@/components/records/table-transition";
 
 interface PaginationControlsProps {
   page: number;
@@ -59,9 +61,12 @@ export function PaginationControls({
             Previous
           </span>
         ) : (
-          <Link href={hrefForPage(page - 1)} className={enabledClassName}>
+          <TableNavLink
+            href={hrefForPage(page - 1)}
+            className={enabledClassName}
+          >
             Previous
-          </Link>
+          </TableNavLink>
         )}
 
         {totalPages > 1 ? (
@@ -84,14 +89,14 @@ export function PaginationControls({
                   {entry}
                 </span>
               ) : (
-                <Link
+                <TableNavLink
                   key={entry}
                   href={hrefForPage(entry)}
                   aria-label={`Page ${entry}`}
                   className={`${pageNumberClassName} text-ink-secondary hover:bg-surface-accent hover:text-ink`}
                 >
                   {entry}
-                </Link>
+                </TableNavLink>
               ),
             )}
           </div>
@@ -102,9 +107,12 @@ export function PaginationControls({
             Next
           </span>
         ) : (
-          <Link href={hrefForPage(page + 1)} className={enabledClassName}>
+          <TableNavLink
+            href={hrefForPage(page + 1)}
+            className={enabledClassName}
+          >
             Next
-          </Link>
+          </TableNavLink>
         )}
       </div>
     </div>
