@@ -37,6 +37,21 @@ export function AddStudentForm({
   );
   const [branchId, setBranchId] = useState(branches[0]?.id ?? "");
   const [classSection, setClassSection] = useState("");
+  // React resets every *uncontrolled* field in a <form action={...}> once
+  // the action returns -- on a validation failure just as much as on
+  // success, since React can't tell the difference from here. Branch and
+  // Grade above never had this problem because Select already drives them
+  // from React state; every other field here was a plain uncontrolled
+  // <input>, which is exactly what was emptying out the whole form on a
+  // single missing box instead of leaving it filled in with just that one
+  // box highlighted.
+  const [admissionNo, setAdmissionNo] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [guardianName, setGuardianName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [pickupPoint, setPickupPoint] = useState("");
+  const [slot, setSlot] = useState("");
+  const [totalReceivable, setTotalReceivable] = useState("");
   const { showToast } = useToast();
 
   // The admin path redirects on success (see actions.ts's setToastNotice +
@@ -75,19 +90,43 @@ export function AddStudentForm({
       </Field>
 
       <Field label="Admission number" error={state.fieldErrors?.admissionNo}>
-        <input name="admissionNo" required className={inputClassName} />
+        <input
+          name="admissionNo"
+          required
+          value={admissionNo}
+          onChange={(event) => setAdmissionNo(event.target.value)}
+          className={inputClassName}
+        />
       </Field>
 
       <Field label="Student full name" error={state.fieldErrors?.fullName}>
-        <input name="fullName" required className={inputClassName} />
+        <input
+          name="fullName"
+          required
+          value={fullName}
+          onChange={(event) => setFullName(event.target.value)}
+          className={inputClassName}
+        />
       </Field>
 
       <Field label="Guardian name" error={state.fieldErrors?.guardianName}>
-        <input name="guardianName" required className={inputClassName} />
+        <input
+          name="guardianName"
+          required
+          value={guardianName}
+          onChange={(event) => setGuardianName(event.target.value)}
+          className={inputClassName}
+        />
       </Field>
 
       <Field label="Phone" error={state.fieldErrors?.phone}>
-        <input name="phone" required className={inputClassName} />
+        <input
+          name="phone"
+          required
+          value={phone}
+          onChange={(event) => setPhone(event.target.value)}
+          className={inputClassName}
+        />
       </Field>
 
       <Field label="Grade" error={state.fieldErrors?.classSection}>
@@ -108,11 +147,23 @@ export function AddStudentForm({
 
       {serviceType === "transport" ? (
         <Field label="Pickup point" error={state.fieldErrors?.pickupPoint}>
-          <input name="pickupPoint" required className={inputClassName} />
+          <input
+            name="pickupPoint"
+            required
+            value={pickupPoint}
+            onChange={(event) => setPickupPoint(event.target.value)}
+            className={inputClassName}
+          />
         </Field>
       ) : (
         <Field label="Slot" error={state.fieldErrors?.slot}>
-          <input name="slot" required className={inputClassName} />
+          <input
+            name="slot"
+            required
+            value={slot}
+            onChange={(event) => setSlot(event.target.value)}
+            className={inputClassName}
+          />
         </Field>
       )}
 
@@ -126,6 +177,8 @@ export function AddStudentForm({
           min="0"
           step="1"
           required
+          value={totalReceivable}
+          onChange={(event) => setTotalReceivable(event.target.value)}
           className={inputClassName}
         />
       </Field>

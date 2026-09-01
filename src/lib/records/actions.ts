@@ -108,7 +108,7 @@ function duplicateServiceError(
   return {
     error: null,
     fieldErrors: {
-      admissionNo: `Admission number ${admissionNo} already has an active ${serviceType} student.`,
+      admissionNo: `A ${serviceType} student with admission number ${admissionNo} already exists.`,
     },
   };
 }
@@ -117,11 +117,25 @@ export async function createStudentWithFeeAccount(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const parsed = createStudentWithFeeAccountSchema.safeParse(
-    formEntries(formData),
-  );
+  const raw = formEntries(formData);
+  const parsed = createStudentWithFeeAccountSchema.safeParse(raw);
   if (!parsed.success) {
-    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+    const fieldErrors = fieldErrorsFromZod(parsed.error);
+    // The schema's own superRefine (pickupPoint required for transport,
+    // slot required for daycare) only fires when the rest of the object
+    // already parsed cleanly -- Zod skips a superRefine's checks once any
+    // sibling field has already failed, so a transport submission missing
+    // BOTH, say, Total receivable and Pickup point silently dropped the
+    // Pickup point error entirely, showing only one of the two problems.
+    // Re-checked here directly against the raw field, independent of
+    // whatever else on the form is or isn't valid.
+    if (raw.serviceType === "transport" && !fieldErrors.pickupPoint && !raw.pickupPoint?.trim()) {
+      fieldErrors.pickupPoint = "Enter a pickup point.";
+    }
+    if (raw.serviceType === "daycare" && !fieldErrors.slot && !raw.slot?.trim()) {
+      fieldErrors.slot = "Choose a slot.";
+    }
+    return { error: null, fieldErrors };
   }
   const value = parsed.data;
   const authed = await requireAuth();
