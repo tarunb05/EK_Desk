@@ -11,6 +11,7 @@ import {
   CoverflowCarousel,
   type CoverflowSlide,
 } from "@/components/ui/coverflow-carousel";
+import { HowItWorks } from "./how-it-works";
 
 export const metadata: Metadata = {
   title: "EK Desk — Fee tracking for EuroKids transport & daycare",
@@ -134,6 +135,8 @@ export default function LandingPage() {
             ))}
           </div>
         </section>
+
+        <HowItWorks />
 
         <section
           id="screenshots"
