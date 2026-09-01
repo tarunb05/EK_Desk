@@ -8,6 +8,7 @@ import {
   type FeeAccountExportMetric,
 } from "@/lib/records/queries";
 import { paiseToRupees } from "@/lib/domain/money";
+import { sanitizeForSpreadsheet } from "@/lib/records/spreadsheet-sanitizer";
 import type { ServiceType } from "@/lib/records/types";
 
 // A Route Handler, not a Server Action -- per CLAUDE.md, a binary file
@@ -74,12 +75,12 @@ export async function GET(request: NextRequest) {
   const todayIso = new Date().toISOString().slice(0, 10);
   for (const row of rows) {
     sheet.addRow({
-      student: row.studentFullName,
-      admissionNo: row.studentAdmissionNo,
-      classSection: row.classSection,
-      branch: row.branchName,
-      guardian: row.guardianName,
-      phone: row.phone,
+      student: sanitizeForSpreadsheet(row.studentFullName),
+      admissionNo: sanitizeForSpreadsheet(row.studentAdmissionNo),
+      classSection: sanitizeForSpreadsheet(row.classSection),
+      branch: sanitizeForSpreadsheet(row.branchName),
+      guardian: sanitizeForSpreadsheet(row.guardianName),
+      phone: sanitizeForSpreadsheet(row.phone),
       receivable: paiseToRupees(row.totalReceivablePaise),
       collected: paiseToRupees(row.collectedPaise),
       pending: paiseToRupees(row.pendingPaise),

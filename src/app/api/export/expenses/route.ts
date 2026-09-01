@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth/require-role";
 import { getAllExpenses } from "@/lib/records/expense-directory";
 import { getBranches } from "@/lib/supabase/queries";
 import { paiseToRupees } from "@/lib/domain/money";
+import { sanitizeForSpreadsheet } from "@/lib/records/spreadsheet-sanitizer";
 
 // A Route Handler, not a Server Action -- see fee-accounts/route.ts's
 // comment for why a Content-Disposition download needs one.
@@ -61,13 +62,13 @@ export async function GET(request: NextRequest) {
   for (const row of rows) {
     sheet.addRow({
       date: row.spentOn,
-      category: row.categoryName,
-      branch: row.branchName,
+      category: sanitizeForSpreadsheet(row.categoryName),
+      branch: sanitizeForSpreadsheet(row.branchName),
       amount: paiseToRupees(row.amountPaise),
       method: row.method,
-      reference: row.reference,
-      note: row.note,
-      enteredBy: row.createdByName,
+      reference: sanitizeForSpreadsheet(row.reference),
+      note: sanitizeForSpreadsheet(row.note),
+      enteredBy: sanitizeForSpreadsheet(row.createdByName),
       edited: row.isEdited ? "Yes" : "No",
     });
   }
