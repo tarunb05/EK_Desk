@@ -18,7 +18,13 @@ export function LoginForm() {
     <form action={formAction} noValidate className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <div className="flex items-baseline justify-between gap-2">
-          <label htmlFor="username" className="text-xs text-ink-muted">
+          {/* login-field-label: Phase 14's glass card bumps this to
+              --ink-secondary while its enhancement is active (see
+              globals.css) -- --ink-muted, the default here, measures
+              short of 4.5:1 against the wave background's darkest
+              extreme. Fallback/reduced-transparency/reduced-contrast
+              states keep this exact --ink-muted, unaffected. */}
+          <label htmlFor="username" className="login-field-label text-xs text-ink-muted">
             Username
           </label>
           {state.fieldErrors?.username ? (
@@ -39,7 +45,7 @@ export function LoginForm() {
 
       <div className="flex flex-col gap-1">
         <div className="flex items-baseline justify-between gap-2">
-          <label htmlFor="password" className="text-xs text-ink-muted">
+          <label htmlFor="password" className="login-field-label text-xs text-ink-muted">
             Password
           </label>
           {state.fieldErrors?.password ? (

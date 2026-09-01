@@ -21,6 +21,21 @@
      restrained rather than bouncy. Used as the default for every existing
      `transition-*` utility in the app (state-change only, per CLAUDE.md). */
   --ease-flowy: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Phase 14, login sign-in card only — see CLAUDE.md's banned-list
+     exception. Built from --surface via color-mix(), not a new hue: a
+     light frosted fill (not a dark tinted one -- tried dark first, it
+     read as heavy/smoked rather than glassy) so the fill itself carries
+     the contrast regardless of what wave-background pixel sits behind
+     it. 75% measured (not assumed) against the wave background's two
+     real extremes -- plain --canvas beige, and a stroked --accent wave
+     line, the lightest and darkest regions that background actually
+     has -- clears 4.5:1 for --ink, --ink-secondary and --attention at
+     their existing, unmodified colors in both cases; only --ink-muted
+     (the field labels' default) falls short against the wave-line
+     extreme, which is why those two labels alone get a scoped bump
+     below rather than a wholesale on-glass palette. */
+  --glass-fill: color-mix(in srgb, var(--surface) 75%, transparent);
 }
 
 /* Opt-in for animating to/from an intrinsic size (block-size: auto), per
@@ -50,6 +65,15 @@
   --color-positive-fill: var(--positive-fill);
   --color-attention: var(--attention);
   --color-attention-fill: var(--attention-fill);
+  /* Phase 14, login sign-in card only — see the --glass-fill definition
+     above and CLAUDE.md's banned-list exception. Registered here so
+     `bg-glass-fill` exists as a real Tailwind utility rather than an
+     inline arbitrary value. No separate border/text tokens: the card
+     keeps its existing border-border and every text element inside it
+     keeps its existing color -- see login-form.tsx's login-field-label
+     class for the one exception. */
+  --color-glass-fill: var(--glass-fill);
+  --blur-glass: 20px;
 
   --font-sans: var(--font-inter);
 
@@ -91,6 +115,70 @@ body {
      back to the browser's own default sans stack instead of Inter. */
   font-family: var(--font-inter), Arial, Helvetica, sans-serif;
   font-size: var(--text-sm);
+}
+
+/* Phase 14 -- the login sign-in card's glass treatment. See CLAUDE.md's
+   banned-list exception for why this exists only here.
+
+   Fallback-first: the base .login-glass-card rule below IS the fallback
+   (an opaque --surface card, identical to what shipped before this phase)
+   -- @supports progressively enhances it to the blurred version, rather
+   than the more common pattern of styling the enhanced version first and
+   patching a fallback on top. That ordering means prefers-reduced-
+   transparency/prefers-contrast: more (below) can simply not apply the
+   enhancement, with no separate "undo the glass" rule to keep in sync. */
+.login-glass-card {
+  background-color: var(--surface);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  @media (prefers-reduced-transparency: no-preference) and (prefers-contrast: no-preference) {
+    .login-glass-card {
+      background-color: var(--glass-fill);
+      -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(1.8);
+      backdrop-filter: blur(var(--blur-glass)) saturate(1.8);
+      /* border-color and every text color inside the card are
+         deliberately untouched here -- at this fill's measured contrast,
+         --border, --ink, --ink-secondary and --attention all already
+         clear their required ratios against both of the wave
+         background's real extremes at their existing, unmodified
+         values. */
+    }
+
+    /* The one color that doesn't clear unmodified: --ink-muted (the
+       field labels' default) measures 3.56:1 against the wave-line
+       extreme, short of the 4.5:1 small text needs. --ink-secondary
+       already clears (4.77:1) and is the natural next step down from
+       full --ink, so it's what these two labels alone borrow while the
+       glass enhancement is active -- login-form.tsx is the only
+       component with the login-field-label class this targets. */
+    .login-glass-card .login-field-label {
+      color: var(--ink-secondary);
+    }
+  }
+}
+
+/* Chrome/Edge/Safari paint autofilled fields with an opaque yellow (light
+   theme) or dark (dark theme) fill of their own that neither `background-
+   color` nor `!important` can override directly -- only this transition
+   trick can. A long enough transition-delay effectively never completes
+   (the field would need to stay autofilled and untouched for a real
+   human lifetime), which is what makes the fill look like it was never
+   applied instead of flashing yellow before this rule wins. text-fill-
+   color (not `color`, which autofill also ignores) is what actually
+   recolors the autofilled text itself. Every field on this login form
+   sits on the near-opaque input fill already, glass card or fallback
+   alike, so --ink stays correct in both.
+   Scoped to .login-glass-card, not a bare `input` selector -- this phase
+   touches the login page only; the same autofill gap exists on every
+   other form in the app too (nothing here fixed it before this phase
+   either), but fixing it app-wide is a separate change outside this
+   phase's boundary. */
+.login-glass-card input:-webkit-autofill,
+.login-glass-card input:-webkit-autofill:hover,
+.login-glass-card input:-webkit-autofill:focus {
+  transition: background-color 600000s 0s, color 600000s 0s;
+  -webkit-text-fill-color: var(--ink);
 }
 
 /* Subtle entrance for popovers/dropdowns (e.g. the month filter) — a plain
