@@ -1,6 +1,6 @@
 # EK Desk
 
-Internal fee-management app for a EuroKids preschool group with two branches, covering school transport and daycare fee accounts.
+Internal fee-management app for preschool, covering school transport and daycare fee accounts.
 
 ## Stack
 
