@@ -27,7 +27,7 @@ export function BranchSplitTable({ rows }: { rows: BranchSplitRow[] }) {
           {rows.map(({ branch, summary }) => (
             <tr
               key={branch.id}
-              className="h-9 border-b border-hairline transition-colors last:border-0 hover:bg-surface-accent"
+              className="h-9 border-b border-hairline even:bg-hairline/40 transition-colors last:border-0 hover:bg-surface-accent"
             >
               <td className="px-3 text-ink">{branch.name}</td>
               <td className="px-3 text-right tabular-nums">

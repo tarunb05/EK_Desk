@@ -1,10 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import type {
-  StudentDirectorySearchParams,
   StudentServiceFilter,
   STUDENT_SORT_KEYS,
 } from "@/lib/shell/student-table-params";
+import type { StudentDirectorySearchParams } from "@/lib/shell/student-search-params";
 import { resolvePagination, type Pagination } from "@/lib/shell/pagination";
 import type { ServiceType } from "@/lib/records/types";
 
@@ -12,6 +12,7 @@ export interface StudentFeeAccountRef {
   feeAccountId: string;
   serviceType: ServiceType;
   academicYearLabel: string;
+  status: "active" | "discontinued";
 }
 
 export interface StudentDirectoryRow {
@@ -36,6 +37,9 @@ export interface StudentDirectoryRow {
 export interface StudentDirectoryParams {
   branch: "all" | string;
   service: StudentServiceFilter;
+  // Resolved server-side from the table.academicYear label -- undefined
+  // means "all years", not "the current year".
+  academicYearId?: string;
   table: StudentDirectorySearchParams;
 }
 
@@ -63,7 +67,7 @@ export function escapePostgrestFilterValue(value: string): string {
 
 function applyFilters(
   supabase: SupabaseClient<Database>,
-  { branch, service, table }: StudentDirectoryParams,
+  { branch, service, academicYearId, table }: StudentDirectoryParams,
   { head }: { head: boolean },
 ) {
   let query = supabase
@@ -72,6 +76,9 @@ function applyFilters(
 
   if (branch !== "all") {
     query = query.eq("branch_code", branch);
+  }
+  if (academicYearId) {
+    query = query.contains("academic_year_ids", [academicYearId]);
   }
   if (service === "transport") {
     query = query.eq("has_transport", true);
@@ -104,6 +111,22 @@ function applyFilters(
 
   if (table.classSection) {
     query = query.eq("class_section", table.classSection);
+  }
+  if (table.dateFrom) {
+    query = query.gte("created_at", table.dateFrom);
+  }
+  if (table.dateTo) {
+    // created_at is a full timestamp, not a bare date -- a straight lte on
+    // the date string would exclude every row from that day after
+    // midnight. Bumping to the start of the next day makes "to" inclusive
+    // of its whole day, matching what picking that day in the calendar
+    // implies. Plain UTC arithmetic on the parsed components, not
+    // new Date("YYYY-MM-DD") + local setDate() -- mixing a UTC-parsed date
+    // with local-timezone mutation is exactly the kind of off-by-one this
+    // codebase already hit once (date-field.tsx's fromIso).
+    const [y, m, d] = table.dateTo.split("-").map(Number);
+    const nextDay = new Date(Date.UTC(y!, m! - 1, d! + 1));
+    query = query.lt("created_at", nextDay.toISOString().slice(0, 10));
   }
   if (table.q) {
     const q = escapePostgrestFilterValue(table.q);
@@ -148,6 +171,7 @@ export async function getStudentDirectory(
               feeAccountId: string | null;
               serviceType: string | null;
               academicYearLabel: string | null;
+              status: string | null;
             }[]
           )
             .filter(
@@ -157,12 +181,14 @@ export async function getStudentDirectory(
                 feeAccountId: string;
                 serviceType: string;
                 academicYearLabel: string;
+                status: string;
               } => !!fa.feeAccountId && !!fa.serviceType,
             )
             .map((fa) => ({
               feeAccountId: fa.feeAccountId,
               serviceType: fa.serviceType as ServiceType,
               academicYearLabel: fa.academicYearLabel ?? "",
+              status: (fa.status ?? "active") as "active" | "discontinued",
             }))
         : [];
 

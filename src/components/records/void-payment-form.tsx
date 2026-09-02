@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import {
   Field,
+  FormError,
   inputClassName,
   dangerButtonClassName,
 } from "@/components/forms/field";
@@ -17,18 +18,14 @@ export function VoidPaymentForm({ paymentId }: { paymentId: string }) {
   );
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} noValidate className="flex flex-col gap-4">
       <input type="hidden" name="paymentId" value={paymentId} />
 
-      <Field label="Reason for voiding">
+      <Field label="Reason for voiding" error={state.fieldErrors?.voidReason}>
         <input name="voidReason" required className={inputClassName} />
       </Field>
 
-      {state.error ? (
-        <p className="text-xs text-attention" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <FormError error={state.error} />
 
       <button
         type="submit"

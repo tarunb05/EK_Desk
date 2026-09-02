@@ -3,6 +3,7 @@ export interface AcademicYearOption {
   label: string;
   isCurrent: boolean;
   startsOn: string;
+  endsOn: string;
 }
 
 export interface BranchOption {

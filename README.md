@@ -1,4 +1,4 @@
-# EuroKids Fee Tracker
+# EK Desk
 
 Internal fee-management app for a EuroKids preschool group with two branches, covering school transport and daycare fee accounts.
 
@@ -105,11 +105,33 @@ never written to a column.
 To run against local Supabase:
 
 ```bash
-npm run db:start   # supabase start (requires Docker)
-npm run db:reset   # apply all migrations from empty
-npm run db:seed    # generate ~60 fake students, fee accounts, and payments
+npm run db:start          # supabase start (requires Docker)
+npm run db:reset          # apply all migrations from empty
+npm run db:seed           # generate ~60 fake students, fee accounts, and payments
+npm run db:seed:expenses  # optional -- fake expense rows for the current year, for the Expenses dashboard/screenshots
 npm run test:integration
 ```
+
+## Permissions
+
+Two roles, `admin` and `teacher` (`profile.role`), enforced in three layers per
+`CLAUDE.md` rule 6 — RLS, `requireRole`/`requireAuth`, and `ROUTE_ACCESS`
+(`src/lib/auth/routes.ts`), which is the single source both middleware and the
+sidebar nav read. This table covers routes only; a teacher's *row-level* access
+to their own branch's students/fee accounts/payments/expenses is separate and
+is granted regardless of which routes below they can reach.
+
+| Route | Admin | Teacher | Notes |
+|---|---|---|---|
+| `/transport`, `/daycare` | ✅ | ❌ | Dashboard aggregates stay admin-only; a teacher's own-branch figures are still visible on `/students`. |
+| `/students` | ✅ | ✅ | A teacher's writes (add/edit/delete) go through a `*_submission` queue, never directly. |
+| `/expenses` | ✅ | ✅ | Deliberately open to both, unlike the fee dashboards — see `CLAUDE.md` rule 9. |
+| `/approvals` | ✅ | ✅ | Same route, branched in the page: admin reviews everyone's queue, a teacher reads their own. |
+| `/logs` (Activity log) | ✅ | ❌ | Admin-only, same reasoning as `/transport`/`/daycare` — every branch's names, every expense amount, every receivable change in one place. Nobody, including admin, can write to `activity_log` directly; it's populated only by `log_activity()`, a `security definer` trigger (`CLAUDE.md` rule 12). |
+| `/settings`, `/settings/expense-categories` | ✅ | ❌ | |
+| `/api/export/fee-accounts` | ✅ | ❌ | |
+| `/api/export/expenses` | ✅ | ✅ | Clamped to the teacher's own branch server-side, regardless of the query string. |
+| `/api/export/logs` | ✅ | ❌ | |
 
 ## Deploying
 
@@ -121,22 +143,19 @@ for bringing the office's existing real records into this schema.
 
 ## Screenshots
 
-Taken against seed data only — never real student data, per `CLAUDE.md`'s
-PII rule. To capture them yourself:
+`public/screenshots/` holds the four images the landing page (`/`) shows
+under "What it looks like" — taken against seed data only, never real
+student data, per `CLAUDE.md`'s PII rule. To recapture them after a UI
+change:
 
 ```bash
-npm run db:start && npm run db:reset && npm run db:seed && npm run auth:seed
-npm run dev
+npm run db:reset && npm run db:seed && npm run auth:seed
+npm run build && npm run start
+npm run screenshots
 ```
 
-Sign in with the seeded admin (`scripts/test-credentials.ts`), then capture:
-
-- `/transport` and `/daycare` — the dashboard (stat cards, By branch split
-  with `?branch=all`, ageing/collection charts, filterable record table).
-- A student's detail drawer (click any row).
-- `/students` — the cross-service student directory.
-
-_Not yet embedded here — this repo doesn't have a way to save a rendered
-screenshot to a file from the tooling available when this section was
-written. Add the images under `docs/screenshots/` and link them here once
-captured._
+`scripts/capture-screenshots.ts` signs in as the seeded admin
+(`scripts/test-credentials.ts`) and writes each one straight to
+`public/screenshots/` via Playwright's own screenshot API — deliberately
+against a production build (`next start`), not `next dev`, so the dev-mode
+indicator badge never ends up in a shipped image.

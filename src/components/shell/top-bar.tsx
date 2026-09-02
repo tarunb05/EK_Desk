@@ -22,13 +22,11 @@ export function TopBar({ username }: TopBarProps) {
           type="button"
           onClick={() => setMobileOpen(true)}
           aria-label="Open menu"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent md:hidden"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent md:hidden"
         >
           <MenuIcon />
         </button>
-        <span className="font-serif text-sm font-medium text-ink">
-          EuroKids Fee Tracker
-        </span>
+        <span className="text-sm font-medium text-ink">EK Desk</span>
       </div>
 
       <div className="flex items-center gap-3">

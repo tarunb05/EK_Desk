@@ -21,6 +21,33 @@
      restrained rather than bouncy. Used as the default for every existing
      `transition-*` utility in the app (state-change only, per CLAUDE.md). */
   --ease-flowy: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Phase 14, login sign-in card only — see CLAUDE.md's banned-list
+     exception. Built from --surface via color-mix(), not a new hue: a
+     light frosted fill (not a dark tinted one -- tried dark first, it
+     read as heavy/smoked rather than glassy) so the fill itself carries
+     the contrast regardless of what wave-background pixel sits behind
+     it. 75% measured (not assumed) against the wave background's two
+     real extremes -- plain --canvas beige, and a stroked --accent wave
+     line, the lightest and darkest regions that background actually
+     has -- clears 4.5:1 for --ink, --ink-secondary and --attention at
+     their existing, unmodified colors in both cases; only --ink-muted
+     (the field labels' default) falls short against the wave-line
+     extreme, which is why those two labels alone get a scoped bump
+     below rather than a wholesale on-glass palette. */
+  --glass-fill: color-mix(in srgb, var(--surface) 75%, transparent);
+}
+
+/* Opt-in for animating to/from an intrinsic size (block-size: auto), per
+   modern-web-guidance's animate-to-intrinsic-sizes guide -- disabled by
+   default everywhere for backwards compatibility, so this has to be turned
+   on explicitly before .activity-log-row below (or anything else that
+   later needs the same trick) can transition to `auto` instead of
+   snapping. Chrome/Edge 129+ only; Firefox and Safari fall back to an
+   instant snap open, which is a real degradation but not a broken one --
+   <details> still opens and closes natively either way. */
+:root {
+  interpolate-size: allow-keywords;
 }
 
 @theme inline {
@@ -38,9 +65,24 @@
   --color-positive-fill: var(--positive-fill);
   --color-attention: var(--attention);
   --color-attention-fill: var(--attention-fill);
+  /* Phase 14, login sign-in card only — see the --glass-fill definition
+     above and CLAUDE.md's banned-list exception. Registered here so
+     `bg-glass-fill` exists as a real Tailwind utility rather than an
+     inline arbitrary value. No separate border/text tokens: the card
+     keeps its existing border-border and every text element inside it
+     keeps its existing color -- see login-form.tsx's login-field-label
+     class for the one exception. */
+  --color-glass-fill: var(--glass-fill);
+  /* Tried 20px and 8px first -- both smeared the wave background's 0.5px
+     hairlines into an indistinct flat wash with no visible material
+     behind the fill at all, exactly "glass over a flat surface is grey."
+     3px is the difference between a line surviving as a soft, visibly
+     blurred stroke and vanishing outright; a photo background with real
+     tonal regions (not hairlines) could take a heavier blur than this
+     source material can. */
+  --blur-glass: 3px;
 
   --font-sans: var(--font-inter);
-  --font-serif: var(--font-serif);
 
   --text-2xs: 11px;
   --text-xs: 12px;
@@ -49,9 +91,17 @@
   --text-lg: 16px;
   --text-xl: 20px;
   --text-2xl: 28px;
+  /* Scoped exception, login page wordmark only — see CLAUDE.md. Every other
+     <h1>/heading in the app stays inside the 28px cap. */
+  --text-login-wordmark: 36px;
 
   --radius-sm: 4px;
   --radius-md: 6px;
+  /* Scoped exception, login page inputs + submit button only — see
+     CLAUDE.md. 10px on a 40px-tall control is nowhere near a pill (~20px),
+     and the two controls share this token so neither reads as unfinished
+     against the other. */
+  --radius-field: 10px;
 
   /* Every existing `transition-*` utility (colors, transform, opacity)
      already in use across the app picks up this curve automatically —
@@ -62,15 +112,80 @@
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  /* --font-inter directly, not --font-sans -- `@theme inline` (needed since
+     --font-inter is a runtime custom property next/font sets on <body>, not
+     a plain :root value) makes Tailwind bake --font-sans straight into the
+     utility classes IT generates (e.g. a used `font-sans` class), but never
+     actually registers --font-sans as a real custom property anywhere. A
+     hand-written rule that references var(--font-sans) literally, like this
+     one, resolves to nothing -- an invalid var() that was silently falling
+     back to the browser's own default sans stack instead of Inter. */
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
   font-size: var(--text-sm);
 }
 
-/* Every page title in the app is an <h1>; data/numerals stay on Inter
-   everywhere else (tabular-nums, small-size legibility). A single rule here
-   covers all of them instead of touching each page. */
-h1 {
-  font-family: var(--font-serif), Georgia, serif;
+/* Phase 14 -- the login sign-in card's glass treatment. See CLAUDE.md's
+   banned-list exception for why this exists only here.
+
+   Fallback-first: the base .login-glass-card rule below IS the fallback
+   (an opaque --surface card, identical to what shipped before this phase)
+   -- @supports progressively enhances it to the blurred version, rather
+   than the more common pattern of styling the enhanced version first and
+   patching a fallback on top. That ordering means prefers-reduced-
+   transparency/prefers-contrast: more (below) can simply not apply the
+   enhancement, with no separate "undo the glass" rule to keep in sync. */
+.login-glass-card {
+  background-color: var(--surface);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  @media (prefers-reduced-transparency: no-preference) and (prefers-contrast: no-preference) {
+    .login-glass-card {
+      background-color: var(--glass-fill);
+      -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(1.8);
+      backdrop-filter: blur(var(--blur-glass)) saturate(1.8);
+      /* border-color and every text color inside the card are
+         deliberately untouched here -- at this fill's measured contrast,
+         --border, --ink, --ink-secondary and --attention all already
+         clear their required ratios against both of the wave
+         background's real extremes at their existing, unmodified
+         values. */
+    }
+
+    /* The one color that doesn't clear unmodified: --ink-muted (the
+       field labels' default) measures 3.56:1 against the wave-line
+       extreme, short of the 4.5:1 small text needs. --ink-secondary
+       already clears (4.77:1) and is the natural next step down from
+       full --ink, so it's what these two labels alone borrow while the
+       glass enhancement is active -- login-form.tsx is the only
+       component with the login-field-label class this targets. */
+    .login-glass-card .login-field-label {
+      color: var(--ink-secondary);
+    }
+  }
+}
+
+/* Chrome/Edge/Safari paint autofilled fields with an opaque yellow (light
+   theme) or dark (dark theme) fill of their own that neither `background-
+   color` nor `!important` can override directly -- only this transition
+   trick can. A long enough transition-delay effectively never completes
+   (the field would need to stay autofilled and untouched for a real
+   human lifetime), which is what makes the fill look like it was never
+   applied instead of flashing yellow before this rule wins. text-fill-
+   color (not `color`, which autofill also ignores) is what actually
+   recolors the autofilled text itself. Every field on this login form
+   sits on the near-opaque input fill already, glass card or fallback
+   alike, so --ink stays correct in both.
+   Scoped to .login-glass-card, not a bare `input` selector -- this phase
+   touches the login page only; the same autofill gap exists on every
+   other form in the app too (nothing here fixed it before this phase
+   either), but fixing it app-wide is a separate change outside this
+   phase's boundary. */
+.login-glass-card input:-webkit-autofill,
+.login-glass-card input:-webkit-autofill:hover,
+.login-glass-card input:-webkit-autofill:focus {
+  transition: background-color 600000s 0s, color 600000s 0s;
+  -webkit-text-fill-color: var(--ink);
 }
 
 /* Subtle entrance for popovers/dropdowns (e.g. the month filter) — a plain
@@ -94,5 +209,351 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   .animate-pop-in {
     animation: none;
+  }
+}
+
+/* Page-transition loading (app/(app)/loading.tsx): a spinning ring. Rotates
+   linear, not eased — an eased infinite spin reads as uneven/jittery since
+   there's no start or end to settle into. */
+@keyframes loading-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-loading-ring {
+  animation: loading-ring-spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-loading-ring {
+    animation: none;
+  }
+}
+
+/* Every <dialog> in the app (DeleteConfirmDialog, and any future confirm
+   modal) — previously relied on the browser's own instant show/hide for a
+   top-layer element, which snapped open/closed with no transition at all.
+   @starting-style + allow-discrete is the standard platform way to animate
+   an element while it's moving in/out of the top layer; `overlay` is
+   Chrome/Edge-only today (no Firefox/Safari support yet), so those browsers
+   fall back to the old instant snap rather than a broken transition —
+   acceptable degradation, not a real gap, for an internal tool.
+
+   `margin: auto` here is a separate, pre-existing bug this surfaced, not
+   part of the animation: a modal <dialog> is normally self-centering (the
+   UA stylesheet gives dialog:modal `position: fixed; inset: 0; margin:
+   auto`, which centers it in the leftover space), but Tailwind's preflight
+   resets `margin: 0` on every element. With the centering margin zeroed out
+   and inset pinned to all four edges, the box collapses to the top-left
+   corner instead of the middle of the screen -- true regardless of this
+   animation, on every delete-confirm dialog in the app before this fix. */
+dialog {
+  opacity: 0;
+  transform: scale(0.97);
+  margin: auto;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 150ms;
+  transition-timing-function: var(--ease-flowy);
+  transition-behavior: allow-discrete;
+}
+
+dialog[open] {
+  opacity: 1;
+  transform: scale(1);
+
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+dialog::backdrop {
+  background-color: rgb(28 27 25 / 0);
+  transition:
+    display 150ms allow-discrete,
+    overlay 150ms allow-discrete,
+    background-color 150ms var(--ease-flowy);
+}
+
+dialog[open]::backdrop {
+  background-color: rgb(28 27 25 / 0.3);
+
+  @starting-style {
+    background-color: rgb(28 27 25 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog {
+    transform: none;
+    transition-duration: 1ms;
+  }
+
+  dialog[open] {
+    @starting-style {
+      transform: none;
+    }
+  }
+}
+
+/* Server Action error text (role="alert" spans across forms and row
+   actions) previously appeared with no transition at all — the message
+   just materialized. A quick fade + small settle gives it the same weight
+   as every other state change in the app without calling attention to
+   itself. */
+@keyframes alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-alert-in {
+  animation: alert-in 150ms var(--ease-flowy);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-alert-in {
+    animation: none;
+  }
+}
+
+/* Category breakdown bars (expenses) grow in from the left on mount instead
+   of appearing pre-filled -- transform (scaleX), not width, is what
+   animates here: a single keyframe works uniformly no matter what each
+   bar's own final width happens to be, and transform is the cheap property
+   to animate (no per-frame layout). animation-fill-mode: backwards holds
+   each bar invisible during its own staggered delay instead of flashing
+   full-width before its turn. */
+@keyframes bar-grow-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-bar-grow-in {
+  transform-origin: left;
+  animation: bar-grow-in 450ms var(--ease-flowy) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-bar-grow-in {
+    animation: none;
+  }
+}
+
+/* Hovering one category row dims its siblings, same "emphasize one, mute
+   the rest" idea the pie-chart reference used on slice hover -- :has()
+   does it without any JS or per-row event handlers. */
+.category-breakdown:has(.category-breakdown-row:hover)
+  .category-breakdown-row:not(:hover) {
+  opacity: 0.5;
+}
+
+.category-breakdown-row {
+  transition: opacity 150ms var(--ease-flowy);
+}
+
+/* Hovered row's own bar grows slightly -- scaleY (thickness), never scaleX
+   (length): length is the data (proportional to the category's amount), so
+   growing it sideways on hover would visually misrepresent the value.
+   Thickness has no such meaning, so it's the safe axis for "give this one
+   a little weight." */
+.category-breakdown-row .animate-bar-grow-in {
+  transition: transform 150ms var(--ease-flowy);
+}
+
+.category-breakdown-row:hover .animate-bar-grow-in {
+  transform: scaleY(1.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-breakdown-row .animate-bar-grow-in {
+    transition-duration: 1ms;
+  }
+}
+
+/* Skeleton shimmer -- a sweeping highlight, not the plain animate-pulse
+   opacity fade every loading.tsx used before. Still no color gradient:
+   the swept layer is a single solid color (--surface, already the
+   lightest token in the palette); a linear-gradient is used only as a
+   *mask* (soft-edged alpha, transparent-black-transparent) to fade the
+   sweep's own edges, never as a background/color treatment. Nothing new
+   is added to what's on screen, so this doesn't run into CLAUDE.md's
+   gradient ban -- that's about decorative color treatments, not this
+   technique for revealing a solid highlight. */
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-color: var(--surface);
+  opacity: 0.6;
+  -webkit-mask-image: linear-gradient(90deg, transparent, black, transparent);
+  mask-image: linear-gradient(90deg, transparent, black, transparent);
+  animation: shimmer-sweep 1.8s ease-in-out infinite;
+}
+
+@keyframes shimmer-sweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer::after {
+    animation: none;
+    display: none;
+  }
+}
+
+/* Table rows (students, expenses) fade + settle in on load instead of just
+   appearing, staggered per-row the same way the category-breakdown bars
+   are -- animation-fill-mode: backwards holds each row invisible during its
+   own delay instead of flashing in full before its turn. Each table caps
+   the per-row delay itself (see StudentDirectoryTable/ExpenseTable) so a
+   long page doesn't drag the last rows in noticeably late. */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-row-in {
+  animation: row-in 250ms var(--ease-flowy) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-row-in {
+    animation: none;
+  }
+}
+
+/* Activity log row expansion (phase 12.3) -- <details>/<summary> animated
+   via ::details-content and interpolate-size (opted in on :root above)
+   instead of a hand-rolled height/max-height hack or a second modal
+   pattern. This list deliberately has NO entrance stagger the way
+   Students/Expenses do (.animate-row-in above) -- an admin opening this
+   page is looking for one specific line, and animating fifty rows in one
+   at a time in front of them is decoration, not information; rows appear
+   when the page does. */
+.activity-log-row::details-content {
+  block-size: 0;
+  overflow-y: clip;
+  transition: block-size 150ms var(--ease-flowy);
+}
+
+.activity-log-row[open]::details-content {
+  block-size: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-log-row::details-content {
+    transition: none;
+  }
+}
+
+/* Landing page only (CLAUDE.md's one carve-out for hero/motion) -- the
+   hero fades/settles in on load like every other .animate-* entrance
+   here, backwards fill so it's invisible for its own delay rather than
+   flashing full before starting. */
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-hero-in {
+  animation: hero-in 400ms var(--ease-flowy) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-in {
+    animation: none;
+  }
+}
+
+/* Below-the-fold landing sections fade+lift in as they cross into view,
+   native scroll-driven animation (per modern-web-guidance's
+   scroll-entry-exit-effects) rather than an IntersectionObserver + JS.
+   Feature-detected via @supports and, since this is decorative only,
+   deliberately has no JS fallback for the browsers it excludes (Firefox
+   as of writing) -- those just see the content in place, unanimated, per
+   that guide's own recommendation. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports ((animation-timeline: view()) and (animation-range: entry)) {
+    @keyframes scroll-reveal-in {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+    }
+
+    .scroll-reveal {
+      animation: scroll-reveal-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+
+/* The landing page's "Sign in" link plays a solid --accent iris/curtain
+   (IrisCurtainLink) instead of Next's instant client-side swap -- a real
+   DOM overlay, not the View Transitions API (that API's pseudo-elements
+   are a live rendering of actual page content, which can't be tinted a
+   solid color; see the component's own comment for the full reasoning).
+   Base state is "closing"/"covered": full coverage, clip-path: circle
+   (150% ...); @starting-style supplies circle(0% ...) as the point this
+   animates FROM the moment the element is first inserted (modern-web-
+   guidance's animate-element-entry-exit) -- no rAF/double-frame trick
+   needed for that half, unlike the timing this replaced. The [data-
+   phase="opening"] override retargets the SAME, already-mounted element
+   back to 0%, which needs no special starting-point handling since it's
+   just an ordinary transition between two live values. */
+.iris-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background-color: var(--accent);
+  clip-path: circle(150% at var(--curtain-x, 50%) var(--curtain-y, 50%));
+  transition: clip-path var(--curtain-duration, 380ms) var(--ease-flowy);
+}
+
+@starting-style {
+  .iris-curtain {
+    clip-path: circle(0% at var(--curtain-x, 50%) var(--curtain-y, 50%));
+  }
+}
+
+.iris-curtain[data-phase="opening"] {
+  clip-path: circle(0% at var(--curtain-x, 50%) var(--curtain-y, 50%));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iris-curtain {
+    transition: none;
   }
 }

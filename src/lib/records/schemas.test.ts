@@ -78,26 +78,36 @@ describe("createStudentWithFeeAccountSchema", () => {
 });
 
 describe("updateFeeAccountSchema", () => {
+  const validUpdate = {
+    feeAccountId: "33333333-3333-4333-8333-333333333333",
+    fullName: "Aarav Sharma",
+    guardianName: "Priya Sharma",
+    phone: "9876543210",
+    classSection: "Nursery",
+    totalReceivable: "15000",
+    dueDate: "2026-07-01",
+    startsOn: "2026-04-01",
+    endsOn: "2027-03-31",
+    status: "active",
+  };
+
   it("accepts a valid update", () => {
-    const result = updateFeeAccountSchema.parse({
-      feeAccountId: "33333333-3333-4333-8333-333333333333",
-      totalReceivable: "15000",
-      dueDate: "2026-07-01",
-      startsOn: "2026-04-01",
-      endsOn: "2027-03-31",
-      status: "active",
-    });
+    const result = updateFeeAccountSchema.parse(validUpdate);
     expect(result.totalReceivable).toBe(1_500_000n);
   });
 
   it("rejects an invalid status", () => {
     const result = updateFeeAccountSchema.safeParse({
-      feeAccountId: "33333333-3333-4333-8333-333333333333",
-      totalReceivable: "15000",
-      dueDate: "2026-07-01",
-      startsOn: "2026-04-01",
-      endsOn: "2027-03-31",
+      ...validUpdate,
       status: "bogus",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a missing student name", () => {
+    const result = updateFeeAccountSchema.safeParse({
+      ...validUpdate,
+      fullName: "",
     });
     expect(result.success).toBe(false);
   });

@@ -5,6 +5,9 @@ export interface FeeAccountRecordRow {
   studentId: string;
   studentFullName: string;
   studentAdmissionNo: string;
+  guardianName: string;
+  phone: string;
+  notes: string | null;
   classSection: string;
   branchCode: string;
   branchName: string;

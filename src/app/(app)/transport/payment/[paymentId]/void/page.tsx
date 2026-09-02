@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatPaise } from "@/lib/domain/money";
 import { VoidPaymentForm } from "@/components/records/void-payment-form";
 import { BackLink } from "@/components/shell/back-link";
+
+export const metadata: Metadata = {
+  title: "Void Payment",
+};
 
 export default async function VoidPaymentPage({
   params,

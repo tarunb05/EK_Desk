@@ -1,6 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
-import { TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD } from "./test-credentials";
+import {
+  TEST_ADMIN_USERNAME,
+  TEST_ADMIN_PASSWORD,
+  TEST_TEACHERS,
+} from "./test-credentials";
 import { usernameToInternalEmail } from "../src/lib/auth/username";
+import type { Database } from "../src/lib/supabase/database.types";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -11,33 +16,87 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   );
 }
 
-const email = usernameToInternalEmail(TEST_ADMIN_USERNAME);
+type SupabaseAdmin = ReturnType<typeof createClient<Database>>;
 
-async function main(supabaseUrl: string, serviceRoleKey: string) {
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
-
+// Creates the auth user if it doesn't exist yet, and either way returns its
+// id -- callers upsert a matching `profile` row afterward regardless of
+// which branch this took, since a migration-time backfill only covers
+// users that already existed when that migration ran, never ones created
+// by this script afterward (this script always runs after `db reset`).
+async function ensureAuthUser(
+  supabase: SupabaseAdmin,
+  email: string,
+  password: string,
+): Promise<string> {
   const { data: existing, error: listError } =
     await supabase.auth.admin.listUsers();
   if (listError) {
     throw listError;
   }
 
-  if (existing.users.some((user) => user.email === email)) {
-    console.log(`Admin user ${TEST_ADMIN_USERNAME} already exists.`);
-    return;
+  const found = existing.users.find((user) => user.email === email);
+  if (found) {
+    return found.id;
   }
 
-  const { error: createError } = await supabase.auth.admin.createUser({
-    email,
-    password: TEST_ADMIN_PASSWORD,
-    email_confirm: true,
+  const { data: created, error: createError } =
+    await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+  if (createError || !created.user) {
+    throw createError ?? new Error(`Could not create user ${email}.`);
+  }
+
+  return created.user.id;
+}
+
+async function main(supabaseUrl: string, serviceRoleKey: string) {
+  const supabase = createClient<Database>(supabaseUrl, serviceRoleKey);
+
+  const adminEmail = usernameToInternalEmail(TEST_ADMIN_USERNAME);
+  const adminId = await ensureAuthUser(supabase, adminEmail, TEST_ADMIN_PASSWORD);
+  const { error: adminProfileError } = await supabase.from("profile").upsert({
+    id: adminId,
+    role: "admin",
+    full_name: "Admin",
   });
-
-  if (createError) {
-    throw createError;
+  if (adminProfileError) {
+    throw adminProfileError;
   }
+  console.log(`Admin user ${TEST_ADMIN_USERNAME} ready.`);
 
-  console.log(`Created admin user ${TEST_ADMIN_USERNAME}.`);
+  for (const teacher of TEST_TEACHERS) {
+    const { data: branch, error: branchError } = await supabase
+      .from("branch")
+      .select("id")
+      .eq("code", teacher.branchCode)
+      .single();
+    if (branchError || !branch) {
+      throw (
+        branchError ??
+        new Error(`Branch ${teacher.branchCode} not found -- seed it first.`)
+      );
+    }
+
+    const email = usernameToInternalEmail(teacher.username);
+    const teacherId = await ensureAuthUser(supabase, email, teacher.password);
+    const { error: teacherProfileError } = await supabase
+      .from("profile")
+      .upsert({
+        id: teacherId,
+        role: "teacher",
+        branch_id: branch.id,
+        full_name: teacher.fullName,
+      });
+    if (teacherProfileError) {
+      throw teacherProfileError;
+    }
+    console.log(
+      `Teacher ${teacher.username} (${teacher.branchCode}) ready.`,
+    );
+  }
 }
 
 main(SUPABASE_URL, SERVICE_ROLE_KEY).catch((error: unknown) => {

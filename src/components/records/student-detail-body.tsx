@@ -1,13 +1,16 @@
 import { formatPaise } from "@/lib/domain/money";
 import type { StudentDetail } from "@/lib/records/student-detail";
+import type { Role } from "@/lib/auth/routes";
 import { DeleteStudentButton } from "./delete-student-button";
 
 export function StudentDetailBody({
   detail,
   redirectTo,
+  role,
 }: {
   detail: StudentDetail;
-  redirectTo: "/transport" | "/daycare";
+  redirectTo: "/transport" | "/daycare" | "/students";
+  role: Role;
 }) {
   return (
     <>
@@ -29,7 +32,12 @@ export function StudentDetailBody({
           This student has been deleted. Their history stays visible here but
           they&rsquo;re excluded from dashboards and record tables.
         </p>
-      ) : (
+      ) : detail.student.status === "withdrawn" ? (
+        <p className="mb-4 text-xs text-ink-muted">
+          This student has withdrawn. Their history stays visible here but
+          they&rsquo;re excluded from dashboards and record tables.
+        </p>
+      ) : role === "admin" ? (
         <div className="mb-6">
           <DeleteStudentButton
             studentId={detail.student.id}
@@ -37,7 +45,7 @@ export function StudentDetailBody({
             redirectTo={redirectTo}
           />
         </div>
-      )}
+      ) : null}
 
       {detail.feeAccounts.length === 0 ? (
         <p className="text-sm text-ink-muted">
@@ -90,7 +98,7 @@ export function StudentDetailBody({
                           <span className="text-2xs text-ink-muted">
                             {payment.voidReason}
                           </span>
-                        ) : (
+                        ) : role === "admin" ? (
                           // A plain anchor, not next/link's Link: this can be
                           // reached from inside the student drawer, and a
                           // client-side transition to a route the @drawer
@@ -103,6 +111,8 @@ export function StudentDetailBody({
                           >
                             Void
                           </a>
+                        ) : (
+                          <span className="text-2xs text-ink-muted">—</span>
                         )}
                       </td>
                     </tr>

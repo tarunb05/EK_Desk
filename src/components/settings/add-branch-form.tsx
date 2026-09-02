@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import {
   Field,
+  FormError,
   inputClassName,
   primaryButtonClassName,
 } from "@/components/forms/field";
@@ -19,9 +20,10 @@ export function AddBranchForm() {
   return (
     <form
       action={formAction}
+      noValidate
       className="flex flex-col gap-3 border-t border-hairline pt-4"
     >
-      <Field label="Code">
+      <Field label="Code" error={state.fieldErrors?.code}>
         <input
           name="code"
           required
@@ -30,7 +32,7 @@ export function AddBranchForm() {
         />
       </Field>
 
-      <Field label="Name">
+      <Field label="Name" error={state.fieldErrors?.name}>
         <input
           name="name"
           required
@@ -39,11 +41,7 @@ export function AddBranchForm() {
         />
       </Field>
 
-      {state.error ? (
-        <p className="text-xs text-attention" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <FormError error={state.error} />
 
       <button
         type="submit"

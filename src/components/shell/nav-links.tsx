@@ -3,17 +3,31 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  ActivityLogIcon,
+  ApprovalsIcon,
   DaycareIcon,
   SettingsIcon,
   StudentsIcon,
   TransportIcon,
+  WalletIcon,
 } from "./nav-icons";
 import { useSidebarContext } from "./sidebar-context";
+import { ROUTE_ACCESS, type Role } from "@/lib/auth/routes";
 
-const LINKS = [
+// Exported so a unit test can assert "teacher's nav equals exactly the
+// teacher-allowed routes" against ROUTE_ACCESS without rendering the
+// component (this codebase's tests are pure-function based throughout;
+// NavLinks needs a router/context mock to render at all).
+export const NAV_LINKS = [
   { href: "/transport", label: "Transport", Icon: TransportIcon },
   { href: "/daycare", label: "Daycare", Icon: DaycareIcon },
   { href: "/students", label: "Students", Icon: StudentsIcon },
+  { href: "/expenses", label: "Expenses", Icon: WalletIcon },
+  { href: "/approvals", label: "Approvals", Icon: ApprovalsIcon },
+  // Admin-only (see ROUTE_ACCESS) -- sits right before Settings, after
+  // every screen with work to action, since this one has nothing to
+  // action, only to read.
+  { href: "/logs", label: "Activity log", Icon: ActivityLogIcon },
   { href: "/settings", label: "Settings", Icon: SettingsIcon },
 ];
 
@@ -21,21 +35,41 @@ const LINKS = [
 // mobile drawer always shows full labels regardless of the desktop
 // collapse preference, so every collapse-driven class is md:-prefixed
 // rather than conditionally rendered, keeping that true with no JS
-// viewport check.
-export function NavLinks({ collapsed = false }: { collapsed?: boolean }) {
+// viewport check. `role` filters LINKS through the same ROUTE_ACCESS map
+// middleware enforces — hiding a link here is cosmetic, never the actual
+// access control, but the two must never be allowed to drift apart.
+export function NavLinks({
+  collapsed = false,
+  role,
+  pendingApprovalsCount = 0,
+}: {
+  collapsed?: boolean;
+  role: Role;
+  pendingApprovalsCount?: number;
+}) {
   const pathname = usePathname();
   const { setMobileOpen } = useSidebarContext();
+  const links = NAV_LINKS.filter((link) =>
+    ROUTE_ACCESS[link.href]?.includes(role),
+  );
 
   return (
     <nav className="flex flex-col gap-1">
-      {LINKS.map(({ href, label, Icon }) => {
+      {links.map(({ href, label, Icon }) => {
+        // Same route and nav slot for both roles -- only the wording
+        // differs, since a teacher only ever sees their own requests here,
+        // never a review queue to act on.
+        const displayLabel =
+          href === "/approvals" && role === "teacher"
+            ? "My requests"
+            : label;
         const isActive = pathname.startsWith(href);
         return (
           <Link
             key={href}
             href={href}
-            aria-label={label}
-            title={label}
+            aria-label={displayLabel}
+            title={displayLabel}
             onClick={() => setMobileOpen(false)}
             className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-accent ${
               collapsed ? "md:justify-center" : ""
@@ -46,7 +80,22 @@ export function NavLinks({ collapsed = false }: { collapsed?: boolean }) {
             }`}
           >
             <Icon />
-            <span className={collapsed ? "md:hidden" : ""}>{label}</span>
+            <span
+              className={`overflow-hidden whitespace-nowrap transition-[opacity,max-width] duration-200 ${
+                collapsed ? "md:max-w-0 md:opacity-0" : "md:max-w-[160px] md:opacity-100"
+              }`}
+            >
+              {displayLabel}
+            </span>
+            {href === "/approvals" && pendingApprovalsCount > 0 ? (
+              <span
+                className={`ml-auto shrink-0 overflow-hidden whitespace-nowrap rounded-md bg-attention px-1.5 py-0.5 text-2xs font-medium text-surface transition-[opacity,max-width] duration-200 ${
+                  collapsed ? "md:max-w-0 md:px-0 md:opacity-0" : "md:max-w-6 md:opacity-100"
+                }`}
+              >
+                {pendingApprovalsCount}
+              </span>
+            ) : null}
           </Link>
         );
       })}

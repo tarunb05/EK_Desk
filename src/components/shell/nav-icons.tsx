@@ -73,6 +73,15 @@ export function SettingsIcon(props: IconProps = {}) {
   );
 }
 
+export function ApprovalsIcon(props: IconProps = {}) {
+  return (
+    <IconBase {...props}>
+      <rect x="4" y="3.5" width="12" height="13" rx="1.5" />
+      <path d="m7 10 2 2 4-4.5" />
+    </IconBase>
+  );
+}
+
 export function CollapseIcon({
   direction,
   ...props
@@ -233,6 +242,26 @@ export function AlertIcon(props: IconProps = {}) {
       <path d="M10 3.5 17.5 16h-15L10 3.5Z" />
       <path d="M10 8.5v3.2" />
       <circle cx="10" cy="14" r="0.15" fill="currentColor" stroke="none" />
+    </IconBase>
+  );
+}
+
+export function ActivityLogIcon(props: IconProps = {}) {
+  return (
+    <IconBase {...props}>
+      <rect x="4" y="3.5" width="12" height="13" rx="1.5" />
+      <path d="M7 7.5h6M7 10.5h6M7 13.5h3.5" />
+    </IconBase>
+  );
+}
+
+// Plain checkmark, no enclosing circle -- StatusIcon already covers the
+// "circle + check" badge look used for Paid status; this is just the mark
+// itself, sized for small controls like a checkbox.
+export function CheckIcon(props: IconProps = {}) {
+  return (
+    <IconBase {...props}>
+      <path d="M4.5 10.5 8 14l7.5-8" />
     </IconBase>
   );
 }

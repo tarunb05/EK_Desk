@@ -64,6 +64,92 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_log: {
+        Row: {
+          academic_year_id: string | null
+          action: string
+          actor_id: string | null
+          actor_label: string
+          actor_role: string | null
+          after_amount_paise: number | null
+          before_amount_paise: number | null
+          branch_id: string | null
+          changed_fields: string[] | null
+          entity: string
+          entity_id: string | null
+          entity_label: string
+          id: number
+          occurred_at: string
+          summary: string
+          txid: number
+        }
+        Insert: {
+          academic_year_id?: string | null
+          action: string
+          actor_id?: string | null
+          actor_label: string
+          actor_role?: string | null
+          after_amount_paise?: number | null
+          before_amount_paise?: number | null
+          branch_id?: string | null
+          changed_fields?: string[] | null
+          entity: string
+          entity_id?: string | null
+          entity_label: string
+          id?: never
+          occurred_at?: string
+          summary: string
+          txid?: number
+        }
+        Update: {
+          academic_year_id?: string | null
+          action?: string
+          actor_id?: string | null
+          actor_label?: string
+          actor_role?: string | null
+          after_amount_paise?: number | null
+          before_amount_paise?: number | null
+          branch_id?: string | null
+          changed_fields?: string[] | null
+          entity?: string
+          entity_id?: string | null
+          entity_label?: string
+          id?: never
+          occurred_at?: string
+          summary?: string
+          txid?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_year"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+        ]
+      }
       branch: {
         Row: {
           code: string
@@ -90,6 +176,180 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      expense: {
+        Row: {
+          academic_year_id: string
+          amount_paise: number
+          branch_id: string
+          category_id: string
+          created_at: string
+          created_by: string
+          id: string
+          method: string
+          note: string | null
+          reference: string | null
+          spent_on: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          academic_year_id: string
+          amount_paise: number
+          branch_id: string
+          category_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          method: string
+          note?: string | null
+          reference?: string | null
+          spent_on: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          academic_year_id?: string
+          amount_paise?: number
+          branch_id?: string
+          category_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          method?: string
+          note?: string | null
+          reference?: string | null
+          spent_on?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_year"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+          {
+            foreignKeyName: "expense_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_category_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_category: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      expense_delete_log: {
+        Row: {
+          actor: string
+          amount_paise: number
+          category_id: string
+          created_at: string
+          expense_id: string
+          id: string
+        }
+        Insert: {
+          actor: string
+          amount_paise: number
+          category_id: string
+          created_at?: string
+          expense_id: string
+          id?: string
+        }
+        Update: {
+          actor?: string
+          amount_paise?: number
+          category_id?: string
+          created_at?: string
+          expense_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_delete_log_actor_fkey"
+            columns: ["actor"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_delete_log_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_delete_log_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_category_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fee_account: {
         Row: {
@@ -225,6 +485,168 @@ export type Database = {
           },
         ]
       }
+      payment_submission: {
+        Row: {
+          amount_paise: number
+          branch_id: string
+          created_at: string
+          created_payment_id: string | null
+          fee_account_id: string | null
+          id: string
+          method: string
+          note: string | null
+          paid_on: string
+          reference: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string
+          submitted_by: string
+          updated_at: string
+        }
+        Insert: {
+          amount_paise: number
+          branch_id: string
+          created_at?: string
+          created_payment_id?: string | null
+          fee_account_id?: string | null
+          id?: string
+          method: string
+          note?: string | null
+          paid_on: string
+          reference?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          submitted_by: string
+          updated_at?: string
+        }
+        Update: {
+          amount_paise?: number
+          branch_id?: string
+          created_at?: string
+          created_payment_id?: string | null
+          fee_account_id?: string | null
+          id?: string
+          method?: string
+          note?: string | null
+          paid_on?: string
+          reference?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          submitted_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_submission_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_submission_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+          {
+            foreignKeyName: "payment_submission_created_payment_id_fkey"
+            columns: ["created_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_submission_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_submission_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_balance"
+            referencedColumns: ["fee_account_id"]
+          },
+          {
+            foreignKeyName: "payment_submission_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["fee_account_id"]
+          },
+          {
+            foreignKeyName: "payment_submission_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_submission_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          full_name: string
+          id: string
+          is_active: boolean
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          full_name?: string
+          id: string
+          is_active?: boolean
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+        ]
+      }
       student: {
         Row: {
           admission_no: string
@@ -282,8 +704,471 @@ export type Database = {
           },
         ]
       }
+      student_delete_submission: {
+        Row: {
+          branch_id: string
+          created_at: string
+          id: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          student_admission_no: string
+          student_full_name: string
+          student_id: string | null
+          submitted_at: string
+          submitted_by: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_admission_no: string
+          student_full_name: string
+          student_id?: string | null
+          submitted_at?: string
+          submitted_by: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_admission_no?: string
+          student_full_name?: string
+          student_id?: string | null
+          submitted_at?: string
+          submitted_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_delete_submission_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_delete_submission_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+          {
+            foreignKeyName: "student_delete_submission_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_delete_submission_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_delete_submission_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_delete_submission_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_edit_submission: {
+        Row: {
+          applied_at: string | null
+          branch_id: string
+          class_section: string
+          created_at: string
+          due_date: string
+          ends_on: string
+          fee_account_id: string | null
+          fee_account_status: string
+          full_name: string
+          guardian_name: string
+          id: string
+          notes: string | null
+          phone: string
+          pickup_point: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          route_name: string | null
+          slot: string | null
+          starts_on: string
+          status: string
+          student_id: string | null
+          submitted_at: string
+          submitted_by: string
+          total_receivable_paise: number
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          branch_id: string
+          class_section: string
+          created_at?: string
+          due_date: string
+          ends_on: string
+          fee_account_id?: string | null
+          fee_account_status: string
+          full_name: string
+          guardian_name: string
+          id?: string
+          notes?: string | null
+          phone: string
+          pickup_point?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          route_name?: string | null
+          slot?: string | null
+          starts_on: string
+          status?: string
+          student_id?: string | null
+          submitted_at?: string
+          submitted_by: string
+          total_receivable_paise: number
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          branch_id?: string
+          class_section?: string
+          created_at?: string
+          due_date?: string
+          ends_on?: string
+          fee_account_id?: string | null
+          fee_account_status?: string
+          full_name?: string
+          guardian_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string
+          pickup_point?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          route_name?: string | null
+          slot?: string | null
+          starts_on?: string
+          status?: string
+          student_id?: string | null
+          submitted_at?: string
+          submitted_by?: string
+          total_receivable_paise?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_edit_submission_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_edit_submission_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+          {
+            foreignKeyName: "student_edit_submission_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_edit_submission_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_balance"
+            referencedColumns: ["fee_account_id"]
+          },
+          {
+            foreignKeyName: "student_edit_submission_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["fee_account_id"]
+          },
+          {
+            foreignKeyName: "student_edit_submission_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_edit_submission_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_edit_submission_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_edit_submission_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_submission: {
+        Row: {
+          academic_year_id: string
+          admission_no: string
+          branch_id: string
+          class_section: string
+          created_at: string
+          created_student_id: string | null
+          due_date: string
+          ends_on: string
+          full_name: string
+          guardian_name: string
+          id: string
+          notes: string | null
+          phone: string
+          pickup_point: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          route_name: string | null
+          service_type: string
+          slot: string | null
+          starts_on: string
+          status: string
+          submitted_at: string
+          submitted_by: string
+          total_receivable_paise: number
+          updated_at: string
+        }
+        Insert: {
+          academic_year_id: string
+          admission_no: string
+          branch_id: string
+          class_section: string
+          created_at?: string
+          created_student_id?: string | null
+          due_date: string
+          ends_on: string
+          full_name: string
+          guardian_name: string
+          id?: string
+          notes?: string | null
+          phone: string
+          pickup_point?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          route_name?: string | null
+          service_type: string
+          slot?: string | null
+          starts_on: string
+          status?: string
+          submitted_at?: string
+          submitted_by: string
+          total_receivable_paise: number
+          updated_at?: string
+        }
+        Update: {
+          academic_year_id?: string
+          admission_no?: string
+          branch_id?: string
+          class_section?: string
+          created_at?: string
+          created_student_id?: string | null
+          due_date?: string
+          ends_on?: string
+          full_name?: string
+          guardian_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string
+          pickup_point?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          route_name?: string | null
+          service_type?: string
+          slot?: string | null
+          starts_on?: string
+          status?: string
+          submitted_at?: string
+          submitted_by?: string
+          total_receivable_paise?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_submission_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_year"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_submission_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_submission_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+          {
+            foreignKeyName: "student_submission_created_student_id_fkey"
+            columns: ["created_student_id"]
+            isOneToOne: false
+            referencedRelation: "student"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_submission_created_student_id_fkey"
+            columns: ["created_student_id"]
+            isOneToOne: false
+            referencedRelation: "student_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_submission_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_submission_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
+      expense_category_summary: {
+        Row: {
+          expense_count: number | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          sort_order: number | null
+          total_spent_paise: number | null
+        }
+        Relationships: []
+      }
+      expense_record: {
+        Row: {
+          academic_year_id: string | null
+          amount_paise: number | null
+          branch_code: string | null
+          branch_id: string | null
+          branch_name: string | null
+          category_id: string | null
+          category_name: string | null
+          created_at: string | null
+          created_by: string | null
+          created_by_name: string | null
+          id: string | null
+          method: string | null
+          note: string | null
+          reference: string | null
+          spent_on: string | null
+          updated_at: string | null
+          updated_by: string | null
+          updated_by_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_year"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+          {
+            foreignKeyName: "expense_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_category_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_account_balance: {
         Row: {
           academic_year_id: string | null
@@ -349,6 +1234,7 @@ export type Database = {
           student_full_name: string | null
           student_guardian_name: string | null
           student_id: string | null
+          student_notes: string | null
           student_phone: string | null
           student_status: string | null
           total_receivable_paise: number | null
@@ -379,6 +1265,7 @@ export type Database = {
       }
       student_directory: {
         Row: {
+          academic_year_ids: string[] | null
           admission_no: string | null
           branch_code: string | null
           branch_name: string | null
@@ -400,6 +1287,13 @@ export type Database = {
       }
     }
     Functions: {
+      approve_payment_submission: { Args: { p_id: string }; Returns: string }
+      approve_student_delete: { Args: { p_id: string }; Returns: undefined }
+      approve_student_edit: { Args: { p_id: string }; Returns: undefined }
+      approve_student_submission: { Args: { p_id: string }; Returns: string }
+      auth_branch_id: { Args: never; Returns: string }
+      auth_is_admin: { Args: never; Returns: boolean }
+      auth_role: { Args: never; Returns: string }
       dashboard_ageing_buckets: {
         Args: {
           p_academic_year_id: string
@@ -465,6 +1359,15 @@ export type Database = {
           total_receivable_paise: number
         }[]
       }
+      expense_category_breakdown: {
+        Args: { p_academic_year_id: string; p_branch_code?: string }
+        Returns: {
+          amount_paise: number
+          category_id: string
+          category_name: string
+        }[]
+      }
+      profile_full_name: { Args: { p_id: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }

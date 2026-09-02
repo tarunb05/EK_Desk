@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { FilterIcon } from "@/components/shell/nav-icons";
+import { ChevronDownIcon, FilterIcon } from "@/components/shell/nav-icons";
 
 interface MonthFilterProps {
   availableMonths: string[];
@@ -44,6 +44,35 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Missing entirely before -- every other popover in the app (Select,
+  // FilterMenu, ActionMenu) closes on an outside click or Escape; this one
+  // only ever toggled from its own trigger, so it stayed open no matter
+  // where else on the page you clicked.
+  useEffect(() => {
+    if (!open) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
 
   const selected = new Set(
     (searchParams.get("months") ?? "").split(",").filter(Boolean),
@@ -81,16 +110,22 @@ export function MonthFilter({ availableMonths }: MonthFilterProps) {
   }
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative w-full">
       <button
         type="button"
         onClick={() => setOpen((wasOpen) => !wasOpen)}
         aria-expanded={open}
         aria-label="Filter collected figures by month"
-        className="flex h-8 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none transition-colors focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent"
+        className="flex h-9 w-full items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 text-sm text-ink outline-none transition-colors focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent"
       >
-        <FilterIcon size={14} />
-        Months: {label}
+        <span className="flex items-center gap-1.5 truncate">
+          <FilterIcon size={14} />
+          {label}
+        </span>
+        <ChevronDownIcon
+          size={14}
+          className={`shrink-0 text-ink-muted transition-transform ${open ? "rotate-180" : ""}`}
+        />
       </button>
 
       {open ? (

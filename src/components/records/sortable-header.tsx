@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import { TableNavLink } from "@/components/records/table-transition";
 
 interface SortableHeaderProps {
   label: string;
@@ -28,7 +30,7 @@ export function SortableHeader({
   params.set("dir", nextDir);
 
   return (
-    <Link
+    <TableNavLink
       href={`?${params.toString()}`}
       className={`text-2xs font-medium uppercase tracking-wide text-ink-muted hover:text-ink ${
         align === "right" ? "text-right" : "text-left"
@@ -36,6 +38,6 @@ export function SortableHeader({
     >
       {label}
       {isActive ? (currentDir === "asc" ? " ▲" : " ▼") : ""}
-    </Link>
+    </TableNavLink>
   );
 }

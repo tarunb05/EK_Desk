@@ -1,21 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import type {
-  RecordTableSearchParams,
-  SortKey,
-} from "@/lib/shell/table-params";
 import type { FeeAccountRecordRow, ServiceType } from "@/lib/records/types";
 
 type FeeAccountRecordDbRow =
   Database["public"]["Views"]["fee_account_record"]["Row"];
-
-const SORT_COLUMN: Record<SortKey, string> = {
-  full_name: "student_full_name",
-  pending_paise: "pending_paise",
-  collected_paise: "collected_paise",
-  total_receivable_paise: "total_receivable_paise",
-  due_date: "due_date",
-};
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -30,6 +18,9 @@ function mapFeeAccountRecordRow(
     studentId: row.student_id ?? "",
     studentFullName: row.student_full_name ?? "",
     studentAdmissionNo: row.student_admission_no ?? "",
+    guardianName: row.student_guardian_name ?? "",
+    phone: row.student_phone ?? "",
+    notes: row.student_notes,
     classSection: row.class_section ?? "",
     branchCode: row.branch_code ?? "",
     branchName: row.branch_name ?? "",
@@ -48,21 +39,31 @@ function mapFeeAccountRecordRow(
   };
 }
 
-export interface RecordScopeParams {
+export type FeeAccountExportMetric =
+  | "receivable"
+  | "collected"
+  | "pending"
+  | "overdue";
+
+export interface FeeAccountExportParams {
   serviceType: ServiceType;
   academicYearId: string;
   branch: "all" | string;
-  table: RecordTableSearchParams;
+  metric: FeeAccountExportMetric;
 }
 
-function applyFilters(
+// Backs the stat-card Excel exports (Total receivable/collected/pending/
+// overdue). Its own metric enum rather than the Students-page status filter
+// chips (all/overdue/pending/paid) -- "collected" isn't one of those, and
+// adding a fifth option there isn't something that page asked for. Every
+// metric still shares the same active-student, in-scope base query.
+export async function getFeeAccountRecordsForExport(
   supabase: SupabaseClient<Database>,
-  { serviceType, academicYearId, branch, table }: RecordScopeParams,
-  { head }: { head: boolean },
-) {
+  { serviceType, academicYearId, branch, metric }: FeeAccountExportParams,
+): Promise<FeeAccountRecordRow[]> {
   let query = supabase
     .from("fee_account_record")
-    .select("*", { count: "exact", head })
+    .select("*")
     .eq("service_type", serviceType)
     .eq("academic_year_id", academicYearId)
     .eq("student_status", "active");
@@ -70,40 +71,26 @@ function applyFilters(
   if (branch !== "all") {
     query = query.eq("branch_code", branch);
   }
-  if (table.classSection) {
-    query = query.eq("class_section", table.classSection);
-  }
-  if (table.q) {
-    query = query.ilike("student_full_name", `%${table.q}%`);
-  }
-  if (table.status === "overdue") {
-    query = query.gt("pending_paise", 0).lt("due_date", todayIso());
-  } else if (table.status === "pending") {
+
+  if (metric === "collected") {
+    query = query.gt("collected_paise", 0);
+  } else if (metric === "pending") {
     query = query.gt("pending_paise", 0);
-  } else if (table.status === "paid") {
-    query = query.lte("pending_paise", 0);
+  } else if (metric === "overdue") {
+    query = query.gt("pending_paise", 0).lt("due_date", todayIso());
   }
+  // "receivable" gets no extra condition -- every fee account in scope has
+  // a receivable amount by definition.
 
-  return query;
-}
-
-// Every matching row for the given scope — used by the PDF export, where
-// "the report" means the whole result, not a page of it.
-export async function getAllFeeAccountRecords(
-  supabase: SupabaseClient<Database>,
-  params: RecordScopeParams,
-): Promise<FeeAccountRecordRow[]> {
-  const { data, error } = await applyFilters(supabase, params, {
-    head: false,
-  }).order(SORT_COLUMN[params.table.sort], {
-    ascending: params.table.dir === "asc",
+  const { data, error } = await query.order("student_full_name", {
+    ascending: true,
   });
 
   if (error) {
-    throw new Error("Could not load records.");
+    throw new Error("Could not load records for export.");
   }
 
-  return data.map((row) => mapFeeAccountRecordRow(row, params.serviceType));
+  return data.map((row) => mapFeeAccountRecordRow(row, serviceType));
 }
 
 export async function getFeeAccountRecordById(

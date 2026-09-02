@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { Client } from "pg";
+import { CLASS_SECTIONS } from "../src/lib/records/class-sections";
 
 // Deterministic: same seed every run, so integration tests can assert exact
 // totals against this dataset.
@@ -48,8 +49,6 @@ const LAST_NAMES = [
   "Pillai",
   "Desai",
 ];
-const CLASS_LEVELS = ["Nursery", "LKG", "UKG", "Class 1", "Class 2"];
-const SECTIONS = ["A", "B"];
 const ROUTES = [
   "Route 1 - MG Road",
   "Route 2 - Whitefield",
@@ -65,6 +64,18 @@ const PICKUP_POINTS = [
 const SLOTS = ["Morning (8-1)", "Full Day (8-6)", "Afternoon (1-6)"];
 const METHODS = ["cash", "upi", "cheque", "bank_transfer"] as const;
 const RECORDED_BY = ["front_office", "accounts_desk"];
+const EXPENSE_CATEGORIES = [
+  "Grocery",
+  "Fuel",
+  "Vehicle maintenance",
+  "Driver salary",
+  "Staff salary",
+  "Stationery",
+  "Utilities",
+  "Repairs",
+  "Cleaning supplies",
+  "Miscellaneous",
+];
 
 type ServiceType = "transport" | "daycare";
 
@@ -129,7 +140,7 @@ async function main() {
   await client.query("begin");
   try {
     await client.query(
-      "truncate table payment, fee_account, student, academic_year, branch restart identity cascade",
+      "truncate table payment, fee_account, student, academic_year, branch, expense_category restart identity cascade",
     );
 
     const branchRows = await client.query<{ id: string; code: string }>(
@@ -152,13 +163,19 @@ async function main() {
       yearRows.rows.map((r) => [r.label, r.id]),
     ) as Record<YearLabel, string>;
 
+    for (const [index, name] of EXPENSE_CATEGORIES.entries()) {
+      await client.query(
+        `insert into expense_category (name, sort_order) values ($1, $2)`,
+        [name, index],
+      );
+    }
+
     const STUDENT_COUNT = 60;
     const students: { id: string; index: number }[] = [];
 
     for (let i = 0; i < STUDENT_COUNT; i++) {
       const branchCode = i % 2 === 0 ? "BR-A" : "BR-B";
-      const classLevel = CLASS_LEVELS[i % CLASS_LEVELS.length];
-      const section = SECTIONS[i % SECTIONS.length];
+      const classSection = CLASS_SECTIONS[i % CLASS_SECTIONS.length];
       const result = await client.query<{ id: string }>(
         `insert into student
           (branch_id, admission_no, full_name, guardian_name, phone, class_section, status)
@@ -170,7 +187,7 @@ async function main() {
           fullName(),
           fullName(),
           randomIndianPhone(),
-          `${classLevel}-${section}`,
+          classSection,
         ],
       );
       students.push({ id: result.rows[0].id, index: i });

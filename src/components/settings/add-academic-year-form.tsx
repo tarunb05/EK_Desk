@@ -3,10 +3,13 @@
 import { useActionState } from "react";
 import {
   Field,
+  FormError,
   inputClassName,
   primaryButtonClassName,
 } from "@/components/forms/field";
 import { createAcademicYear, type ActionState } from "@/lib/settings/actions";
+import { DateField } from "@/components/forms/date-field";
+import { Checkbox } from "@/components/forms/checkbox";
 
 const initialState: ActionState = { error: null };
 
@@ -19,9 +22,10 @@ export function AddAcademicYearForm() {
   return (
     <form
       action={formAction}
+      noValidate
       className="flex flex-col gap-3 border-t border-hairline pt-4"
     >
-      <Field label="Label">
+      <Field label="Label" error={state.fieldErrors?.label}>
         <input
           name="label"
           required
@@ -31,38 +35,22 @@ export function AddAcademicYearForm() {
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Starts on">
-          <input
-            name="startsOn"
-            type="date"
-            required
-            className={inputClassName}
-          />
+        <Field label="Starts on" error={state.fieldErrors?.startsOn}>
+          <DateField name="startsOn" required ariaLabel="Starts on" />
         </Field>
-        <Field label="Ends on">
-          <input
-            name="endsOn"
-            type="date"
-            required
-            className={inputClassName}
-          />
+        <Field label="Ends on" error={state.fieldErrors?.endsOn}>
+          <DateField name="endsOn" required ariaLabel="Ends on" />
         </Field>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-ink-secondary">
-        <input
-          type="checkbox"
-          name="isCurrent"
-          className="h-4 w-4 rounded border-border"
-        />
-        Make this the current year
-      </label>
+      <div className="flex items-center gap-2">
+        <Checkbox id="isCurrent" name="isCurrent" />
+        <label htmlFor="isCurrent" className="text-sm text-ink-secondary">
+          Make this the current year
+        </label>
+      </div>
 
-      {state.error ? (
-        <p className="text-xs text-attention" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <FormError error={state.error} />
 
       <button
         type="submit"

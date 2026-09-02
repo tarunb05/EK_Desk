@@ -2,13 +2,30 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireRole } from "@/lib/auth/require-role";
+import { usernameToInternalEmail } from "@/lib/auth/username";
+import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
+import { normalizeCategoryName } from "@/lib/domain/expense-category-name";
 import {
   createAcademicYearSchema,
   createBranchSchema,
+  createExpenseCategorySchema,
+  createTeacherSchema,
+  deleteExpenseCategorySchema,
+  deleteTeacherSchema,
+  renameExpenseCategorySchema,
+  reorderExpenseCategorySchema,
+  setExpenseCategoryActiveSchema,
+  updateAcademicYearSchema,
+  updateBranchSchema,
+  updateOwnCredentialsSchema,
+  updateTeacherSchema,
 } from "@/lib/settings/schemas";
 
 export interface ActionState {
   error: string | null;
+  fieldErrors?: Record<string, string>;
 }
 
 function formEntries(formData: FormData): Record<string, string> {
@@ -35,9 +52,7 @@ export async function createAcademicYear(
 ): Promise<ActionState> {
   const parsed = createAcademicYearSchema.safeParse(formEntries(formData));
   if (!parsed.success) {
-    return {
-      error: parsed.error.issues[0]?.message ?? "Check the form and try again.",
-    };
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
   }
   const value = parsed.data;
   const supabase = await createClient();
@@ -71,15 +86,66 @@ export async function createAcademicYear(
   return { error: null };
 }
 
+// Same two-step "unset, then set" as createAcademicYear -- the
+// academic_year_one_current partial unique index (migration
+// 20260822000000) is the actual guarantee, this ordering is just what
+// keeps a normal save from tripping it. Unsetting excludes this row itself
+// so re-saving an already-current year as current is a no-op, not a
+// pointless unset-then-reset. Saving with isCurrent unchecked is allowed
+// to leave zero years current -- the index only forbids more than one,
+// and resolve-year-branch.ts already falls back to the most recent year
+// when none is flagged.
+export async function updateAcademicYear(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = updateAcademicYearSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+  const supabase = await createClient();
+
+  if (value.isCurrent) {
+    const { error: unsetError } = await supabase
+      .from("academic_year")
+      .update({ is_current: false })
+      .eq("is_current", true)
+      .neq("id", value.yearId);
+
+    if (unsetError) {
+      return { error: "Could not update the current academic year." };
+    }
+  }
+
+  const { error } = await supabase
+    .from("academic_year")
+    .update({
+      label: value.label,
+      starts_on: value.startsOn,
+      ends_on: value.endsOn,
+      is_current: value.isCurrent,
+    })
+    .eq("id", value.yearId);
+
+  if (error) {
+    return {
+      error:
+        "Could not save the academic year — check the label isn't already used.",
+    };
+  }
+
+  revalidateScopeDependents();
+  return { error: null };
+}
+
 export async function createBranch(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   const parsed = createBranchSchema.safeParse(formEntries(formData));
   if (!parsed.success) {
-    return {
-      error: parsed.error.issues[0]?.message ?? "Check the form and try again.",
-    };
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
   }
   const value = parsed.data;
   const supabase = await createClient();
@@ -96,5 +162,430 @@ export async function createBranch(
   }
 
   revalidateScopeDependents();
+  return { error: null };
+}
+
+export async function updateBranch(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = updateBranchSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("branch")
+    .update({
+      code: value.code,
+      name: value.name,
+      is_active: value.isActive,
+    })
+    .eq("id", value.branchId);
+
+  if (error) {
+    return {
+      error: "Could not save the branch — check the code isn't already used.",
+    };
+  }
+
+  revalidateScopeDependents();
+  return { error: null };
+}
+
+// Creating a login is only possible through the Supabase Admin API, which
+// needs the service-role key -- this is the one place in the running app
+// that key is ever used (everywhere else relies on RLS through the
+// caller's own session). requireRole("admin") gates it in addition to
+// /settings already being an admin-only route, since this Server Action
+// could in principle be invoked directly.
+export async function createTeacher(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = createTeacherSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+
+  let adminClient: ReturnType<typeof createAdminClient>;
+  try {
+    adminClient = createAdminClient();
+  } catch {
+    return { error: "Server is not configured to create logins right now." };
+  }
+
+  const email = usernameToInternalEmail(value.username);
+
+  // GoTrue hashes the password (bcrypt) before it's ever written to
+  // auth.users -- this app never sees or stores the plaintext password
+  // itself past this call.
+  const { data: created, error: createError } =
+    await adminClient.auth.admin.createUser({
+      email,
+      password: value.password,
+      email_confirm: true,
+    });
+
+  if (createError || !created.user) {
+    return {
+      error:
+        "Could not create this login — check the username isn't already used.",
+    };
+  }
+
+  const { error: profileError } = await adminClient.from("profile").upsert({
+    id: created.user.id,
+    role: "teacher",
+    branch_id: value.branchId,
+    full_name: value.fullName,
+  });
+
+  if (profileError) {
+    return {
+      error: "Login created, but could not save the teacher's profile.",
+    };
+  }
+
+  revalidatePath("/settings");
+  return { error: null };
+}
+
+export async function updateTeacher(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = updateTeacherSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+
+  let adminClient: ReturnType<typeof createAdminClient>;
+  try {
+    adminClient = createAdminClient();
+  } catch {
+    return { error: "Server is not configured to manage logins right now." };
+  }
+
+  const authUpdate: { email: string; password?: string } = {
+    email: usernameToInternalEmail(value.username),
+  };
+  if (value.newPassword) {
+    authUpdate.password = value.newPassword;
+  }
+
+  const { error: authError } = await adminClient.auth.admin.updateUserById(
+    value.teacherId,
+    authUpdate,
+  );
+  if (authError) {
+    return {
+      error:
+        "Could not update this login — check the username isn't already used.",
+    };
+  }
+
+  const { error: profileError } = await adminClient
+    .from("profile")
+    .update({ full_name: value.fullName, branch_id: value.branchId })
+    .eq("id", value.teacherId);
+
+  if (profileError) {
+    return {
+      error: "Login updated, but could not save the teacher's profile.",
+    };
+  }
+
+  revalidatePath("/settings");
+  return { error: null };
+}
+
+export async function deleteTeacher(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = deleteTeacherSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+
+  let adminClient: ReturnType<typeof createAdminClient>;
+  try {
+    adminClient = createAdminClient();
+  } catch {
+    return { error: "Server is not configured to manage logins right now." };
+  }
+
+  // profile has an on-delete-cascade FK to auth.users, so deleting the auth
+  // user is the one action needed -- the profile row goes with it.
+  const { error } = await adminClient.auth.admin.deleteUser(
+    parsed.data.teacherId,
+  );
+  if (error) {
+    return { error: "Could not delete this login." };
+  }
+
+  revalidatePath("/settings");
+  return { error: null };
+}
+
+// An admin editing their own username/password -- same Admin API call as
+// editing a teacher, just targeted at the caller's own id instead of one
+// chosen from a list. Changing email/password this way doesn't invalidate
+// the admin's current session (confirmed empirically renaming the seed
+// admin account earlier), so this doesn't need to sign anyone out.
+export async function updateOwnCredentials(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const authed = await requireRole("admin");
+  const parsed = updateOwnCredentialsSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+
+  let adminClient: ReturnType<typeof createAdminClient>;
+  try {
+    adminClient = createAdminClient();
+  } catch {
+    return { error: "Server is not configured to manage logins right now." };
+  }
+
+  const authUpdate: { email: string; password?: string } = {
+    email: usernameToInternalEmail(value.username),
+  };
+  if (value.newPassword) {
+    authUpdate.password = value.newPassword;
+  }
+
+  const { error } = await adminClient.auth.admin.updateUserById(
+    authed.userId,
+    authUpdate,
+  );
+  if (error) {
+    return {
+      error: "Could not update your login — check the username isn't already used.",
+    };
+  }
+
+  revalidatePath("/settings");
+  return { error: null };
+}
+
+// /expenses has no page yet (that's phase 10.3) -- revalidating it now is
+// inert but harmless, and saves having to remember to add it once the page
+// exists. A renamed/reordered/deactivated category that still shows its old
+// state there is exactly the kind of disagreement this app exists to avoid.
+function revalidateExpenseCategoryDependents() {
+  revalidatePath("/settings/expense-categories");
+  revalidatePath("/expenses", "page");
+}
+
+async function findDuplicateCategoryName(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  name: string,
+  excludeId?: string,
+): Promise<boolean> {
+  let query = supabase
+    .from("expense_category")
+    .select("id")
+    // No wildcards in the pattern -- ilike with a plain string is an exact
+    // case-insensitive match, exactly the "Grocery"/"grocery" check the
+    // spec asks for.
+    .ilike("name", name);
+  if (excludeId) {
+    query = query.neq("id", excludeId);
+  }
+  const { data } = await query.limit(1);
+  return (data?.length ?? 0) > 0;
+}
+
+export async function createExpenseCategory(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = createExpenseCategorySchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const name = normalizeCategoryName(parsed.data.name);
+  if (!name) {
+    return { error: null, fieldErrors: { name: "Enter a category name." } };
+  }
+  const supabase = await createClient();
+
+  if (await findDuplicateCategoryName(supabase, name)) {
+    return { error: null, fieldErrors: { name: `"${name}" already exists.` } };
+  }
+
+  const { data: maxRow } = await supabase
+    .from("expense_category")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextSortOrder = (maxRow?.sort_order ?? -1) + 1;
+
+  const { error } = await supabase
+    .from("expense_category")
+    .insert({ name, sort_order: nextSortOrder });
+
+  if (error) {
+    return { error: "Could not save this category." };
+  }
+
+  revalidateExpenseCategoryDependents();
+  return { error: null };
+}
+
+export async function renameExpenseCategory(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = renameExpenseCategorySchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const { categoryId } = parsed.data;
+  const name = normalizeCategoryName(parsed.data.name);
+  if (!name) {
+    return { error: null, fieldErrors: { name: "Enter a category name." } };
+  }
+  const supabase = await createClient();
+
+  if (await findDuplicateCategoryName(supabase, name, categoryId)) {
+    return { error: null, fieldErrors: { name: `"${name}" already exists.` } };
+  }
+
+  const { error } = await supabase
+    .from("expense_category")
+    .update({ name })
+    .eq("id", categoryId);
+
+  if (error) {
+    return { error: "Could not rename this category." };
+  }
+
+  revalidateExpenseCategoryDependents();
+  return { error: null };
+}
+
+export async function setExpenseCategoryActive(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = setExpenseCategoryActiveSchema.safeParse(
+    formEntries(formData),
+  );
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("expense_category")
+    .update({ is_active: parsed.data.isActive })
+    .eq("id", parsed.data.categoryId);
+
+  if (error) {
+    return { error: "Could not update this category." };
+  }
+
+  revalidateExpenseCategoryDependents();
+  return { error: null };
+}
+
+export async function reorderExpenseCategory(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = reorderExpenseCategorySchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const { categoryId, direction } = parsed.data;
+  const supabase = await createClient();
+
+  const { data: rows, error: readError } = await supabase
+    .from("expense_category")
+    .select("id, sort_order")
+    .order("sort_order");
+
+  if (readError || !rows) {
+    return { error: "Could not reorder this category." };
+  }
+
+  const index = rows.findIndex((row) => row.id === categoryId);
+  const swapIndex = direction === "up" ? index - 1 : index + 1;
+  if (index === -1 || swapIndex < 0 || swapIndex >= rows.length) {
+    // Already at the top/bottom -- a clean no-op, not an error.
+    return { error: null };
+  }
+
+  const current = rows[index]!;
+  const swapWith = rows[swapIndex]!;
+
+  const [{ error: firstError }, { error: secondError }] = await Promise.all([
+    supabase
+      .from("expense_category")
+      .update({ sort_order: swapWith.sort_order })
+      .eq("id", current.id),
+    supabase
+      .from("expense_category")
+      .update({ sort_order: current.sort_order })
+      .eq("id", swapWith.id),
+  ]);
+
+  if (firstError || secondError) {
+    return { error: "Could not reorder this category." };
+  }
+
+  revalidateExpenseCategoryDependents();
+  return { error: null };
+}
+
+export async function deleteExpenseCategory(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = deleteExpenseCategorySchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("expense_category")
+    .delete()
+    .eq("id", parsed.data.categoryId);
+
+  if (error) {
+    // 23503 = foreign_key_violation -- the UI only offers delete when the
+    // category has zero expenses, but that count can go stale between the
+    // page render and this click, so on_delete_restrict is the real
+    // guarantee here, not just the UI's own check.
+    if (error.code === "23503") {
+      return {
+        error:
+          "This category has expenses recorded against it — deactivate it instead.",
+      };
+    }
+    return { error: "Could not delete this category." };
+  }
+
+  revalidateExpenseCategoryDependents();
   return { error: null };
 }
