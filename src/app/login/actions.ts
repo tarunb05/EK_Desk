@@ -92,11 +92,26 @@ export async function signIn(
     cookieStore.set(REMEMBER_ME_COOKIE, "0", { path: "/" });
   }
 
+  const { data: role } = await supabase.rpc("auth_role");
+
+  // auth_role() reads profile and filters on is_active -- a deactivated
+  // login (Settings' "Delete" on a teacher archives them rather than
+  // removing their auth.users row) still passes the password check above,
+  // since that row is untouched. Without this, they'd see what looks like
+  // a successful sign-in only to be bounced straight back to /login by
+  // middleware on the next request, with no explanation. Sign back out
+  // rather than leaving a live-but-useless session cookie in the browser.
+  if (!role) {
+    await supabase.auth.signOut();
+    return {
+      error: "This login has been disabled. Contact an administrator.",
+    };
+  }
+
   // redirect() from a Server Action resolves client-side rather than as a
   // fresh top-level navigation, so it doesn't necessarily re-run
   // middleware's own role check on the way there — this has to send each
   // role to a route they can actually reach itself, not rely on middleware
   // to catch a wrong guess afterward.
-  const { data: role } = await supabase.rpc("auth_role");
-  redirect(defaultRouteFor((role as Role | null) ?? "admin"));
+  redirect(defaultRouteFor(role as Role));
 }
