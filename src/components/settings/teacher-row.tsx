@@ -10,7 +10,7 @@ import {
 } from "@/components/forms/field";
 import { Select } from "@/components/forms/select";
 import {
-  deleteTeacher,
+  deactivateTeacher,
   updateTeacher,
   type ActionState,
 } from "@/lib/settings/actions";
@@ -38,7 +38,7 @@ export function TeacherRow({
     initialState,
   );
   const [deleteState, deleteAction, deletePending] = useActionState(
-    deleteTeacher,
+    deactivateTeacher,
     initialState,
   );
 
@@ -51,6 +51,17 @@ export function TeacherRow({
       setEditing(false);
     }
   }, [updateState]);
+
+  // Same trick for the confirm step: a successful deactivation used to be
+  // masked by the row disappearing once revalidation removed it (this was
+  // a genuine hard delete before). Now the row stays -- just marked
+  // Inactive -- so without this it would sit stuck showing Confirm/Cancel
+  // forever after a successful click.
+  useEffect(() => {
+    if (deleteState !== initialState && !deleteState.error) {
+      setDeleting(false);
+    }
+  }, [deleteState]);
 
   if (editing) {
     return (
@@ -142,13 +153,16 @@ export function TeacherRow({
         {deleting ? (
           <form action={deleteAction} className="flex items-center gap-2">
             <input type="hidden" name="teacherId" value={teacher.id} />
-            <span className="text-2xs text-ink-secondary">Delete login?</span>
+            <span className="max-w-[220px] text-2xs text-ink-secondary">
+              They won&apos;t be able to sign in again. Students, expenses,
+              and approvals they&apos;ve added stay on record.
+            </span>
             <button
               type="submit"
               disabled={deletePending}
-              className={`${dangerButtonClassName} h-7 px-2 text-2xs`}
+              className={`${dangerButtonClassName} h-7 shrink-0 px-2 text-2xs`}
             >
-              {deletePending ? "Deleting…" : "Confirm"}
+              {deletePending ? "Removing…" : "Confirm"}
             </button>
             <button
               type="button"

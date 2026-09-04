@@ -79,7 +79,7 @@ export const updateTeacherSchema = z.object({
   newPassword: optionalNewPassword,
 });
 
-export const deleteTeacherSchema = z.object({
+export const deactivateTeacherSchema = z.object({
   teacherId: z.string().uuid(),
 });
 

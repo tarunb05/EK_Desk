@@ -143,10 +143,17 @@ export async function getPendingSubmissions(
 
   const { data: profiles } = await supabase
     .from("profile")
-    .select("id, full_name")
+    .select("id, full_name, is_active")
     .in("id", Array.from(submittedByIds));
+  // A submitter deactivated since (Settings' "Delete" on a teacher archives
+  // rather than removes -- see deactivateTeacher's own comment) still owns
+  // every submission they made; only the displayed name changes, matching
+  // expense_record's profile_full_name() the same way.
   const submittedByName = new Map(
-    (profiles ?? []).map((p) => [p.id, p.full_name]),
+    (profiles ?? []).map((p) => [
+      p.id,
+      p.is_active ? p.full_name : "Teacher (Deleted)",
+    ]),
   );
 
   // Both payment and edit submissions only store fee_account_id --

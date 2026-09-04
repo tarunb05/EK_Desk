@@ -12,8 +12,8 @@ import {
   createBranchSchema,
   createExpenseCategorySchema,
   createTeacherSchema,
+  deactivateTeacherSchema,
   deleteExpenseCategorySchema,
-  deleteTeacherSchema,
   renameExpenseCategorySchema,
   reorderExpenseCategorySchema,
   setExpenseCategoryActiveSchema,
@@ -306,12 +306,29 @@ export async function updateTeacher(
   return { error: null };
 }
 
-export async function deleteTeacher(
+// "Delete" on a teacher archives them rather than removing the row --
+// student_submission/student_edit_submission/payment_submission.submitted_by,
+// expense.created_by/updated_by, and activity_log.actor_id all reference
+// profile with no on-delete action, by design, so a genuine
+// adminClient.auth.admin.deleteUser() (which cascades auth.users -> profile)
+// would throw a foreign-key violation the moment a teacher had added
+// anything at all -- which is exactly the bug this replaces. Setting
+// is_active false instead keeps every one of those rows, and every row
+// they reference, completely untouched.
+//
+// This alone is also the whole "can't sign in again" mechanism: auth_role()/
+// auth_branch_id() (security definer functions everything in the app reads
+// role/branch through) filter on is_active, so a deactivated teacher
+// resolves to no role at all the moment this commits -- middleware treats
+// that identically to being signed out on their very next request, and
+// login/actions.ts's signIn() catches it even earlier, at the login form
+// itself, instead of letting a real password check succeed first.
+export async function deactivateTeacher(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   await requireRole("admin");
-  const parsed = deleteTeacherSchema.safeParse(formEntries(formData));
+  const parsed = deactivateTeacherSchema.safeParse(formEntries(formData));
   if (!parsed.success) {
     return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
   }
@@ -323,16 +340,41 @@ export async function deleteTeacher(
     return { error: "Server is not configured to manage logins right now." };
   }
 
-  // profile has an on-delete-cascade FK to auth.users, so deleting the auth
-  // user is the one action needed -- the profile row goes with it.
-  const { error } = await adminClient.auth.admin.deleteUser(
-    parsed.data.teacherId,
-  );
-  if (error) {
-    return { error: "Could not delete this login." };
+  // The Server Action itself is only ever wired to a "Delete" button
+  // inside TeacherRow, which only ever renders for role = 'teacher'
+  // profiles -- but this can in principle be invoked directly, and
+  // profile_full_name()'s "Teacher (Deleted)" label (migration
+  // 20260902000000) is only accurate for an actual teacher. Refuse
+  // anything else outright rather than silently deactivating it.
+  const { data: target } = await adminClient
+    .from("profile")
+    .select("role")
+    .eq("id", parsed.data.teacherId)
+    .maybeSingle();
+
+  if (target?.role !== "teacher") {
+    return { error: "Could not remove this teacher's access." };
   }
 
+  // profile has no update policy for anyone (see role-based-rls migration)
+  // -- role/branch/is_active changes go through the admin client, same as
+  // updateTeacher above.
+  const { error } = await adminClient
+    .from("profile")
+    .update({ is_active: false })
+    .eq("id", parsed.data.teacherId);
+
+  if (error) {
+    return { error: "Could not remove this teacher's access." };
+  }
+
+  // Expenses and Approvals both show this teacher's name live (joined from
+  // profile, not a frozen snapshot the way activity_log's actor_label is)
+  // -- both need to pick up "Teacher (Deleted)" immediately, not just
+  // Settings' own teacher list.
   revalidatePath("/settings");
+  revalidatePath("/expenses");
+  revalidatePath("/approvals");
   return { error: null };
 }
 
