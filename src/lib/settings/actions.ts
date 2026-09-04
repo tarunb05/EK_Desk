@@ -14,6 +14,7 @@ import {
   createTeacherSchema,
   deactivateTeacherSchema,
   deleteExpenseCategorySchema,
+  reactivateTeacherSchema,
   renameExpenseCategorySchema,
   reorderExpenseCategorySchema,
   setExpenseCategoryActiveSchema,
@@ -378,6 +379,52 @@ export async function deactivateTeacher(
   return { error: null };
 }
 
+// The reverse of deactivateTeacher -- restores exactly what deactivating
+// took away (is_active), nothing else. Nothing about their profile,
+// submissions, expenses, or activity log ever changed when they were
+// deactivated in the first place, so there's nothing else to restore here.
+export async function reactivateTeacher(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = reactivateTeacherSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+
+  let adminClient: ReturnType<typeof createAdminClient>;
+  try {
+    adminClient = createAdminClient();
+  } catch {
+    return { error: "Server is not configured to manage logins right now." };
+  }
+
+  const { data: target } = await adminClient
+    .from("profile")
+    .select("role")
+    .eq("id", parsed.data.teacherId)
+    .maybeSingle();
+
+  if (target?.role !== "teacher") {
+    return { error: "Could not restore this teacher's access." };
+  }
+
+  const { error } = await adminClient
+    .from("profile")
+    .update({ is_active: true })
+    .eq("id", parsed.data.teacherId);
+
+  if (error) {
+    return { error: "Could not restore this teacher's access." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/expenses");
+  revalidatePath("/approvals");
+  return { error: null };
+}
+
 // An admin editing their own username/password -- same Admin API call as
 // editing a teacher, just targeted at the caller's own id instead of one
 // chosen from a list. Changing email/password this way doesn't invalidate
@@ -414,7 +461,8 @@ export async function updateOwnCredentials(
   );
   if (error) {
     return {
-      error: "Could not update your login — check the username isn't already used.",
+      error:
+        "Could not update your login — check the username isn't already used.",
     };
   }
 

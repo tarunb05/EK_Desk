@@ -83,6 +83,10 @@ export const deactivateTeacherSchema = z.object({
   teacherId: z.string().uuid(),
 });
 
+export const reactivateTeacherSchema = z.object({
+  teacherId: z.string().uuid(),
+});
+
 export const updateOwnCredentialsSchema = z.object({
   username: usernameField,
   newPassword: optionalNewPassword,

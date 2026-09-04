@@ -11,6 +11,7 @@ import {
 import { Select } from "@/components/forms/select";
 import {
   deactivateTeacher,
+  reactivateTeacher,
   updateTeacher,
   type ActionState,
 } from "@/lib/settings/actions";
@@ -28,6 +29,7 @@ export function TeacherRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reactivating, setReactivating] = useState(false);
   const [branchId, setBranchId] = useState(
     branches.find((b) => b.code === teacher.branchCode)?.id ??
       branches[0]?.id ??
@@ -39,6 +41,10 @@ export function TeacherRow({
   );
   const [deleteState, deleteAction, deletePending] = useActionState(
     deactivateTeacher,
+    initialState,
+  );
+  const [reactivateState, reactivateAction, reactivatePending] = useActionState(
+    reactivateTeacher,
     initialState,
   );
 
@@ -62,6 +68,16 @@ export function TeacherRow({
       setDeleting(false);
     }
   }, [deleteState]);
+
+  // Same trick again for the reverse flow -- once reactivation succeeds,
+  // teacher.isActive flips to true on the next render and this row falls
+  // through to the normal Edit/Delete branch below on its own; this just
+  // makes sure it doesn't stay stuck on Confirm/Cancel in the meantime.
+  useEffect(() => {
+    if (reactivateState !== initialState && !reactivateState.error) {
+      setReactivating(false);
+    }
+  }, [reactivateState]);
 
   if (editing) {
     return (
@@ -150,12 +166,43 @@ export function TeacherRow({
             Inactive
           </span>
         )}
-        {deleting ? (
+        {!teacher.isActive ? (
+          reactivating ? (
+            <form action={reactivateAction} className="flex items-center gap-2">
+              <input type="hidden" name="teacherId" value={teacher.id} />
+              <span className="max-w-[200px] text-2xs text-ink-secondary">
+                They&apos;ll be able to sign in again.
+              </span>
+              <button
+                type="submit"
+                disabled={reactivatePending}
+                className={`${primaryButtonClassName} h-7 shrink-0 px-2 text-2xs`}
+              >
+                {reactivatePending ? "Activating…" : "Confirm"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setReactivating(false)}
+                className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setReactivating(true)}
+              className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+            >
+              Activate
+            </button>
+          )
+        ) : deleting ? (
           <form action={deleteAction} className="flex items-center gap-2">
             <input type="hidden" name="teacherId" value={teacher.id} />
             <span className="max-w-[220px] text-2xs text-ink-secondary">
-              They won&apos;t be able to sign in again. Students, expenses,
-              and approvals they&apos;ve added stay on record.
+              They won&apos;t be able to sign in again. Students, expenses, and
+              approvals they&apos;ve added stay on record.
             </span>
             <button
               type="submit"
@@ -192,6 +239,7 @@ export function TeacherRow({
         )}
       </div>
       <FormError error={deleteState.error} className="mt-1 w-full" />
+      <FormError error={reactivateState.error} className="mt-1 w-full" />
     </li>
   );
 }
