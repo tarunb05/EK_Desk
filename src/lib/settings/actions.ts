@@ -14,6 +14,7 @@ import {
   createTeacherSchema,
   deactivateTeacherSchema,
   deleteExpenseCategorySchema,
+  deleteTeacherPermanentlySchema,
   reactivateTeacherSchema,
   renameExpenseCategorySchema,
   reorderExpenseCategorySchema,
@@ -417,6 +418,77 @@ export async function reactivateTeacher(
 
   if (error) {
     return { error: "Could not restore this teacher's access." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/expenses");
+  revalidatePath("/approvals");
+  return { error: null };
+}
+
+// A genuine, permanent delete -- only ever reachable once a teacher is
+// already deactivated (TeacherRow only renders this action's button on an
+// inactive row), as a deliberate safety buffer: archive first, decide to
+// actually purge later, never straight from an active login. The
+// is_active check below enforces that server-side too, not just in the UI.
+//
+// This can still fail: student_submission/student_edit_submission/
+// payment_submission.submitted_by, expense.created_by/updated_by, and
+// activity_log.actor_id all reference profile with no on-delete action, by
+// design (see deactivateTeacher's own comment) -- so a teacher who's ever
+// actually added anything (which, via log_activity()'s trigger, includes
+// simply existing as the actor on an activity_log row) can't be purged
+// this way. That's deliberate, not a bug: it's the same guarantee
+// deactivateTeacher exists to make in the first place -- their work stays
+// on record -- just enforced here as "can't delete" instead of "won't
+// delete". The Admin API surfaces that as a generic error, not a
+// structured Postgres code the way PostgREST does elsewhere in this app,
+// so this can't distinguish it from any other failure -- one honest
+// message covers both rather than guessing.
+export async function deleteTeacherPermanently(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const parsed = deleteTeacherPermanentlySchema.safeParse(
+    formEntries(formData),
+  );
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+
+  let adminClient: ReturnType<typeof createAdminClient>;
+  try {
+    adminClient = createAdminClient();
+  } catch {
+    return { error: "Server is not configured to manage logins right now." };
+  }
+
+  const { data: target } = await adminClient
+    .from("profile")
+    .select("role, is_active")
+    .eq("id", parsed.data.teacherId)
+    .maybeSingle();
+
+  if (target?.role !== "teacher") {
+    return { error: "Could not delete this login." };
+  }
+  if (target.is_active) {
+    return { error: "Deactivate this teacher before deleting them." };
+  }
+
+  // profile has an on-delete-cascade FK to auth.users, so deleting the auth
+  // user is the one action needed -- the profile row goes with it, if
+  // nothing else references it first.
+  const { error } = await adminClient.auth.admin.deleteUser(
+    parsed.data.teacherId,
+  );
+
+  if (error) {
+    return {
+      error:
+        "This teacher has added students, expenses, or payments and can't be permanently deleted — their access is already revoked.",
+    };
   }
 
   revalidatePath("/settings");

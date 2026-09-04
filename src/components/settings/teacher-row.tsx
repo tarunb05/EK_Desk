@@ -11,6 +11,7 @@ import {
 import { Select } from "@/components/forms/select";
 import {
   deactivateTeacher,
+  deleteTeacherPermanently,
   reactivateTeacher,
   updateTeacher,
   type ActionState,
@@ -30,6 +31,7 @@ export function TeacherRow({
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [reactivating, setReactivating] = useState(false);
+  const [permanentlyDeleting, setPermanentlyDeleting] = useState(false);
   const [branchId, setBranchId] = useState(
     branches.find((b) => b.code === teacher.branchCode)?.id ??
       branches[0]?.id ??
@@ -47,6 +49,8 @@ export function TeacherRow({
     reactivateTeacher,
     initialState,
   );
+  const [permanentDeleteState, permanentDeleteAction, permanentDeletePending] =
+    useActionState(deleteTeacherPermanently, initialState);
 
   // useActionState's initial value and a successful action's return are
   // both { error: null } by shape, but different object references -- that
@@ -188,14 +192,48 @@ export function TeacherRow({
                 Cancel
               </button>
             </form>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setReactivating(true)}
-              className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+          ) : permanentlyDeleting ? (
+            <form
+              action={permanentDeleteAction}
+              className="flex items-center gap-2"
             >
-              Activate
-            </button>
+              <input type="hidden" name="teacherId" value={teacher.id} />
+              <span className="max-w-[220px] text-2xs text-ink-secondary">
+                This permanently deletes their login and can&apos;t be undone.
+                Only works if they&apos;ve never added anything.
+              </span>
+              <button
+                type="submit"
+                disabled={permanentDeletePending}
+                className={`${dangerButtonClassName} h-7 shrink-0 px-2 text-2xs`}
+              >
+                {permanentDeletePending ? "Deleting…" : "Confirm"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPermanentlyDeleting(false)}
+                className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setReactivating(true)}
+                className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+              >
+                Activate
+              </button>
+              <button
+                type="button"
+                onClick={() => setPermanentlyDeleting(true)}
+                className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+              >
+                Delete
+              </button>
+            </>
           )
         ) : deleting ? (
           <form action={deleteAction} className="flex items-center gap-2">
@@ -240,6 +278,7 @@ export function TeacherRow({
       </div>
       <FormError error={deleteState.error} className="mt-1 w-full" />
       <FormError error={reactivateState.error} className="mt-1 w-full" />
+      <FormError error={permanentDeleteState.error} className="mt-1 w-full" />
     </li>
   );
 }
