@@ -4,7 +4,6 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
 import {
   Select,
   SelectContent,
@@ -121,8 +120,6 @@ export function Calendar({
   showMonthYearPickers = false,
 }: CalendarProps) {
   const [currentDate, setCurrentDate] = React.useState(selected ?? new Date());
-  const [isAnimating, setIsAnimating] = React.useState(false);
-  const [direction, setDirection] = React.useState<"left" | "right">("right");
   const today = new Date();
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
@@ -148,15 +145,20 @@ export function Calendar({
   const remainingCells = totalCells - prevMonthDays.length - currentMonthDays.length;
   const nextMonthDays = Array.from({ length: remainingCells }, (_, i) => i + 1);
 
+  // Commits immediately and derives the next month from the previous state
+  // rather than the render's closed-over currentDate -- clicking Next
+  // several times in a row (routine for an "ends on" date many months out)
+  // used to gate each click behind a 150ms setTimeout that disabled the
+  // button and only then applied a SINGLE step computed from the click
+  // that started the timer, so every click landing in that window (nearly
+  // all of them, arriving faster than 150ms apart) was silently dropped --
+  // nine clicks advanced the calendar by one month.
   function navigateMonth(dir: "prev" | "next") {
-    setIsAnimating(true);
-    setDirection(dir === "prev" ? "left" : "right");
-    setTimeout(() => {
-      const newDate = new Date(currentDate);
-      newDate.setMonth(currentMonth + (dir === "prev" ? -1 : 1));
-      setCurrentDate(newDate);
-      setIsAnimating(false);
-    }, 150);
+    setCurrentDate((prev) => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() + (dir === "prev" ? -1 : 1));
+      return newDate;
+    });
   }
 
   function handleMonthChange(month: string) {
@@ -247,19 +249,12 @@ export function Calendar({
     return "default";
   }
 
-  const slideVariants = {
-    enter: (dir: string) => ({ x: dir === "right" ? 40 : -40, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: string) => ({ x: dir === "right" ? -40 : 40, opacity: 0 }),
-  };
-
   return (
     <div className={cn(calendarVariants({ size }), className)}>
       <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={() => navigateMonth("prev")}
-          disabled={isAnimating}
           aria-label="Previous month"
           className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
         >
@@ -307,7 +302,6 @@ export function Calendar({
         <button
           type="button"
           onClick={() => navigateMonth("next")}
-          disabled={isAnimating}
           aria-label="Next month"
           className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
         >
@@ -326,58 +320,58 @@ export function Calendar({
         ))}
       </div>
 
-      <div className="relative overflow-hidden">
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={`${currentMonth}-${currentYear}`}
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 0.15 }}
-            className="grid grid-cols-7 gap-1"
+      {/* No per-month mount/unmount animation here (there was one, sliding
+          in via AnimatePresence keyed on month+year) -- with the click-drop
+          fix above, rapid Next/Prev clicks (routine when an "ends on" date
+          is many months out) advance currentMonth/currentYear faster than a
+          150ms exit animation can complete. AnimatePresence's mode="wait"
+          then leaves the previous month's day buttons mounted and clickable
+          while it waits its turn to unmount, so a click can land on a
+          stale button whose onClick closure still points at the old
+          month -- silently saving a date many months off from what the
+          header displays, with no error and no visual sign anything is
+          wrong. Rendering the grid directly guarantees exactly one set of
+          day buttons exists at any moment, always built from the render
+          that's currently on screen. */}
+      <div className="grid grid-cols-7 gap-1">
+        {showOutsideDays &&
+          prevMonthDays.map((day) => (
+            <button
+              key={`prev-${day}`}
+              type="button"
+              onClick={() => handleDateClick(day, -1)}
+              disabled={isDateDisabled(new Date(currentYear, currentMonth - 1, day))}
+              aria-label={dayAriaLabel(day, -1)}
+              className={dayVariants({ variant: getDayVariant(day, -1), size })}
+            >
+              {day}
+            </button>
+          ))}
+        {currentMonthDays.map((day) => (
+          <button
+            key={`current-${day}`}
+            type="button"
+            onClick={() => handleDateClick(day)}
+            disabled={isDateDisabled(new Date(currentYear, currentMonth, day))}
+            aria-label={dayAriaLabel(day)}
+            className={dayVariants({ variant: getDayVariant(day), size })}
           >
-            {showOutsideDays &&
-              prevMonthDays.map((day) => (
-                <button
-                  key={`prev-${day}`}
-                  type="button"
-                  onClick={() => handleDateClick(day, -1)}
-                  disabled={isDateDisabled(new Date(currentYear, currentMonth - 1, day))}
-                  aria-label={dayAriaLabel(day, -1)}
-                  className={dayVariants({ variant: getDayVariant(day, -1), size })}
-                >
-                  {day}
-                </button>
-              ))}
-            {currentMonthDays.map((day) => (
-              <button
-                key={`current-${day}`}
-                type="button"
-                onClick={() => handleDateClick(day)}
-                disabled={isDateDisabled(new Date(currentYear, currentMonth, day))}
-                aria-label={dayAriaLabel(day)}
-                className={dayVariants({ variant: getDayVariant(day), size })}
-              >
-                {day}
-              </button>
-            ))}
-            {showOutsideDays &&
-              nextMonthDays.map((day) => (
-                <button
-                  key={`next-${day}`}
-                  type="button"
-                  onClick={() => handleDateClick(day, 1)}
-                  disabled={isDateDisabled(new Date(currentYear, currentMonth + 1, day))}
-                  aria-label={dayAriaLabel(day, 1)}
-                  className={dayVariants({ variant: getDayVariant(day, 1), size })}
-                >
-                  {day}
-                </button>
-              ))}
-          </motion.div>
-        </AnimatePresence>
+            {day}
+          </button>
+        ))}
+        {showOutsideDays &&
+          nextMonthDays.map((day) => (
+            <button
+              key={`next-${day}`}
+              type="button"
+              onClick={() => handleDateClick(day, 1)}
+              disabled={isDateDisabled(new Date(currentYear, currentMonth + 1, day))}
+              aria-label={dayAriaLabel(day, 1)}
+              className={dayVariants({ variant: getDayVariant(day, 1), size })}
+            >
+              {day}
+            </button>
+          ))}
       </div>
     </div>
   );
