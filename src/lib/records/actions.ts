@@ -8,6 +8,7 @@ import { setToastNotice } from "@/lib/shell/toast-cookie";
 import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
 import { EXPENSE_SANITY_CEILING_PAISE } from "@/lib/domain/money";
 import { isWithinAcademicYear } from "@/lib/domain/academic-year";
+import { cancelOpenPaymentLink } from "@/lib/payments/link-lifecycle";
 import {
   canTransitionStudentStatus,
   type StudentStatus,
@@ -357,6 +358,36 @@ export async function updateFeeAccount(
     return { error: "Could not update the fee account." };
   }
 
+  // A discontinued account, or a receivable lowered below an open link's
+  // own amount, both make that link stale -- Phase 15's own rule (section
+  // 4): kill it in the same action rather than leaving it payable against
+  // terms that no longer exist. Best-effort: this never blocks or
+  // surfaces an error into the update itself, the same way
+  // cancelOpenPaymentLink treats a caller's real state change as the
+  // event of record regardless of whether the Razorpay-side call
+  // succeeds.
+  if (value.status === "discontinued") {
+    await cancelOpenPaymentLink(
+      supabase,
+      value.feeAccountId,
+      "Fee account discontinued",
+    );
+  } else {
+    const { data: openLink } = await supabase
+      .from("payment_request")
+      .select("amount_paise")
+      .eq("fee_account_id", value.feeAccountId)
+      .eq("status", "open")
+      .maybeSingle();
+    if (openLink && BigInt(openLink.amount_paise) > value.totalReceivable) {
+      await cancelOpenPaymentLink(
+        supabase,
+        value.feeAccountId,
+        "Receivable lowered below the open link's amount",
+      );
+    }
+  }
+
   revalidatePath(`/${feeAccount.service_type}`);
   revalidatePath("/students");
   redirect(`/${feeAccount.service_type}`);
@@ -421,6 +452,24 @@ export async function recordPayment(
 
   if (error) {
     return { error: "Could not record the payment." };
+  }
+
+  // A manual payment that clears the account's pending balance makes an
+  // open link stale -- Phase 15's own rule (section 4). Read fresh rather
+  // than compute from this payment alone: fee_account_record's
+  // pending_paise already accounts for every payment on the account, not
+  // just this one.
+  const { data: afterPayment } = await supabase
+    .from("fee_account_record")
+    .select("pending_paise")
+    .eq("fee_account_id", value.feeAccountId)
+    .maybeSingle();
+  if (afterPayment && BigInt(afterPayment.pending_paise ?? 0) <= 0n) {
+    await cancelOpenPaymentLink(
+      supabase,
+      value.feeAccountId,
+      "Pending balance cleared by a manual payment",
+    );
   }
 
   revalidatePath(`/${feeAccount.service_type}`);
@@ -545,6 +594,40 @@ export async function permanentlyDeleteStudent(
   }
   const value = parsed.data;
   const supabase = await createClient();
+
+  const { data: feeAccounts } = await supabase
+    .from("fee_account")
+    .select("id")
+    .eq("student_id", value.studentId);
+  const feeAccountIds = (feeAccounts ?? []).map((fa) => fa.id);
+
+  // A student with a real online payment on record is not hard-deletable
+  // at all (Phase 15 plan, answer 4): fee_account/payment both cascade on
+  // this delete (hard-delete-student migration), which would permanently
+  // erase our own record of real money Razorpay holds its own record of.
+  // archiveStudent (the soft-delete above) is the only option once a
+  // student has a gateway payment.
+  if (feeAccountIds.length > 0) {
+    const { count: gatewayPaymentCount } = await supabase
+      .from("payment")
+      .select("id", { count: "exact", head: true })
+      .in("fee_account_id", feeAccountIds)
+      .eq("source", "gateway");
+    if ((gatewayPaymentCount ?? 0) > 0) {
+      return {
+        error:
+          "This student has an online payment on record and can't be permanently deleted — archive them instead.",
+      };
+    }
+  }
+
+  for (const feeAccountId of feeAccountIds) {
+    await cancelOpenPaymentLink(
+      supabase,
+      feeAccountId,
+      "Student permanently deleted",
+    );
+  }
 
   const { error, count } = await supabase
     .from("student")

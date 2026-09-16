@@ -11,6 +11,7 @@ import {
   getStudentClassSections,
   getStudentDirectory,
 } from "@/lib/records/student-directory";
+import { getPaymentLinkButtonInfo } from "@/lib/payments/queries";
 import { StudentDirectoryFilters } from "@/components/students/student-directory-filters";
 import { StudentDirectoryTable } from "@/components/students/student-directory-table";
 import { ScopeSelectors } from "@/components/shell/scope-selectors";
@@ -66,6 +67,19 @@ export default async function StudentsPage({
     pageSize: PAGE_SIZE,
   });
 
+  // Never even asked for a teacher -- payment_request's RLS would return
+  // nothing anyway, but skipping the query entirely matches how every
+  // other admin-only money surface in this app behaves.
+  const paymentLinkInfo =
+    authed.role === "admin"
+      ? await getPaymentLinkButtonInfo(
+          supabase,
+          rows.flatMap((row) =>
+            row.feeAccounts.map((account) => account.feeAccountId),
+          ),
+        )
+      : undefined;
+
   const flatSearchParams = Object.fromEntries(
     Object.entries(rawParams).map(([key, value]) => [
       key,
@@ -106,6 +120,7 @@ export default async function StudentsPage({
         totalPages={pagination.totalPages}
         searchParams={flatSearchParams}
         role={authed.role}
+        paymentLinkInfo={paymentLinkInfo}
       />
     </div>
   );

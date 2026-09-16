@@ -1,14 +1,16 @@
 import Link from "next/link";
-import { formatPaise } from "@/lib/domain/money";
+import { formatPaise, paiseToRupeesInputString } from "@/lib/domain/money";
 import type { StudentDirectoryRow } from "@/lib/records/student-directory";
 import type { StudentSortKey } from "@/lib/shell/student-table-params";
 import type { Role } from "@/lib/auth/routes";
+import type { PaymentLinkButtonInfo } from "@/lib/payments/queries";
 import { SortableHeader } from "@/components/records/sortable-header";
 import { PaginationControls } from "@/components/records/pagination-controls";
 import { TableTransitionProvider } from "@/components/records/table-transition";
 import { PendingTbody } from "@/components/records/pending-tbody";
 import { AlertIcon, ClockIcon, StatusIcon } from "@/components/shell/nav-icons";
 import { RowActionMenu } from "@/components/students/row-action-menu";
+import { PaymentLinkButton } from "@/components/students/payment-link-button";
 
 interface StudentDirectoryTableProps {
   rows: StudentDirectoryRow[];
@@ -19,6 +21,10 @@ interface StudentDirectoryTableProps {
   totalPages: number;
   searchParams: Record<string, string | undefined>;
   role: Role;
+  // Admin only -- never fetched for a teacher in the first place (see
+  // students/page.tsx), so this is undefined rather than an empty Map for
+  // that role, and RowActions never renders the button at all for one.
+  paymentLinkInfo?: Map<string, PaymentLinkButtonInfo>;
 }
 
 function PaymentStatus({ row }: { row: StudentDirectoryRow }) {
@@ -54,7 +60,49 @@ const SERVICE_LABEL: Record<string, string> = {
   daycare: "Daycare",
 };
 
-function RowActions({ row, role }: { row: StudentDirectoryRow; role: Role }) {
+// A payment link only ever makes sense for an account with real pending
+// money -- an account with nothing owed has no amount to prefill and
+// nothing to pay, so the button doesn't render at all rather than opening
+// a dialog that can only fail validation.
+function PaymentLinkButtonForAccount({
+  feeAccountId,
+  info,
+}: {
+  feeAccountId: string;
+  info: PaymentLinkButtonInfo | undefined;
+}) {
+  if (!info || info.pendingPaise <= 0n) {
+    return null;
+  }
+
+  return (
+    <PaymentLinkButton
+      feeAccountId={feeAccountId}
+      pendingDisplay={formatPaise(info.pendingPaise)}
+      defaultAmountInput={paiseToRupeesInputString(info.pendingPaise)}
+      existingLink={
+        info.openLink
+          ? {
+              id: info.openLink.id,
+              shortUrl: info.openLink.shortUrl,
+              expiresAt: info.openLink.expiresAt,
+              amountDisplay: formatPaise(info.openLink.amountPaise),
+            }
+          : null
+      }
+    />
+  );
+}
+
+function RowActions({
+  row,
+  role,
+  paymentLinkInfo,
+}: {
+  row: StudentDirectoryRow;
+  role: Role;
+  paymentLinkInfo?: Map<string, PaymentLinkButtonInfo>;
+}) {
   if (row.feeAccounts.length === 0) {
     return (
       <RowActionMenu
@@ -105,6 +153,12 @@ function RowActions({ row, role }: { row: StudentDirectoryRow; role: Role }) {
               studentName={row.fullName}
               role={role}
             />
+            {role === "admin" && account.status === "active" ? (
+              <PaymentLinkButtonForAccount
+                feeAccountId={account.feeAccountId}
+                info={paymentLinkInfo?.get(account.feeAccountId)}
+              />
+            ) : null}
           </div>
         );
       })}
@@ -121,6 +175,7 @@ export function StudentDirectoryTable({
   totalPages,
   searchParams,
   role,
+  paymentLinkInfo,
 }: StudentDirectoryTableProps) {
   if (rows.length === 0) {
     return (
@@ -232,7 +287,11 @@ export function StudentDirectoryTable({
                     <PaymentStatus row={row} />
                   </td>
                   <td className="px-3">
-                    <RowActions row={row} role={role} />
+                    <RowActions
+                      row={row}
+                      role={role}
+                      paymentLinkInfo={paymentLinkInfo}
+                    />
                   </td>
                 </tr>
               ))}

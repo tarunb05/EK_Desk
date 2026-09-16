@@ -31,6 +31,12 @@ jobs:
       # live Supabase call at build time. Not secrets; safe as plain values.
       NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder-anon-key
+      # Same idea for Razorpay's env module (src/lib/payments/env.ts) --
+      # only needs to be well-formed so it doesn't throw on import. CI never
+      # calls Razorpay: every test mocks the boundary (lib/payments/razorpay.ts).
+      RAZORPAY_KEY_ID: rzp_test_ci_placeholder
+      RAZORPAY_KEY_SECRET: ci-build-placeholder-key-secret
+      RAZORPAY_WEBHOOK_SECRET: ci-build-placeholder-webhook-secret
 
     steps:
       - uses: actions/checkout@v7
@@ -83,6 +89,14 @@ jobs:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
       SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
       SEED_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:54322/postgres
+      # next dev's route compilation needs lib/payments/env.ts to not throw
+      # even on a page the e2e suite never visits. RAZORPAY_MOCK itself is
+      # set in playwright.config.ts's webServer.env, not here -- that's
+      # the one place that applies identically whether this server gets
+      # spawned locally or in CI.
+      RAZORPAY_KEY_ID: rzp_test_ci_placeholder
+      RAZORPAY_KEY_SECRET: ci-build-placeholder-key-secret
+      RAZORPAY_WEBHOOK_SECRET: ci-build-placeholder-webhook-secret
 
     steps:
       - uses: actions/checkout@v7

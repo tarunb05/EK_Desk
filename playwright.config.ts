@@ -30,5 +30,15 @@ export default defineConfig({
     command: "npm run build && npm run start",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
+    // RAZORPAY_MOCK only for this spawned server process -- never for
+    // `npm run dev`, so a developer manually exercising the feature in
+    // their own browser still hits real Razorpay (Test-mode, with real
+    // keys in .env.local) unless they're specifically running this suite.
+    env: { RAZORPAY_MOCK: "true" },
+    // The default 60s covers `next start` alone comfortably, but this
+    // command runs a full `next build` first too -- a cold build already
+    // took ~55s locally on its own, leaving `start` almost no room in the
+    // same budget. 3 minutes covers a cold build plus start with margin.
+    timeout: 180_000,
   },
 });

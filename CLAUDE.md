@@ -79,6 +79,10 @@ Typography: Inter via `next/font` for everything — body text, labels, every nu
 
 Layout: fixed left sidebar (Transport / Daycare / Students / Settings), a top bar holding the academic-year and branch selectors since both apply to every screen, content column capped at 1440px. Keyboard-accessible throughout; visible focus rings; the record table must be usable with the keyboard alone.
 
+## External services
+
+- **Razorpay (Phase 15, online payment links) — Preview and Development environments use Test-mode keys; only Production uses Live keys.** Same principle as keeping Preview deployments off the production Supabase project (`docs/deployment.md`) — a Preview deploy creating a real payment link against a real bank account would be an actual money bug, not a data bug. `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET`/`RAZORPAY_WEBHOOK_SECRET` are server-only (`src/lib/payments/env.ts`), never `NEXT_PUBLIC_`. CI never calls Razorpay — the boundary (`src/lib/payments/razorpay.ts`) is mocked in tests.
+
 ## Project rules
 
 - Conventional Commits. One logical change per commit. `main` always deployable; work on branches, merge by squashed PR.
