@@ -24,6 +24,10 @@ export const ROUTE_ACCESS: Record<string, readonly Role[]> = {
   // route, branched by role in the page itself, since RLS already scopes
   // a teacher's own submission reads to just theirs.
   "/approvals": ["admin", "teacher"],
+  // A teacher's message to an admin, and the admin's inbox for them -- same
+  // route, branched by role the same way /approvals is: RLS already scopes
+  // a teacher's own read to their own requests.
+  "/support": ["admin", "teacher"],
   // The three Excel exports (Route Handlers, not pages) -- same role split
   // as the dashboard/expenses/log page each one's data comes from.
   "/api/export/fee-accounts": ["admin"],

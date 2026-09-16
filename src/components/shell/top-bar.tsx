@@ -3,16 +3,20 @@
 import { signOut } from "@/lib/auth/sign-out";
 import { MenuIcon, SignOutIcon, UserIcon } from "./nav-icons";
 import { useSidebarContext } from "./sidebar-context";
+import { SupportRequestButton } from "@/components/support/support-request-button";
+import type { Role } from "@/lib/auth/routes";
 
 interface TopBarProps {
   username: string | null;
+  role: Role;
 }
 
 // Year/branch selectors used to live here, but that put them out of
 // context on every screen and left this bar cluttered on mobile. Each
 // page now shows them itself, next to its own title, via ScopeSelectors —
-// this bar is just the mobile menu toggle, branding, and sign-out.
-export function TopBar({ username }: TopBarProps) {
+// this bar is just the mobile menu toggle, branding, sign-out, and (for a
+// teacher) the one-click way to reach an admin from wherever she is.
+export function TopBar({ username, role }: TopBarProps) {
   const { setMobileOpen } = useSidebarContext();
 
   return (
@@ -30,6 +34,7 @@ export function TopBar({ username }: TopBarProps) {
       </div>
 
       <div className="flex items-center gap-3">
+        {role === "teacher" ? <SupportRequestButton /> : null}
         {username ? (
           <span className="flex items-center gap-1.5 rounded-md bg-surface-accent px-2.5 py-1 text-sm text-ink-secondary">
             <UserIcon size={14} />

@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { internalEmailToUsername } from "@/lib/auth/username";
 import { requireAuth } from "@/lib/auth/require-role";
 import { getPendingSubmissionCount } from "@/lib/records/approvals";
+import { getOpenSupportRequestCount } from "@/lib/support/queries";
 
 export default async function AppLayout({
   children,
@@ -27,7 +28,10 @@ export default async function AppLayout({
   // Both roles reach /approvals now -- admin sees everyone's pending count,
   // a teacher sees only their own (RLS scopes the underlying query to
   // `submitted_by = auth.uid()` automatically, no role branch needed here).
-  const pendingApprovalsCount = await getPendingSubmissionCount(supabase);
+  const [pendingApprovalsCount, openSupportCount] = await Promise.all([
+    getPendingSubmissionCount(supabase),
+    getOpenSupportRequestCount(supabase),
+  ]);
 
   return (
     <SidebarProvider>
@@ -40,9 +44,13 @@ export default async function AppLayout({
           >
             Skip to content
           </a>
-          <Sidebar role={role} pendingApprovalsCount={pendingApprovalsCount} />
+          <Sidebar
+            role={role}
+            pendingApprovalsCount={pendingApprovalsCount}
+            openSupportCount={openSupportCount}
+          />
           <div className="flex min-w-0 flex-1 flex-col">
-            <TopBar username={username} />
+            <TopBar username={username} role={role} />
             <RouteRestrictedBanner />
             <main
               id="main-content"

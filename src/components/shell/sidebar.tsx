@@ -11,9 +11,11 @@ const COLLAPSED_STORAGE_KEY = "sidebar-collapsed";
 export function Sidebar({
   role,
   pendingApprovalsCount = 0,
+  openSupportCount = 0,
 }: {
   role: Role;
   pendingApprovalsCount?: number;
+  openSupportCount?: number;
 }) {
   const { mobileOpen, setMobileOpen } = useSidebarContext();
   const [collapsed, setCollapsed] = useState(false);
@@ -91,6 +93,7 @@ export function Sidebar({
           collapsed={visuallyCollapsed}
           role={role}
           pendingApprovalsCount={pendingApprovalsCount}
+          openSupportCount={openSupportCount}
         />
       </aside>
     </>

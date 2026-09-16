@@ -77,7 +77,12 @@ describe("teacher nav", () => {
     const teacherHrefs = NAV_LINKS.filter((link) =>
       ROUTE_ACCESS[link.href]?.includes("teacher"),
     ).map((link) => link.href);
-    expect(teacherHrefs).toEqual(["/students", "/expenses", "/approvals"]);
+    expect(teacherHrefs).toEqual([
+      "/students",
+      "/expenses",
+      "/approvals",
+      "/support",
+    ]);
   });
 
   it("shows every NAV_LINKS entry for admin", () => {

@@ -265,3 +265,16 @@ export function CheckIcon(props: IconProps = {}) {
     </IconBase>
   );
 }
+
+// A speech bubble with a question mark -- "reach an admin for help",
+// distinct from ApprovalsIcon's checklist (a change awaiting review) since
+// a support request isn't proposing a change to anything.
+export function SupportIcon(props: IconProps = {}) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 5.5h12v8H8.5L5 16.5V13.5H4z" />
+      <path d="M8.3 9.2a1.7 1.7 0 1 1 2.5 1.5c-.5.3-.8.6-.8 1.1" />
+      <circle cx="10" cy="13.1" r="0.15" fill="currentColor" stroke="none" />
+    </IconBase>
+  );
+}

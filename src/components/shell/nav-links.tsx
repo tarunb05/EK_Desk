@@ -8,6 +8,7 @@ import {
   DaycareIcon,
   SettingsIcon,
   StudentsIcon,
+  SupportIcon,
   TransportIcon,
   WalletIcon,
 } from "./nav-icons";
@@ -24,6 +25,7 @@ export const NAV_LINKS = [
   { href: "/students", label: "Students", Icon: StudentsIcon },
   { href: "/expenses", label: "Expenses", Icon: WalletIcon },
   { href: "/approvals", label: "Approvals", Icon: ApprovalsIcon },
+  { href: "/support", label: "Support", Icon: SupportIcon },
   // Admin-only (see ROUTE_ACCESS) -- sits right before Settings, after
   // every screen with work to action, since this one has nothing to
   // action, only to read.
@@ -42,10 +44,12 @@ export function NavLinks({
   collapsed = false,
   role,
   pendingApprovalsCount = 0,
+  openSupportCount = 0,
 }: {
   collapsed?: boolean;
   role: Role;
   pendingApprovalsCount?: number;
+  openSupportCount?: number;
 }) {
   const pathname = usePathname();
   const { setMobileOpen } = useSidebarContext();
@@ -64,6 +68,12 @@ export function NavLinks({
             ? "My requests"
             : label;
         const isActive = pathname.startsWith(href);
+        const badgeCount =
+          href === "/approvals"
+            ? pendingApprovalsCount
+            : href === "/support"
+              ? openSupportCount
+              : 0;
         return (
           <Link
             key={href}
@@ -87,13 +97,13 @@ export function NavLinks({
             >
               {displayLabel}
             </span>
-            {href === "/approvals" && pendingApprovalsCount > 0 ? (
+            {badgeCount > 0 ? (
               <span
                 className={`ml-auto shrink-0 overflow-hidden whitespace-nowrap rounded-md bg-attention px-1.5 py-0.5 text-2xs font-medium text-surface transition-[opacity,max-width] duration-200 ${
                   collapsed ? "md:max-w-0 md:px-0 md:opacity-0" : "md:max-w-6 md:opacity-100"
                 }`}
               >
-                {pendingApprovalsCount}
+                {badgeCount}
               </span>
             ) : null}
           </Link>
