@@ -12,7 +12,9 @@ import { Select } from "@/components/forms/select";
 import {
   cancelPaymentLink,
   createPaymentLink,
+  getPaymentLinkButtonData,
   type PaymentLinkActionState,
+  type PaymentLinkButtonData,
 } from "@/lib/payments/actions";
 import { PAYMENT_LINK_EXPIRY_DAYS } from "@/lib/domain/payment-request";
 
@@ -23,30 +25,7 @@ const EXPIRY_OPTIONS = PAYMENT_LINK_EXPIRY_DAYS.map((days) => ({
   label: days === 1 ? "1 day" : `${days} days`,
 }));
 
-export interface ExistingPaymentLink {
-  id: string;
-  shortUrl: string;
-  expiresAt: string;
-  amountDisplay: string;
-}
-
-export interface PaymentLinkButtonProps {
-  feeAccountId: string;
-  pendingDisplay: string;
-  // Pre-formatted rupee string (e.g. "1234.00"), computed server-side from
-  // pending_paise via money.ts's paiseToRupeesInputString -- a bigint
-  // can't cross the server/client boundary as a prop (nothing else in
-  // this codebase passes one to a "use client" component either).
-  defaultAmountInput: string;
-  existingLink: ExistingPaymentLink | null;
-}
-
-export function PaymentLinkButton({
-  feeAccountId,
-  pendingDisplay,
-  defaultAmountInput,
-  existingLink,
-}: PaymentLinkButtonProps) {
+export function PaymentLinkButton({ feeAccountId }: { feeAccountId: string }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -66,9 +45,6 @@ export function PaymentLinkButton({
       {open ? (
         <PaymentLinkDialog
           feeAccountId={feeAccountId}
-          pendingDisplay={pendingDisplay}
-          defaultAmountInput={defaultAmountInput}
-          existingLink={existingLink}
           onClose={() => setOpen(false)}
         />
       ) : null}
@@ -87,11 +63,11 @@ function formatExpiry(iso: string): string {
 
 function PaymentLinkDialog({
   feeAccountId,
-  pendingDisplay,
-  defaultAmountInput,
-  existingLink,
   onClose,
-}: PaymentLinkButtonProps & { onClose: () => void }) {
+}: {
+  feeAccountId: string;
+  onClose: () => void;
+}) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [expiryDays, setExpiryDays] = useState("7");
   // Starts true when there's already an open link (brief: the dialog
@@ -108,13 +84,31 @@ function PaymentLinkDialog({
   );
   const [copied, setCopied] = useState(false);
 
+  // Fetched on open, not passed as props from the Students list's own
+  // server render -- an earlier version batched this into every page load
+  // for every row (two extra Supabase queries each), which measurably
+  // tightened e2e timing margins in CI even though nothing was wrong with
+  // the interaction itself. On-demand costs one round trip only when this
+  // dialog is actually opened.
+  const [data, setData] = useState<PaymentLinkButtonData | null | "loading">(
+    "loading",
+  );
+
   useEffect(() => {
     dialogRef.current?.showModal();
+    let cancelled = false;
+    getPaymentLinkButtonData(feeAccountId).then((result) => {
+      if (!cancelled) setData(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- feeAccountId is stable for this dialog's whole lifetime (a fresh instance mounts per open, see PaymentLinkButton's comment)
   }, []);
 
   // A just-created link (this session) takes priority over the one fetched
-  // when the page loaded; a just-cancelled one clears back to the create
-  // form without needing to close and reopen the dialog.
+  // on open; a just-cancelled one clears back to the create form without
+  // needing to close and reopen the dialog.
   const activeLink =
     createState !== initialState && createState.link
       ? { ...createState.link, amountDisplay: null as string | null }
@@ -122,7 +116,9 @@ function PaymentLinkDialog({
         ? null
         : creatingNew
           ? null
-          : existingLink;
+          : data !== "loading" && data
+            ? data.existingLink
+            : null;
 
   function closeDialog() {
     dialogRef.current?.close();
@@ -153,7 +149,17 @@ function PaymentLinkDialog({
           Payment link
         </h2>
 
-        {activeLink ? (
+        {data === "loading" ? (
+          <p className="text-sm text-ink-secondary">Loading…</p>
+        ) : !data ? (
+          <p className="text-sm text-ink-secondary">
+            Could not load this fee account.
+          </p>
+        ) : !data.hasPending && !activeLink ? (
+          <p className="text-sm text-ink-secondary">
+            Nothing pending for this account.
+          </p>
+        ) : activeLink ? (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-ink-secondary">
               {activeLink.amountDisplay
@@ -211,7 +217,7 @@ function PaymentLinkDialog({
           <form action={createAction} noValidate className="flex flex-col gap-3">
             <input type="hidden" name="feeAccountId" value={feeAccountId} />
             <p className="text-sm text-ink-secondary">
-              Pending: {pendingDisplay}
+              Pending: {data.pendingDisplay}
             </p>
 
             <Field label="Amount (₹)" error={createState.fieldErrors?.amount}>
@@ -219,7 +225,7 @@ function PaymentLinkDialog({
                 name="amount"
                 inputMode="decimal"
                 required
-                defaultValue={defaultAmountInput}
+                defaultValue={data.defaultAmountInput}
                 className={inputClassName}
               />
             </Field>

@@ -47,7 +47,14 @@ test.describe("payment link", () => {
     await row.getByRole("button", { name: "Payment link" }).click();
 
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText("Pending: ₹10,000")).toBeVisible();
+    // getPaymentLinkButtonData is fetched on open now, not server-rendered
+    // into the page -- this is the one assertion waiting on that round
+    // trip, so it gets a longer explicit timeout than the 5s default
+    // (which is fine everywhere else, where content is already on the
+    // page by the time the dialog opens).
+    await expect(dialog.getByText("Pending: ₹10,000")).toBeVisible({
+      timeout: 15_000,
+    });
 
     // Part payment, well within the UPI limit -- no warning expected.
     await dialog.getByLabel("Amount (₹)").fill("4000");
@@ -61,11 +68,14 @@ test.describe("payment link", () => {
     ).toBeVisible();
 
     // Reopening the dialog shows the same link, not a fresh create form --
-    // it's still open, fetched server-side on this page load.
+    // it's still open, re-fetched fresh (getPaymentLinkButtonData) the
+    // moment this second dialog instance mounts.
     await dialog.getByRole("button", { name: "Close" }).click();
     await page.reload();
     await row.getByRole("button", { name: "Payment link" }).click();
-    await expect(page.getByRole("dialog").getByText(/rzp\.io\/i\/mock/)).toBeVisible();
+    await expect(
+      page.getByRole("dialog").getByText(/rzp\.io\/i\/mock/),
+    ).toBeVisible({ timeout: 15_000 });
 
     // Cancel it -- back to a plain create form afterward.
     await page.getByRole("dialog").getByRole("button", { name: "Cancel link" }).click();

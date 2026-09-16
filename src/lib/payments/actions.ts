@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
+import { formatPaise, paiseToRupeesInputString } from "@/lib/domain/money";
 import {
   UPI_PER_TRANSACTION_LIMIT_PAISE,
   expiryDaysToExpireBy,
@@ -30,6 +31,70 @@ function formEntries(formData: FormData): Record<string, string> {
   return Object.fromEntries(
     Array.from(formData.entries()).map(([key, value]) => [key, String(value)]),
   );
+}
+
+export interface ExistingPaymentLink {
+  id: string;
+  shortUrl: string;
+  expiresAt: string;
+  amountDisplay: string;
+}
+
+export interface PaymentLinkButtonData {
+  hasPending: boolean;
+  pendingDisplay: string;
+  defaultAmountInput: string;
+  existingLink: ExistingPaymentLink | null;
+}
+
+// Fetched on demand when the "Payment link" button is actually clicked,
+// not batched into every Students-list page load for every row -- an
+// earlier version did the latter (two extra Supabase queries per page
+// load, for every fee account whether or not its button was ever
+// clicked), which measurably tightened e2e timing margins in CI even
+// though the interaction itself checked out fine under manual testing.
+// requireRole("admin") here is what actually keeps this admin-only (the
+// button rendering server-side is cosmetic; this is the real gate, same
+// as every other admin-only read in this app).
+export async function getPaymentLinkButtonData(
+  feeAccountId: string,
+): Promise<PaymentLinkButtonData | null> {
+  await requireRole("admin");
+  const supabase = await createClient();
+
+  const [{ data: record }, { data: existing }] = await Promise.all([
+    supabase
+      .from("fee_account_record")
+      .select("pending_paise")
+      .eq("fee_account_id", feeAccountId)
+      .maybeSingle(),
+    supabase
+      .from("payment_request")
+      .select("id, short_url, expires_at, amount_paise")
+      .eq("fee_account_id", feeAccountId)
+      .eq("status", "open")
+      .maybeSingle(),
+  ]);
+
+  if (!record) {
+    return null;
+  }
+
+  const pendingPaise = BigInt(record.pending_paise ?? 0);
+
+  return {
+    hasPending: pendingPaise > 0n,
+    pendingDisplay: formatPaise(pendingPaise),
+    defaultAmountInput: paiseToRupeesInputString(pendingPaise),
+    existingLink: existing
+      ? {
+          id: existing.id,
+          shortUrl: existing.short_url ?? "",
+          expiresAt: existing.expires_at,
+          amountDisplay: formatPaise(BigInt(existing.amount_paise)),
+        }
+      : null,
+  };
 }
 
 // "A few links per minute is plenty" (Phase 15 brief) -- backed by a
