@@ -5,7 +5,16 @@
 
 create table payment_request (
   id uuid primary key default gen_random_uuid(),
-  fee_account_id uuid not null references fee_account (id),
+  -- on delete cascade to match fee_account.student_id and
+  -- payment.fee_account_id (both already cascade, added specifically for
+  -- permanentlyDeleteStudent -- see 20260825000001_hard_delete_student.sql)
+  -- -- without this, hard-deleting a student blows up with a foreign-key
+  -- violation the moment their fee account has ANY payment_request row
+  -- against it, including a merely cancelled one that was never paid, not
+  -- just a real gateway payment (which is blocked earlier, deliberately,
+  -- at the application layer -- see permanentlyDeleteStudent's own
+  -- gateway-payment check).
+  fee_account_id uuid not null references fee_account (id) on delete cascade,
   amount_paise bigint not null check (amount_paise > 0),
   status text not null default 'open' check (status in ('open', 'paid', 'cancelled', 'expired')),
   gateway text not null default 'razorpay',
