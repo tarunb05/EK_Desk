@@ -428,36 +428,45 @@ export type Database = {
         Row: {
           amount_paise: number
           fee_account_id: string
+          gateway_payment_id: string | null
           id: string
           method: string
           note: string | null
           paid_on: string
+          payment_request_id: string | null
           recorded_by: string
           reference: string | null
+          source: string
           void_reason: string | null
           voided_at: string | null
         }
         Insert: {
           amount_paise: number
           fee_account_id: string
+          gateway_payment_id?: string | null
           id?: string
           method: string
           note?: string | null
           paid_on: string
+          payment_request_id?: string | null
           recorded_by: string
           reference?: string | null
+          source?: string
           void_reason?: string | null
           voided_at?: string | null
         }
         Update: {
           amount_paise?: number
           fee_account_id?: string
+          gateway_payment_id?: string | null
           id?: string
           method?: string
           note?: string | null
           paid_on?: string
+          payment_request_id?: string | null
           recorded_by?: string
           reference?: string | null
+          source?: string
           void_reason?: string | null
           voided_at?: string | null
         }
@@ -482,6 +491,100 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "fee_account_record"
             referencedColumns: ["fee_account_id"]
+          },
+          {
+            foreignKeyName: "payment_payment_request_id_fkey"
+            columns: ["payment_request_id"]
+            isOneToOne: false
+            referencedRelation: "payment_request"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_request: {
+        Row: {
+          amount_paise: number
+          cancelled_reason: string | null
+          created_at: string
+          created_by: string
+          expires_at: string
+          fee_account_id: string
+          gateway: string
+          gateway_link_id: string | null
+          id: string
+          paid_payment_id: string | null
+          shared_via_whatsapp_at: string | null
+          short_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_paise: number
+          cancelled_reason?: string | null
+          created_at?: string
+          created_by: string
+          expires_at: string
+          fee_account_id: string
+          gateway?: string
+          gateway_link_id?: string | null
+          id?: string
+          paid_payment_id?: string | null
+          shared_via_whatsapp_at?: string | null
+          short_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_paise?: number
+          cancelled_reason?: string | null
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          fee_account_id?: string
+          gateway?: string
+          gateway_link_id?: string | null
+          id?: string
+          paid_payment_id?: string | null
+          shared_via_whatsapp_at?: string | null
+          short_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_request_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_request_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_request_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_balance"
+            referencedColumns: ["fee_account_id"]
+          },
+          {
+            foreignKeyName: "payment_request_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["fee_account_id"]
+          },
+          {
+            foreignKeyName: "payment_request_paid_payment_id_fkey"
+            columns: ["paid_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1147,6 +1250,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      webhook_event: {
+        Row: {
+          event_id: string
+          event_type: string
+          received_at: string
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          received_at?: string
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          received_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

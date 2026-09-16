@@ -36,3 +36,23 @@ export function formatLogDate(iso: string): string {
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return `${get("day")} ${get("month")} ${get("year")}`;
 }
+
+// "en-CA" formats as YYYY-MM-DD by locale convention -- the one built-in
+// Intl locale that happens to match Postgres's own `date` column format,
+// so no manual part-reassembly is needed the way the two formatters above
+// need it for their en-GB display order.
+const IST_DATE_KEY_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Kolkata",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+// For stamping a `date` column (payment.paid_on) from a gateway's UTC
+// instant (Phase 15's webhook) -- a payment at 23:50 UTC has already
+// crossed into the next calendar day in India (UTC+5:30), and storing the
+// UTC calendar day instead would silently attribute it to the wrong day's
+// collections.
+export function toISTDateString(iso: string): string {
+  return IST_DATE_KEY_FORMATTER.format(new Date(iso));
+}
