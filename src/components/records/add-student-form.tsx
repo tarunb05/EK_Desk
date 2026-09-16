@@ -51,6 +51,7 @@ export function AddStudentForm({
   const [phone, setPhone] = useState("");
   const [pickupPoint, setPickupPoint] = useState("");
   const [slot, setSlot] = useState("");
+  const [notes, setNotes] = useState("");
   const [totalReceivable, setTotalReceivable] = useState("");
   const { showToast } = useToast();
 
@@ -142,6 +143,15 @@ export function AddStudentForm({
               label: section,
             })),
           ]}
+        />
+      </Field>
+
+      <Field label="Notes (optional)" error={state.fieldErrors?.notes}>
+        <input
+          name="notes"
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          className={inputClassName}
         />
       </Field>
 

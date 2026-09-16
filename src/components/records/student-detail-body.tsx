@@ -25,6 +25,8 @@ export function StudentDetailBody({
         <dd className="text-ink">{detail.student.classSection}</dd>
         <dt className="text-ink-muted">Branch</dt>
         <dd className="text-ink">{detail.student.branchName}</dd>
+        <dt className="text-ink-muted">Notes</dt>
+        <dd className="text-ink">{detail.student.notes || "—"}</dd>
       </dl>
 
       {detail.student.status === "inactive" ? (

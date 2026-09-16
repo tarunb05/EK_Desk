@@ -172,6 +172,7 @@ export async function createStudentWithFeeAccount(
       guardian_name: value.guardianName,
       phone: value.phone,
       class_section: value.classSection,
+      notes: value.notes ?? null,
       academic_year_id: value.academicYearId,
       service_type: value.serviceType,
       total_receivable_paise: Number(value.totalReceivable),
@@ -216,6 +217,7 @@ export async function createStudentWithFeeAccount(
         guardian_name: value.guardianName,
         phone: value.phone,
         class_section: value.classSection,
+        notes: value.notes ?? null,
       })
       .select("id")
       .single();

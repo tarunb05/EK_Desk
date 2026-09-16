@@ -13,6 +13,7 @@ export interface StudentInfo {
   admissionNo: string;
   branchName: string;
   status: string;
+  notes: string | null;
 }
 
 interface PaymentWithMeta extends Payment {
@@ -60,7 +61,7 @@ export async function getStudentDetail(
   const { data: student, error: studentError } = await supabase
     .from("student")
     .select(
-      "id, full_name, guardian_name, phone, class_section, admission_no, status, branch:branch_id(name)",
+      "id, full_name, guardian_name, phone, class_section, admission_no, status, notes, branch:branch_id(name)",
     )
     .eq("id", studentId)
     .single();
@@ -160,6 +161,7 @@ export async function getStudentDetail(
       admissionNo: student.admission_no,
       branchName: branch?.name ?? "",
       status: student.status,
+      notes: student.notes,
     },
     feeAccounts: feeAccountDetails,
   };
