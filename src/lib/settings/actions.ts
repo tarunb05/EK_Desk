@@ -14,7 +14,7 @@ import {
   createTeacherSchema,
   deactivateTeacherSchema,
   deleteExpenseCategorySchema,
-  deleteTeacherPermanentlySchema,
+  hideTeacherSchema,
   reactivateTeacherSchema,
   renameExpenseCategorySchema,
   reorderExpenseCategorySchema,
@@ -426,33 +426,30 @@ export async function reactivateTeacher(
   return { error: null };
 }
 
-// A genuine, permanent delete -- only ever reachable once a teacher is
-// already deactivated (TeacherRow only renders this action's button on an
-// inactive row), as a deliberate safety buffer: archive first, decide to
-// actually purge later, never straight from an active login. The
-// is_active check below enforces that server-side too, not just in the UI.
+// Only ever reachable once a teacher is already deactivated (TeacherRow
+// only renders this action's button on an inactive row) -- a deliberate
+// safety buffer: archive first, decide to remove them from the list
+// later, never straight from an active login. The is_active check below
+// enforces that server-side too, not just in the UI.
 //
-// This can still fail: student_submission/student_edit_submission/
-// payment_submission.submitted_by, expense.created_by/updated_by, and
-// activity_log.actor_id all reference profile with no on-delete action, by
-// design (see deactivateTeacher's own comment) -- so a teacher who's ever
-// actually added anything (which, via log_activity()'s trigger, includes
-// simply existing as the actor on an activity_log row) can't be purged
-// this way. That's deliberate, not a bug: it's the same guarantee
-// deactivateTeacher exists to make in the first place -- their work stays
-// on record -- just enforced here as "can't delete" instead of "won't
-// delete". The Admin API surfaces that as a generic error, not a
-// structured Postgres code the way PostgREST does elsewhere in this app,
-// so this can't distinguish it from any other failure -- one honest
-// message covers both rather than guessing.
-export async function deleteTeacherPermanently(
+// This used to be a genuine auth.admin.deleteUser() call, but
+// student_submission/student_edit_submission/payment_submission.submitted_by,
+// expense.created_by/updated_by, and activity_log.actor_id all reference
+// profile with no on-delete action -- so it only ever succeeded for a
+// teacher who had never added anything at all, which in practice is
+// nearly never (even just existing as activity_log's actor on their own
+// deactivation counts). is_hidden is what an admin actually wants here:
+// stop showing them in the list, unconditionally succeed, and leave
+// everything they created exactly where deactivateTeacher already left
+// it -- their login stays disabled and profile_full_name() keeps
+// substituting "Teacher (Deleted)" everywhere their name is shown live,
+// neither of which this needs to touch.
+export async function hideTeacher(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   await requireRole("admin");
-  const parsed = deleteTeacherPermanentlySchema.safeParse(
-    formEntries(formData),
-  );
+  const parsed = hideTeacherSchema.safeParse(formEntries(formData));
   if (!parsed.success) {
     return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
   }
@@ -471,29 +468,22 @@ export async function deleteTeacherPermanently(
     .maybeSingle();
 
   if (target?.role !== "teacher") {
-    return { error: "Could not delete this login." };
+    return { error: "Could not remove this teacher from the list." };
   }
   if (target.is_active) {
-    return { error: "Deactivate this teacher before deleting them." };
+    return { error: "Deactivate this teacher before removing them." };
   }
 
-  // profile has an on-delete-cascade FK to auth.users, so deleting the auth
-  // user is the one action needed -- the profile row goes with it, if
-  // nothing else references it first.
-  const { error } = await adminClient.auth.admin.deleteUser(
-    parsed.data.teacherId,
-  );
+  const { error } = await adminClient
+    .from("profile")
+    .update({ is_hidden: true })
+    .eq("id", parsed.data.teacherId);
 
   if (error) {
-    return {
-      error:
-        "This teacher has added students, expenses, or payments and can't be permanently deleted — their access is already revoked.",
-    };
+    return { error: "Could not remove this teacher from the list." };
   }
 
   revalidatePath("/settings");
-  revalidatePath("/expenses");
-  revalidatePath("/approvals");
   return { error: null };
 }
 

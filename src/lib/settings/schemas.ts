@@ -87,7 +87,7 @@ export const reactivateTeacherSchema = z.object({
   teacherId: z.string().uuid(),
 });
 
-export const deleteTeacherPermanentlySchema = z.object({
+export const hideTeacherSchema = z.object({
   teacherId: z.string().uuid(),
 });
 

@@ -1,0 +1,16 @@
+-- A second, distinct flag from is_active. Deactivating a teacher (rule:
+-- domain model, teacher_deactivation_display migration) already blocks
+-- their login and swaps their displayed name to "Teacher (Deleted)"
+-- everywhere it's shown live -- but they still show up in Settings' own
+-- teacher list, since an admin might reactivate them later.
+--
+-- A genuine, permanent auth.admin.deleteUser() call was tried for that
+-- list-removal case (see the now-replaced deleteTeacherPermanently), but
+-- student_submission/student_edit_submission/payment_submission.submitted_by,
+-- expense.created_by/updated_by, and activity_log.actor_id all reference
+-- profile with no on-delete action -- so it only ever succeeded for a
+-- teacher who had never actually done anything, which is closer to never
+-- than to the common case. is_hidden is the simpler, always-succeeding
+-- alternative an admin actually wants: stop showing them in the list they
+-- manage day to day, without touching auth.users or anything they created.
+alter table profile add column is_hidden boolean not null default false;

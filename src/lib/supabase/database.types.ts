@@ -609,6 +609,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
+          is_hidden: boolean
           role: string
           updated_at: string
         }
@@ -618,6 +619,7 @@ export type Database = {
           full_name?: string
           id: string
           is_active?: boolean
+          is_hidden?: boolean
           role: string
           updated_at?: string
         }
@@ -627,6 +629,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          is_hidden?: boolean
           role?: string
           updated_at?: string
         }

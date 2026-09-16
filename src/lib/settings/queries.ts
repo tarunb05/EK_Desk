@@ -26,6 +26,7 @@ export async function getTeachersWithBranch(
         .from("profile")
         .select("id, full_name, branch_id, is_active")
         .eq("role", "teacher")
+        .eq("is_hidden", false)
         .order("full_name"),
       adminClient.from("branch").select("id, code, name"),
       adminClient.auth.admin.listUsers(),
