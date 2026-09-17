@@ -398,6 +398,22 @@ describe("whatsapp payment requests (phase 15.1)", () => {
     try {
       await clientA.query("begin");
       await impersonateAdmin(clientA);
+      // A dedicated branch, not the shared seeded BR-A: this test and its
+      // counterpart in collection-account-writes.integration.test.ts
+      // (15.2) both exercise is_default=true for "the branch" concurrently,
+      // and vitest runs test files in parallel workers by default -- on
+      // BR-A, a real cross-file collision on the partial unique index is
+      // possible (one file's own currently-live default row conflicting
+      // with the other's insert), not just a leftover from a failed run.
+      // Idempotent by code, same reasoning as the shared "Race Test Year"
+      // academic year fixture.
+      const raceBranch = await clientA.query<{ id: string }>(
+        `insert into branch (code, name)
+         values ('RACE-DEFAULT-TEST', 'Race Default Test Branch')
+         on conflict (code) do update set code = excluded.code
+         returning id`,
+      );
+      const raceBranchId = raceBranch.rows[0]!.id;
       await clientA.query("commit");
 
       const insertSql = `
@@ -417,9 +433,9 @@ describe("whatsapp payment requests (phase 15.1)", () => {
       await clientB.query("begin");
       await impersonateAdmin(clientB);
 
-      await clientA.query(insertSql, [branchId, "Default A", "defaulta@upi"]);
+      await clientA.query(insertSql, [raceBranchId, "Default A", "defaulta@upi"]);
       const clientBInsert = clientB.query(insertSql, [
-        branchId,
+        raceBranchId,
         "Default B",
         "defaultb@upi",
       ]);
@@ -434,20 +450,35 @@ describe("whatsapp payment requests (phase 15.1)", () => {
       await impersonateAdmin(clientA);
       const defaults = await clientA.query(
         "select count(*)::int as count from collection_account where branch_id = $1 and is_default",
-        [branchId],
+        [raceBranchId],
       );
       expect(defaults.rows[0]!.count).toBe(1);
       await clientA.query("commit");
-
-      // Same as the payment_request race test above: collection_account
-      // grants no DELETE to authenticated, so cleanup goes through the raw
-      // postgres role instead of RLS.
-      await clientA.query("reset role");
-      await clientA.query(
-        "delete from collection_account where branch_id = $1 and label = 'Default A'",
-        [branchId],
-      );
     } finally {
+      // Best-effort, regardless of how the test above exited: an earlier
+      // version only deleted "Default A" on the happy path, after the
+      // assertions -- any failure above (including a genuine, rare loss of
+      // this exact race) skipped it and left is_default=true permanently
+      // on this branch, which then made *every* subsequent run fail
+      // immediately on this test's own first insert, not the race at all.
+      // Same fix as the payment_request race test's own cleanup.
+      for (const c of [clientA, clientB]) {
+        try {
+          await c.query("rollback");
+        } catch {
+          // No transaction was open.
+        }
+        await c.query("reset role");
+      }
+      // Looked up by code rather than relying on the raceBranchId variable
+      // (declared inside the try block, so a throw before it's assigned
+      // would leave it out of scope here) -- the dedicated branch is a
+      // well-known, idempotent fixture either way.
+      await clientA.query(
+        `delete from collection_account
+         where label in ('Default A', 'Default B')
+           and branch_id = (select id from branch where code = 'RACE-DEFAULT-TEST')`,
+      );
       await clientA.end();
       await clientB.end();
     }

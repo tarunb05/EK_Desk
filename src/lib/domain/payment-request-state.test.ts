@@ -26,6 +26,7 @@ describe("closePaymentRequest", () => {
   const cancellingReasons: PaymentRequestCloseReason[] = [
     "cancelled",
     "account_changed",
+    "fee_account_changed",
   ];
   for (const reason of cancellingReasons) {
     it(`moves an open request to cancelled for reason "${reason}"`, () => {

@@ -9,6 +9,7 @@ import { TableTransitionProvider } from "@/components/records/table-transition";
 import { PendingTbody } from "@/components/records/pending-tbody";
 import { AlertIcon, ClockIcon, StatusIcon } from "@/components/shell/nav-icons";
 import { RowActionMenu } from "@/components/students/row-action-menu";
+import { RequestPaymentButton } from "@/components/students/request-payment-button";
 
 interface StudentDirectoryTableProps {
   rows: StudentDirectoryRow[];
@@ -105,6 +106,12 @@ function RowActions({ row, role }: { row: StudentDirectoryRow; role: Role }) {
               studentName={row.fullName}
               role={role}
             />
+            {role === "admin" && account.status === "active" ? (
+              <RequestPaymentButton
+                feeAccountId={account.feeAccountId}
+                studentId={row.id}
+              />
+            ) : null}
           </div>
         );
       })}

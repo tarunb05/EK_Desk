@@ -1639,6 +1639,19 @@ export type Database = {
       auth_branch_id: { Args: never; Returns: string }
       auth_is_admin: { Args: never; Returns: boolean }
       auth_role: { Args: never; Returns: string }
+      cancel_payment_request: { Args: { p_id: string }; Returns: undefined }
+      create_payment_request: {
+        Args: {
+          p_amount_paise: number
+          p_collection_account_id: string
+          p_expiry_days: number
+          p_fee_account_id: string
+          p_include_bank: boolean
+          p_include_upi: boolean
+          p_token_hash: string
+        }
+        Returns: Json
+      }
       dashboard_ageing_buckets: {
         Args: {
           p_academic_year_id: string
@@ -1733,6 +1746,10 @@ export type Database = {
         }[]
       }
       profile_full_name: { Args: { p_id: string }; Returns: string }
+      reissue_payment_request_token: {
+        Args: { p_id: string; p_token_hash: string }
+        Returns: undefined
+      }
       save_collection_account: {
         Args: {
           p_account_holder?: string

@@ -11,7 +11,14 @@ export type PaymentRequestCloseReason =
   | "pending_cleared"
   | "expired"
   | "cancelled"
-  | "account_changed";
+  | "account_changed"
+  // The fee account itself changed under the request (discontinued, or its
+  // receivable lowered below the request's own amount) -- distinct from
+  // account_changed, which is specifically about the *collection* account's
+  // UPI/bank details (Phase 15.2). Added in 15.3; not in the brief's own
+  // suggested list, which has no value for this case (pending_cleared
+  // implies the debt was paid off, which isn't true here).
+  | "fee_account_changed";
 
 export interface PaymentRequestTransition {
   nextStatus: PaymentRequestStatus;
@@ -30,6 +37,7 @@ const REASON_TO_STATUS: Record<PaymentRequestCloseReason, PaymentRequestStatus> 
     expired: "closed",
     cancelled: "cancelled",
     account_changed: "cancelled",
+    fee_account_changed: "cancelled",
   };
 
 export function closePaymentRequest(

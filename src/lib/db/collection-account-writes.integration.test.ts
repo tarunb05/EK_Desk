@@ -263,6 +263,20 @@ describe("collection account writes (phase 15.2)", () => {
     try {
       await clientA.query("begin");
       await seedAdminWithPassword(clientA);
+      // A dedicated branch, not the shared seeded BR-A: this test and its
+      // counterpart in whatsapp-payment-requests.integration.test.ts (15.1)
+      // both make is_default=true true for "the branch" concurrently, and
+      // vitest runs test files in parallel workers by default -- on BR-A, a
+      // real cross-file collision on the partial unique index is possible,
+      // not just a leftover from a failed run. Idempotent by code, same
+      // reasoning as the shared "Race Test Year" academic year fixture.
+      const raceBranch = await clientA.query<{ id: string }>(
+        `insert into branch (code, name)
+         values ('RACE-DEFAULT-TEST', 'Race Default Test Branch')
+         on conflict (code) do update set code = excluded.code
+         returning id`,
+      );
+      const raceBranchId = raceBranch.rows[0]!.id;
 
       const first = await clientA.query<{
         save_collection_account: { id: string };
@@ -272,7 +286,7 @@ describe("collection account writes (phase 15.2)", () => {
            p_payee_name := 'Payee', p_is_active := true,
            p_current_password := $3, p_upi_id := 'racea@upi'
          )`,
-        [branchId, labelA, ADMIN_PASSWORD],
+        [raceBranchId, labelA, ADMIN_PASSWORD],
       );
       const idA = first.rows[0]!.save_collection_account.id;
 
@@ -284,7 +298,7 @@ describe("collection account writes (phase 15.2)", () => {
            p_payee_name := 'Payee', p_is_active := true,
            p_current_password := $3, p_upi_id := 'raceb@upi'
          )`,
-        [branchId, labelB, ADMIN_PASSWORD],
+        [raceBranchId, labelB, ADMIN_PASSWORD],
       );
       const idB = second.rows[0]!.save_collection_account.id;
 
@@ -323,7 +337,7 @@ describe("collection account writes (phase 15.2)", () => {
       await impersonate(clientA, ADMIN_ID);
       const defaults = await clientA.query<{ count: number }>(
         "select count(*)::int as count from collection_account where branch_id = $1 and is_default",
-        [branchId],
+        [raceBranchId],
       );
       expect(defaults.rows[0]!.count).toBe(1);
       await clientA.query("commit");
