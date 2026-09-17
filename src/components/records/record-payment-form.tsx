@@ -18,6 +18,7 @@ const METHOD_OPTIONS = [
   { value: "upi", label: "UPI" },
   { value: "cheque", label: "Cheque" },
   { value: "bank_transfer", label: "Bank transfer" },
+  { value: "card", label: "Card (at office)" },
 ];
 
 export function RecordPaymentForm({ feeAccountId }: { feeAccountId: string }) {

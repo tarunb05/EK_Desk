@@ -177,6 +177,114 @@ export type Database = {
         }
         Relationships: []
       }
+      collection_account: {
+        Row: {
+          account_holder: string | null
+          account_number: string | null
+          bank_name: string | null
+          branch_id: string
+          created_at: string
+          id: string
+          ifsc: string | null
+          is_active: boolean
+          is_default: boolean
+          label: string
+          payee_name: string
+          updated_at: string
+          updated_by: string
+          upi_id: string | null
+        }
+        Insert: {
+          account_holder?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          branch_id: string
+          created_at?: string
+          id?: string
+          ifsc?: string | null
+          is_active?: boolean
+          is_default?: boolean
+          label: string
+          payee_name: string
+          updated_at?: string
+          updated_by: string
+          upi_id?: string | null
+        }
+        Update: {
+          account_holder?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          branch_id?: string
+          created_at?: string
+          id?: string
+          ifsc?: string | null
+          is_active?: boolean
+          is_default?: boolean
+          label?: string
+          payee_name?: string
+          updated_at?: string
+          updated_by?: string
+          upi_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_account_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_account_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+          {
+            foreignKeyName: "collection_account_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collection_account_change_log: {
+        Row: {
+          actor: string
+          after: Json | null
+          before: Json | null
+          collection_account_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          actor: string
+          after?: Json | null
+          before?: Json | null
+          collection_account_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          actor?: string
+          after?: Json | null
+          before?: Json | null
+          collection_account_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_account_change_log_actor_fkey"
+            columns: ["actor"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense: {
         Row: {
           academic_year_id: string
@@ -485,6 +593,169 @@ export type Database = {
           },
         ]
       }
+      payment_claim: {
+        Row: {
+          claimed_amount_paise: number
+          claimed_paid_on: string
+          created_at: string
+          id: string
+          payment_id: string | null
+          payment_request_id: string
+          reject_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string
+          status: string
+          utr: string
+        }
+        Insert: {
+          claimed_amount_paise: number
+          claimed_paid_on: string
+          created_at?: string
+          id?: string
+          payment_id?: string | null
+          payment_request_id: string
+          reject_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source: string
+          status?: string
+          utr: string
+        }
+        Update: {
+          claimed_amount_paise?: number
+          claimed_paid_on?: string
+          created_at?: string
+          id?: string
+          payment_id?: string | null
+          payment_request_id?: string
+          reject_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          status?: string
+          utr?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_claim_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_claim_payment_request_id_fkey"
+            columns: ["payment_request_id"]
+            isOneToOne: false
+            referencedRelation: "payment_request"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_claim_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_request: {
+        Row: {
+          amount_paise: number
+          closed_reason: string | null
+          collection_account_id: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          fee_account_id: string
+          id: string
+          include_bank: boolean
+          include_upi: boolean
+          reference_code: string
+          shared_at: string | null
+          shared_to_last4: string | null
+          shared_via: string | null
+          status: string
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          amount_paise: number
+          closed_reason?: string | null
+          collection_account_id: string
+          created_at?: string
+          created_by: string
+          expires_at: string
+          fee_account_id: string
+          id?: string
+          include_bank: boolean
+          include_upi: boolean
+          reference_code: string
+          shared_at?: string | null
+          shared_to_last4?: string | null
+          shared_via?: string | null
+          status?: string
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          amount_paise?: number
+          closed_reason?: string | null
+          collection_account_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          fee_account_id?: string
+          id?: string
+          include_bank?: boolean
+          include_upi?: boolean
+          reference_code?: string
+          shared_at?: string | null
+          shared_to_last4?: string | null
+          shared_via?: string | null
+          status?: string
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_request_collection_account_id_fkey"
+            columns: ["collection_account_id"]
+            isOneToOne: false
+            referencedRelation: "collection_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_request_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_request_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_request_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_balance"
+            referencedColumns: ["fee_account_id"]
+          },
+          {
+            foreignKeyName: "payment_request_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["fee_account_id"]
+          },
+        ]
+      }
       payment_submission: {
         Row: {
           amount_paise: number
@@ -661,8 +932,11 @@ export type Database = {
           id: string
           notes: string | null
           phone: string
+          phone_not_on_whatsapp_at: string | null
           status: string
           updated_at: string
+          whatsapp_phone: string | null
+          whatsapp_phone_not_on_whatsapp_at: string | null
         }
         Insert: {
           admission_no: string
@@ -674,8 +948,11 @@ export type Database = {
           id?: string
           notes?: string | null
           phone: string
+          phone_not_on_whatsapp_at?: string | null
           status?: string
           updated_at?: string
+          whatsapp_phone?: string | null
+          whatsapp_phone_not_on_whatsapp_at?: string | null
         }
         Update: {
           admission_no?: string
@@ -687,8 +964,11 @@ export type Database = {
           id?: string
           notes?: string | null
           phone?: string
+          phone_not_on_whatsapp_at?: string | null
           status?: string
           updated_at?: string
+          whatsapp_phone?: string | null
+          whatsapp_phone_not_on_whatsapp_at?: string | null
         }
         Relationships: [
           {
@@ -1430,6 +1710,26 @@ export type Database = {
           amount_paise: number
           category_id: string
           category_name: string
+        }[]
+      }
+      lookup_payment_request_by_token_hash: {
+        Args: { p_token_hash: string }
+        Returns: {
+          account_holder: string
+          account_number: string
+          amount_paise: number
+          bank_name: string
+          branch_name: string
+          child_first_name: string
+          expires_at: string
+          ifsc: string
+          include_bank: boolean
+          include_upi: boolean
+          payee_name: string
+          reference_code: string
+          service_type: string
+          status: string
+          upi_id: string
         }[]
       }
       profile_full_name: { Args: { p_id: string }; Returns: string }

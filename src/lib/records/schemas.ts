@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { MONEY_METHODS, parseRupeesToPaise, rupeesToPaise } from "@/lib/domain/money";
+import {
+  MONEY_METHODS,
+  PAYMENT_METHODS,
+  parseRupeesToPaise,
+  rupeesToPaise,
+} from "@/lib/domain/money";
 import { CLASS_SECTIONS } from "@/lib/records/class-sections";
 
 const rupeesAmount = z
@@ -103,7 +108,7 @@ export const recordPaymentSchema = z.object({
   feeAccountId: z.string().uuid(),
   amount: rupeesAmount,
   paidOn: dateField,
-  method: z.enum(MONEY_METHODS),
+  method: z.enum(PAYMENT_METHODS),
   reference: z.string().trim().optional(),
   note: z.string().trim().optional(),
   recordedBy: z.string().trim().min(1, "Enter who recorded this payment."),

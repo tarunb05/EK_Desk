@@ -395,7 +395,12 @@ export async function recordPayment(
       amount_paise: Number(value.amount),
       paid_on: value.paidOn,
       method: value.method,
-      reference: value.reference ?? null,
+      // `|| null`, not `??` -- a blank field parses as "" (a valid,
+      // non-nullish string), which `??` would store verbatim instead of as
+      // NULL. This row's reference is copied straight into `payment.reference`
+      // on approval (approve_payment_submission), so a stray '' here would
+      // reach the new partial-unique-on-non-voided-UPI-reference index too.
+      reference: value.reference || null,
       note: value.note ?? null,
     });
 
@@ -414,7 +419,10 @@ export async function recordPayment(
     amount_paise: Number(value.amount),
     paid_on: value.paidOn,
     method: value.method,
-    reference: value.reference ?? null,
+    // `|| null`, not `??` -- see the payment_submission insert above for
+    // why: a blank field parses as "", which a unique index treats as a
+    // real, colliding value, unlike NULL.
+    reference: value.reference || null,
     note: value.note ?? null,
     recorded_by: value.recordedBy,
   });
