@@ -15,11 +15,15 @@ import {
   buildPaymentRequestMessage,
 } from "@/lib/domain/payment-request-message";
 import { getSiteUrl } from "@/lib/site-url";
+import { getClientIpHash } from "@/lib/request-ip";
+import { normalizeUtr } from "@/lib/domain/utr";
+import { buildUpiPaymentUri } from "@/lib/domain/upi-uri";
 import {
   createPaymentRequestSchema,
   markNumberUnreachableSchema,
   recordShareChannelSchema,
   sendReminderSchema,
+  submitPaymentClaimSchema,
 } from "@/lib/payments/schemas";
 
 const SERVICE_LABEL: Record<string, string> = {
@@ -444,4 +448,134 @@ export async function recordShareChannel(formData: FormData): Promise<void> {
       shared_to_last4: parsed.data.sharedToLast4,
     })
     .eq("id", parsed.data.paymentRequestId);
+}
+
+export interface PayPageData {
+  status: string;
+  branchName: string;
+  serviceLabel: string;
+  childFirstName: string;
+  amountDisplay: string;
+  expiresAtDisplay: string;
+  referenceCode: string;
+  payeeName: string;
+  upiId: string | null;
+  upiUri: string | null;
+  includeUpi: boolean;
+  includeBank: boolean;
+  bankName: string | null;
+  accountHolder: string | null;
+  accountNumber: string | null;
+  ifsc: string | null;
+}
+
+// The public pay page's one read (Phase 15.4) -- no session, no role
+// check, because there is neither: this is the app's first genuinely
+// unauthenticated caller, and every real check (rate limits, does this
+// token even resolve) lives inside lookup_payment_request_by_token_hash
+// itself, a security definer function granted to anon. Collapses every
+// non-open status to the same null this function already returns for an
+// unknown/rate-limited token -- the brief's own requirement that unknown,
+// expired, closed, cancelled, and (here) rate-limited all render
+// identically, enforced one layer further out as defense in depth.
+export async function getPayPageData(rawToken: string): Promise<PayPageData | null> {
+  const tokenHash = createHash("sha256").update(rawToken).digest();
+  const ipHash = await getClientIpHash();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc(
+    "lookup_payment_request_by_token_hash",
+    {
+      p_token_hash: toByteaHex(tokenHash),
+      p_ip_hash: toByteaHex(ipHash),
+    },
+  );
+
+  if (error || !data || data.length === 0) {
+    return null;
+  }
+  const row = data[0]!;
+  if (row.status !== "open") {
+    return null;
+  }
+
+  return {
+    status: row.status,
+    branchName: row.branch_name,
+    serviceLabel: SERVICE_LABEL[row.service_type] ?? row.service_type,
+    childFirstName: row.child_first_name,
+    amountDisplay: formatPaise(BigInt(row.amount_paise)),
+    expiresAtDisplay: formatLogDate(row.expires_at),
+    referenceCode: row.reference_code,
+    payeeName: row.payee_name,
+    upiId: row.include_upi ? row.upi_id : null,
+    upiUri:
+      row.include_upi && row.upi_id
+        ? buildUpiPaymentUri({
+            payeeVpa: row.upi_id,
+            payeeName: row.payee_name,
+            amountRupees: paiseToRupeesInputString(BigInt(row.amount_paise)),
+            referenceCode: row.reference_code,
+          })
+        : null,
+    includeUpi: row.include_upi,
+    includeBank: row.include_bank,
+    bankName: row.include_bank ? row.bank_name : null,
+    accountHolder: row.include_bank ? row.account_holder : null,
+    accountNumber: row.include_bank ? row.account_number : null,
+    ifsc: row.include_bank ? row.ifsc : null,
+  };
+}
+
+export interface ClaimActionState {
+  error: string | null;
+  fieldErrors?: Record<string, string>;
+  submitted?: boolean;
+}
+
+// The claim form's one write, and the one Server Action in this app
+// callable by a fully anonymous visitor. Every failure mode -- not open,
+// rate-limited, too many pending claims already, an invalid date --
+// collapses to the same one generic sentence, same anti-fingerprinting
+// reasoning as the page load: distinguishing them would tell a script
+// which guess landed closer to a real, live token. Logs nothing at all
+// (not even the payment_request id) -- there's no admin action yet to
+// correlate it with (that's 15.5), so there's no established need to
+// weigh against the exposure of logging anything about an anonymous
+// submission.
+export async function submitPaymentClaim(
+  _prevState: ClaimActionState,
+  formData: FormData,
+): Promise<ClaimActionState> {
+  const parsed = submitPaymentClaimSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const value = parsed.data;
+  const amountPaise = parseRupeesToPaise(value.amount);
+  if (amountPaise === null) {
+    return { error: null, fieldErrors: { amount: "Enter a valid amount." } };
+  }
+
+  const tokenHash = createHash("sha256").update(value.token).digest();
+  const ipHash = await getClientIpHash();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("submit_payment_claim", {
+    p_token_hash: toByteaHex(tokenHash),
+    p_ip_hash: toByteaHex(ipHash),
+    p_utr: normalizeUtr(value.utr),
+    p_amount_paise: Number(amountPaise),
+    p_paid_on: value.paidOn,
+    p_source: "parent_page",
+  });
+
+  if (error) {
+    return {
+      error:
+        "We couldn't process this — please try again or contact the school office.",
+    };
+  }
+
+  return { error: null, submitted: true };
 }

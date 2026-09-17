@@ -88,11 +88,16 @@ export async function updateSession(request: NextRequest) {
   // The marketing landing page, and the legal pages linked from its footer
   // -- all reachable signed out or signed in (a signed-in visitor isn't
   // forced off them the way /login forces them onward; each page just
-  // renders the same for anyone who lands on it).
+  // renders the same for anyone who lands on it). /p/ is different in
+  // kind, not just reachable signed-out: it's the one route a parent with
+  // no account at all is meant to land on (Phase 15's pay page) -- this
+  // matcher already covers it (it excludes only static assets), so this
+  // is the one line needed to stop it redirecting to /login.
   const isPublicRoute =
     request.nextUrl.pathname === "/" ||
     request.nextUrl.pathname === "/privacy" ||
     request.nextUrl.pathname === "/terms" ||
+    request.nextUrl.pathname.startsWith("/p/") ||
     isLoginRoute;
 
   if (!user && !isPublicRoute) {

@@ -532,6 +532,30 @@ export type Database = {
           },
         ]
       }
+      pay_page_activity: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          ip_hash: string
+          token_hash: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          ip_hash: string
+          token_hash?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_hash?: string
+          token_hash?: string | null
+        }
+        Relationships: []
+      }
       payment: {
         Row: {
           amount_paise: number
@@ -1726,7 +1750,7 @@ export type Database = {
         }[]
       }
       lookup_payment_request_by_token_hash: {
-        Args: { p_token_hash: string }
+        Args: { p_ip_hash: string; p_token_hash: string }
         Returns: {
           account_holder: string
           account_number: string
@@ -1772,6 +1796,17 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      submit_payment_claim: {
+        Args: {
+          p_amount_paise: number
+          p_ip_hash: string
+          p_paid_on: string
+          p_source: string
+          p_token_hash: string
+          p_utr: string
+        }
+        Returns: undefined
+      }
       verify_current_password: {
         Args: { p_password: string }
         Returns: boolean

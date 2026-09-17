@@ -194,8 +194,8 @@ describe("whatsapp payment requests (phase 15.1)", () => {
       await client.query("rollback to savepoint before_denied_read");
 
       const result = await client.query(
-        "select * from lookup_payment_request_by_token_hash($1)",
-        [fixture.tokenHash],
+        "select * from lookup_payment_request_by_token_hash($1, $2)",
+        [fixture.tokenHash, Buffer.from("aaaaaaaa", "hex")],
       );
       expect(result.rows).toHaveLength(1);
       const row = result.rows[0];
@@ -227,15 +227,16 @@ describe("whatsapp payment requests (phase 15.1)", () => {
 
       await client.query("set role anon");
 
+      const ipHash = Buffer.from("bbbbbbbb", "hex");
       const unknownResult = await client.query(
-        "select * from lookup_payment_request_by_token_hash($1)",
-        [unknownHash],
+        "select * from lookup_payment_request_by_token_hash($1, $2)",
+        [unknownHash, ipHash],
       );
       expect(unknownResult.rows).toHaveLength(0);
 
       const cancelledResult = await client.query(
-        "select * from lookup_payment_request_by_token_hash($1)",
-        [cancelled.tokenHash],
+        "select * from lookup_payment_request_by_token_hash($1, $2)",
+        [cancelled.tokenHash, ipHash],
       );
       expect(cancelledResult.rows).toHaveLength(1);
       expect(cancelledResult.rows[0].status).toBe("cancelled");

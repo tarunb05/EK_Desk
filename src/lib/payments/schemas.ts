@@ -54,3 +54,27 @@ export const recordShareChannelSchema = z.object({
   sharedVia: z.enum(["whatsapp", "sms", "copied"]),
   sharedToLast4: z.string().max(4),
 });
+
+// The public pay page's claim form (Phase 15.4) -- token arrives as a
+// hidden field (the page already has it in its own URL), not trusted from
+// any session, since there is no session. Date bounds (no future, not
+// before the request's own creation date) and the "already open" check
+// both need server-side data this schema doesn't have, so they're enforced
+// again in submit_payment_claim, not here -- this only rejects obviously
+// malformed input before it reaches the database.
+export const submitPaymentClaimSchema = z.object({
+  token: z.string().min(1, "Missing token."),
+  // A real UTR is 12 digits; a bank reference is rarely longer than a
+  // couple dozen characters. This is the one field in the app an
+  // unauthenticated visitor can write freely -- without a cap, a raw POST
+  // (bypassing the input's own client-side limit entirely) could store an
+  // arbitrarily large string here on every submission the rate limits
+  // still allow through.
+  utr: z
+    .string()
+    .trim()
+    .min(1, "Enter the UTR or bank reference.")
+    .max(50, "That doesn't look like a UTR or bank reference."),
+  amount: rupeesAmount,
+  paidOn: z.string().min(1, "Choose the date you paid."),
+});
