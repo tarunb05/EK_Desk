@@ -38,6 +38,66 @@ export async function getPendingClaimsCount(
   return count ?? 0;
 }
 
+export interface OpenRequest {
+  id: string;
+  feeAccountId: string;
+  studentName: string;
+  branchName: string;
+  serviceLabel: string;
+  amountPaise: bigint;
+  amountDisplay: string;
+  referenceCode: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+// Every open request nobody has paid (or claimed) yet -- a claim already
+// pending review for a request is shown there instead (see
+// getPendingClaims), not duplicated here, so an admin only ever sees one
+// row, with one clear next action, per request.
+export async function getOpenRequests(
+  supabase: SupabaseClient<Database>,
+): Promise<OpenRequest[]> {
+  const [{ data: requests }, { data: pendingClaims }] = await Promise.all([
+    supabase
+      .from("payment_request")
+      .select(
+        `id, fee_account_id, amount_paise, reference_code, created_at, expires_at,
+         fee_account:fee_account_id (
+           service_type,
+           student:student_id ( full_name, branch:branch_id ( name ) )
+         )`,
+      )
+      .eq("status", "open")
+      .order("created_at", { ascending: true }),
+    supabase.from("payment_claim").select("payment_request_id").eq("status", "pending"),
+  ]);
+
+  const alreadyClaimed = new Set(
+    (pendingClaims ?? []).map((c) => c.payment_request_id),
+  );
+
+  return (requests ?? [])
+    .filter((request) => request.fee_account && !alreadyClaimed.has(request.id))
+    .map((request) => {
+      const feeAccount = request.fee_account!;
+      const student = feeAccount.student!;
+      const amountPaise = BigInt(request.amount_paise);
+      return {
+        id: request.id,
+        feeAccountId: request.fee_account_id,
+        studentName: student.full_name,
+        branchName: student.branch.name,
+        serviceLabel: SERVICE_LABEL[feeAccount.service_type] ?? feeAccount.service_type,
+        amountPaise,
+        amountDisplay: formatPaise(amountPaise),
+        referenceCode: request.reference_code,
+        createdAt: request.created_at,
+        expiresAt: request.expires_at,
+      };
+    });
+}
+
 export async function getPendingClaims(
   supabase: SupabaseClient<Database>,
 ): Promise<PendingClaim[]> {

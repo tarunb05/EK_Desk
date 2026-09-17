@@ -129,8 +129,8 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-lg font-medium text-ink">The pay page</h2>
             <p className="mt-3 text-sm text-ink-secondary">
               The link in a payment message opens a page showing the
-              amount due, a QR code, and the school&apos;s payment details —
-              nothing else about the student or family. It expires after a
+              amount due and the school&apos;s payment details — nothing
+              else about the student or family. It expires after a
               short period or once the school confirms the payment. If a
               guardian reports having paid, we collect only the reference
               number (UTR) or bank reference, the amount, and the date they

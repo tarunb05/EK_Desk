@@ -1,6 +1,6 @@
 import type { Client } from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { connect, impersonate, impersonateAdmin, withRollback } from "./test-helpers";
+import { connect, impersonate, withRollback } from "./test-helpers";
 
 const ADMIN_ID = "00000000-0000-4000-8000-000000000501";
 const TEACHER_ID = "00000000-0000-4000-8000-000000000502";
@@ -207,7 +207,12 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
     let collectionAccountId: string | undefined;
     try {
       await clientA.query("begin");
-      await impersonateAdmin(clientA);
+      // seedProfiles + impersonate(clientA, ADMIN_ID), not
+      // impersonateAdmin -- the collection_account insert below sets
+      // updated_by to this file's own ADMIN_ID, which impersonateAdmin
+      // (a different, shared admin profile) never creates.
+      await seedProfiles(clientA);
+      await impersonate(clientA, ADMIN_ID);
 
       // A genuine two-connection race needs two independently-committing
       // transactions, which means the fixture below (and the winning
@@ -592,6 +597,103 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
       expect(statusFor(noRequest.feeAccountId)).toBe("none");
       expect(statusFor(openOnly.feeAccountId)).toBe("open");
       expect(statusFor(reported.feeAccountId)).toBe("reported");
+    });
+  });
+
+  it("cancel_payment_request closes an open request, and no-ops on one that's already closed", async () => {
+    await withRollback(client, async () => {
+      const fixture = await seedClaim(client, { admissionNo: "VC-CANCEL" });
+
+      await client.query(`select cancel_payment_request($1)`, [
+        fixture.paymentRequestId,
+      ]);
+      const request = await client.query(
+        "select status, closed_reason from payment_request where id = $1",
+        [fixture.paymentRequestId],
+      );
+      expect(request.rows[0]!.status).toBe("cancelled");
+      expect(request.rows[0]!.closed_reason).toBe("cancelled");
+
+      // Already cancelled -- a second call matches zero rows, not an
+      // error, same "no-op on an already-terminal row" convention as
+      // every other state-machine function in this schema.
+      await client.query(`select cancel_payment_request($1)`, [
+        fixture.paymentRequestId,
+      ]);
+      const stillCancelled = await client.query(
+        "select status from payment_request where id = $1",
+        [fixture.paymentRequestId],
+      );
+      expect(stillCancelled.rows[0]!.status).toBe("cancelled");
+    });
+  });
+
+  it("a teacher can't call cancel_payment_request", async () => {
+    await withRollback(client, async () => {
+      const fixture = await seedClaim(client, { admissionNo: "VC-CANCEL-TEACHER" });
+      await impersonate(client, TEACHER_ID);
+
+      await expect(
+        client.query(`select cancel_payment_request($1)`, [fixture.paymentRequestId]),
+      ).rejects.toThrow(/only an admin/i);
+    });
+  });
+
+  it("activity_log gets a row for creating, cancelling, and closing a payment_request, and for a claim being submitted, confirmed, and rejected", async () => {
+    await withRollback(client, async () => {
+      const created = await seedClaim(client, { admissionNo: "VC-LOG-1" });
+
+      const createdLog = await client.query(
+        "select summary, action, entity from activity_log where entity = 'payment_request' and entity_id = $1",
+        [created.paymentRequestId],
+      );
+      expect(createdLog.rows).toHaveLength(1);
+      expect(createdLog.rows[0]!.action).toBe("create");
+      expect(createdLog.rows[0]!.summary).toContain("Requested a payment for");
+
+      const claimCreatedLog = await client.query(
+        "select summary, action from activity_log where entity = 'payment_claim' and entity_id = $1",
+        [created.claimId],
+      );
+      expect(claimCreatedLog.rows).toHaveLength(1);
+      expect(claimCreatedLog.rows[0]!.action).toBe("create");
+      expect(claimCreatedLog.rows[0]!.summary).toContain("Reported a payment claim for");
+
+      await client.query(
+        `select confirm_payment_claim($1, 400000, current_date, 'upi', true)`,
+        [created.claimId],
+      );
+
+      const closedLog = await client.query(
+        "select summary from activity_log where entity = 'payment_request' and entity_id = $1 and action = 'update'",
+        [created.paymentRequestId],
+      );
+      expect(closedLog.rows.length).toBeGreaterThanOrEqual(1);
+      expect(closedLog.rows.some((r) => r.summary.includes("Closed the payment request for") && r.summary.includes("(paid)"))).toBe(true);
+
+      const confirmedLog = await client.query(
+        "select summary from activity_log where entity = 'payment_claim' and entity_id = $1 and action = 'update'",
+        [created.claimId],
+      );
+      expect(confirmedLog.rows).toHaveLength(1);
+      expect(confirmedLog.rows[0]!.summary).toContain("Confirmed a payment claim for");
+
+      const cancelled = await seedClaim(client, { admissionNo: "VC-LOG-2" });
+      await client.query("update payment_claim set status = 'rejected', reject_reason = 'test reason', reviewed_by = $1, reviewed_at = now() where id = $2", [ADMIN_ID, cancelled.claimId]);
+      await client.query(`select cancel_payment_request($1)`, [cancelled.paymentRequestId]);
+
+      const rejectedLog = await client.query(
+        "select summary from activity_log where entity = 'payment_claim' and entity_id = $1 and action = 'update'",
+        [cancelled.claimId],
+      );
+      expect(rejectedLog.rows[0]!.summary).toContain("Rejected a payment claim for");
+      expect(rejectedLog.rows[0]!.summary).toContain("test reason");
+
+      const cancelledLog = await client.query(
+        "select summary from activity_log where entity = 'payment_request' and entity_id = $1 and action = 'update'",
+        [cancelled.paymentRequestId],
+      );
+      expect(cancelledLog.rows.some((r) => r.summary.includes("Cancelled the payment request for"))).toBe(true);
     });
   });
 });

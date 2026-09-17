@@ -11,6 +11,8 @@ export const ACTIVITY_LOG_ENTITIES = [
   "expense_category",
   "student_submission",
   "profile",
+  "payment_request",
+  "payment_claim",
 ] as const;
 export type ActivityLogEntity = (typeof ACTIVITY_LOG_ENTITIES)[number];
 

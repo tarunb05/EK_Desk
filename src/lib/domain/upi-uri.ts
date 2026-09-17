@@ -5,10 +5,10 @@ export interface UpiPaymentParams {
   referenceCode: string; // tn
 }
 
-// The NPCI-standard upi://pay intent URI -- same query string used both for
-// the "Pay with UPI app" button and encoded into the QR. encodeURIComponent
-// per field (not URLSearchParams, which encodes spaces as `+` rather than
-// %20) matches this app's existing convention for building share URLs.
+// The NPCI-standard upi://pay intent URI, used by the "Pay with UPI app"
+// button. encodeURIComponent per field (not URLSearchParams, which
+// encodes spaces as `+` rather than %20) matches this app's existing
+// convention for building share URLs.
 export function buildUpiPaymentUri(params: UpiPaymentParams): string {
   const parts = [
     `pa=${encodeURIComponent(params.payeeVpa)}`,

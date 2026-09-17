@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { getPayPageData } from "@/lib/payments/actions";
-import { renderQrSvg } from "@/lib/payments/qr";
 import { ClaimForm } from "@/components/pay/claim-form";
 
 // Never indexed -- this is a bearer-token URL, not content meant to be
@@ -31,8 +30,6 @@ export default async function PayPage({
     );
   }
 
-  const qrSvg = data.upiUri ? await renderQrSvg(data.upiUri) : null;
-
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col gap-4 bg-canvas px-4 py-8">
       <div className="rounded-md border border-border bg-surface p-4">
@@ -52,14 +49,6 @@ export default async function PayPage({
             Pay by UPI: <span className="text-ink">{data.upiId}</span>
           </p>
           <p className="text-xs text-ink-muted">Payee name shown: {data.payeeName}</p>
-          {qrSvg ? (
-            <div
-              className="h-48 w-48"
-              // Server-generated SVG from a fixed upi://pay URI this same
-              // request built -- not user input, safe to inline.
-              dangerouslySetInnerHTML={{ __html: qrSvg }}
-            />
-          ) : null}
           <a
             href={data.upiUri ?? undefined}
             className="inline-flex h-10 w-full items-center justify-center rounded-md bg-accent text-sm font-medium text-surface"
@@ -67,8 +56,7 @@ export default async function PayPage({
             Pay with UPI app
           </a>
           <p className="text-2xs text-ink-muted">
-            If the button doesn&apos;t work, scan the QR or pay to the UPI ID
-            above.
+            If the button doesn&apos;t work, pay to the UPI ID above.
           </p>
         </div>
       ) : null}

@@ -9,7 +9,6 @@ import { TableTransitionProvider } from "@/components/records/table-transition";
 import { PendingTbody } from "@/components/records/pending-tbody";
 import { AlertIcon, ClockIcon, StatusIcon } from "@/components/shell/nav-icons";
 import { RowActionMenu } from "@/components/students/row-action-menu";
-import { RequestPaymentButton } from "@/components/students/request-payment-button";
 
 interface StudentDirectoryTableProps {
   rows: StudentDirectoryRow[];
@@ -105,19 +104,16 @@ function RowActions({ row, role }: { row: StudentDirectoryRow; role: Role }) {
               studentId={row.id}
               studentName={row.fullName}
               role={role}
+              requestPaymentFeeAccountId={
+                role === "admin" && account.status === "active"
+                  ? account.feeAccountId
+                  : undefined
+              }
             />
-            {role === "admin" && account.status === "active" ? (
-              <>
-                <RequestPaymentButton
-                  feeAccountId={account.feeAccountId}
-                  studentId={row.id}
-                />
-                {account.paymentRequestStatus === "open" ? (
-                  <span className="text-2xs text-ink-muted">Request open</span>
-                ) : account.paymentRequestStatus === "reported" ? (
-                  <span className="text-2xs text-attention">Payment reported</span>
-                ) : null}
-              </>
+            {account.paymentRequestStatus === "open" ? (
+              <span className="text-2xs text-ink-muted">Request open</span>
+            ) : account.paymentRequestStatus === "reported" ? (
+              <span className="text-2xs text-attention">Payment reported</span>
             ) : null}
           </div>
         );

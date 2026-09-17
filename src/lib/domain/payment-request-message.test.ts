@@ -23,7 +23,7 @@ describe("buildPaymentRequestMessage", () => {
     });
     expect(message).toContain("Pay by UPI: school@upi");
     expect(message).toContain("Payee name shown: EuroKids Kothanur");
-    expect(message).toContain(`QR code and pay button: ${base.payPageUrl}`);
+    expect(message).toContain(`Pay button: ${base.payPageUrl}`);
     expect(message).not.toContain("Bank transfer:");
   });
 

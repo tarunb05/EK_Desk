@@ -29,39 +29,6 @@ const EXPIRY_OPTIONS = REQUEST_EXPIRY_DAYS.map((days) => ({
   label: `${days} days`,
 }));
 
-export function RequestPaymentButton({
-  feeAccountId,
-  studentId,
-}: {
-  feeAccountId: string;
-  studentId: string;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
-      >
-        Request payment
-      </button>
-
-      {/* Mounted only while open, same reasoning as every other Phase 15
-          dialog: a fresh instance per open means a second open starts
-          clean instead of replaying the previous submission's state. */}
-      {open ? (
-        <RequestPaymentDialog
-          feeAccountId={feeAccountId}
-          studentId={studentId}
-          onClose={() => setOpen(false)}
-        />
-      ) : null}
-    </>
-  );
-}
-
 function PhonePicker({
   data,
   value,
@@ -241,7 +208,7 @@ function ShareLinksView({
   );
 }
 
-function RequestPaymentDialog({
+export function RequestPaymentDialog({
   feeAccountId,
   studentId,
   onClose,

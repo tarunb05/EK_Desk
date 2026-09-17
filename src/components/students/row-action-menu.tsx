@@ -7,6 +7,7 @@ import {
   requestStudentDelete,
 } from "@/lib/records/actions";
 import { DeleteConfirmDialog } from "./delete-confirm-dialog";
+import { RequestPaymentDialog } from "./request-payment-dialog";
 import { ActionMenu, type ActionMenuItem } from "@/components/shell/action-menu";
 import { FormError } from "@/components/forms/field";
 import type { Role } from "@/lib/auth/routes";
@@ -22,17 +23,23 @@ export function RowActionMenu({
   studentId,
   studentName,
   role,
+  requestPaymentFeeAccountId,
 }: {
   editHref?: string;
   paymentHref?: string;
   studentId: string;
   studentName: string;
   role: Role;
+  // Only set for an active fee account an admin may request payment
+  // against -- when present, adds the menu item and this component owns
+  // the dialog's own open state, same as every other row action here.
+  requestPaymentFeeAccountId?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [requestPaymentOpen, setRequestPaymentOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   function handleDelete() {
@@ -65,6 +72,9 @@ export function RowActionMenu({
       : []),
     ...(paymentHref
       ? [{ label: "Record payment", onSelect: () => router.push(paymentHref) }]
+      : []),
+    ...(requestPaymentFeeAccountId
+      ? [{ label: "Request payment", onSelect: () => setRequestPaymentOpen(true) }]
       : []),
     {
       label: role === "admin" ? "Delete permanently" : "Request deletion",
@@ -100,6 +110,17 @@ export function RowActionMenu({
         destructive={role === "admin"}
         onConfirm={handleDelete}
       />
+      {/* Mounted only while open -- a fresh instance per open means a
+          second open starts clean instead of replaying the previous
+          submission's state, same reasoning as every other Phase 15
+          dialog. */}
+      {requestPaymentOpen && requestPaymentFeeAccountId ? (
+        <RequestPaymentDialog
+          feeAccountId={requestPaymentFeeAccountId}
+          studentId={studentId}
+          onClose={() => setRequestPaymentOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

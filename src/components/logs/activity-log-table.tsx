@@ -16,6 +16,8 @@ const ENTITY_LABEL: Record<string, string> = {
   expense_category: "Category",
   student_submission: "Submission",
   profile: "User",
+  payment_request: "Payment request",
+  payment_claim: "Payment claim",
 };
 
 // Shared between the header row and every <summary> row so their columns

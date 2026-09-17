@@ -28,6 +28,8 @@ const ENTITY_OPTIONS: Record<ActivityLogEntity | "all", string> = {
   expense_category: "Category",
   student_submission: "Submission",
   profile: "User",
+  payment_request: "Payment request",
+  payment_claim: "Payment claim",
 };
 
 export function ActivityLogFilters({

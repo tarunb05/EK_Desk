@@ -16,11 +16,11 @@ export interface PaymentRequestMessageInput {
 }
 
 // The brief's own template puts the pay-page URL only inside the UPI block
-// ("QR code and pay button: <url>") -- but the closing line ("tap 'I've
-// paid' on the link above") applies regardless of which method was
-// offered, so a bank-only request still needs the link surfaced somewhere.
-// Handled here with its own line in that case, rather than silently
-// dropping the link a bank-only parent would need to report their payment.
+// ("Pay button: <url>") -- but the closing line ("tap 'I've paid' on the
+// link above") applies regardless of which method was offered, so a
+// bank-only request still needs the link surfaced somewhere. Handled here
+// with its own line in that case, rather than silently dropping the link
+// a bank-only parent would need to report their payment.
 export function buildPaymentRequestMessage(
   input: PaymentRequestMessageInput,
 ): string {
@@ -38,7 +38,7 @@ export function buildPaymentRequestMessage(
       [
         `Pay by UPI: ${input.upi.upiId}`,
         `Payee name shown: ${input.upi.payeeName}`,
-        `QR code and pay button: ${input.payPageUrl}`,
+        `Pay button: ${input.payPageUrl}`,
       ].join("\n"),
     );
   }

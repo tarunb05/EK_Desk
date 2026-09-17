@@ -362,6 +362,29 @@ export async function shareAgainPaymentRequest(
   return { error: null, share };
 }
 
+// Wires up cancel_payment_request (built in 15.3, never called from
+// anywhere until now) to a real button -- lets an admin invalidate an
+// open request's link before it naturally expires. The pay page already
+// shows the identical generic "no longer active" message the instant
+// status leaves 'open', same as a natural expiry.
+export async function cancelPaymentRequest(
+  paymentRequestId: string,
+): Promise<{ error: string | null }> {
+  await requireRole("admin");
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("cancel_payment_request", {
+    p_id: paymentRequestId,
+  });
+  if (error) {
+    return { error: "This request is no longer open." };
+  }
+
+  revalidatePath("/verify");
+  revalidatePath("/students", "page");
+  return { error: null };
+}
+
 export async function sendReminder(
   _prevState: PaymentRequestActionState,
   formData: FormData,

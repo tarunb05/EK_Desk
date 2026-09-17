@@ -28,7 +28,7 @@ export const NAV_LINKS = [
   { href: "/approvals", label: "Approvals", Icon: ApprovalsIcon },
   // Admin-only (see ROUTE_ACCESS) -- a teacher never sees this link, same
   // stricter standard as the payment_request/payment_claim tables it reads.
-  { href: "/verify", label: "To verify", Icon: CheckIcon },
+  { href: "/verify", label: "Payment verification", Icon: CheckIcon },
   { href: "/support", label: "Support", Icon: SupportIcon },
   // Admin-only (see ROUTE_ACCESS) -- sits right before Settings, after
   // every screen with work to action, since this one has nothing to
