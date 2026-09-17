@@ -1733,8 +1733,32 @@ export type Database = {
         }[]
       }
       profile_full_name: { Args: { p_id: string }; Returns: string }
+      save_collection_account: {
+        Args: {
+          p_account_holder?: string
+          p_account_number?: string
+          p_bank_name?: string
+          p_branch_id: string
+          p_current_password: string
+          p_id: string
+          p_ifsc?: string
+          p_is_active: boolean
+          p_label: string
+          p_payee_name: string
+          p_upi_id?: string
+        }
+        Returns: Json
+      }
+      set_default_collection_account: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      verify_current_password: {
+        Args: { p_password: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

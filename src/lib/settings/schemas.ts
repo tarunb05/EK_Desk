@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  isValidAccountNumber,
+  isValidIfsc,
+  isValidUpiId,
+} from "@/lib/domain/collection-account-validation";
 
 export const createAcademicYearSchema = z
   .object({
@@ -117,4 +122,88 @@ export const reorderExpenseCategorySchema = z.object({
 
 export const deleteExpenseCategorySchema = z.object({
   categoryId: z.string().uuid(),
+});
+
+// Shared shape for create and edit -- id is only present on an edit
+// (createCollectionAccount/updateCollectionAccount branch on that, same
+// convention this file uses elsewhere for optional trailing id fields).
+const collectionAccountFields = {
+  branchId: z.string().uuid("Choose a branch."),
+  label: z.string().trim().min(1, "Enter a label."),
+  upiId: z.string().trim().optional(),
+  payeeName: z.string().trim().min(1, "Enter the payee name."),
+  bankName: z.string().trim().optional(),
+  accountHolder: z.string().trim().optional(),
+  accountNumber: z.string().trim().optional(),
+  confirmAccountNumber: z.string().trim().optional(),
+  ifsc: z.string().trim().optional(),
+  // A checkbox with no explicit value submits "on" when checked and is
+  // simply absent from FormData when unchecked -- same convention as
+  // updateBranchSchema's isActive, not setExpenseCategoryActiveSchema's
+  // (that one's driven by a <Select>, which always sends an explicit value).
+  isActive: z
+    .string()
+    .optional()
+    .transform((value) => value === "on"),
+  // Re-authentication (Phase 15.2) -- checked server-side against
+  // auth.users.encrypted_password via verify_current_password, never
+  // against a client-supplied claim.
+  currentPassword: z
+    .string()
+    .min(1, "Enter your password to confirm this change."),
+};
+
+// A shared generic helper over Zod's own .refine() loses enough type
+// information that every callback's parameter collapses to `unknown` --
+// a known rough edge in Zod's generics, not worth fighting for five small
+// checks. Written out on each concrete schema instead.
+type CollectionAccountFieldsInput = {
+  upiId?: string;
+  accountNumber?: string;
+  confirmAccountNumber?: string;
+  ifsc?: string;
+};
+
+function refineCollectionAccountFields<
+  T extends z.ZodObject<z.ZodRawShape>,
+>(schema: T) {
+  return schema
+    .refine(
+      (v: CollectionAccountFieldsInput) =>
+        Boolean(v.upiId) || Boolean(v.accountNumber),
+      { message: "Enter a UPI ID or bank account details.", path: ["upiId"] },
+    )
+    .refine((v: CollectionAccountFieldsInput) => !v.upiId || isValidUpiId(v.upiId), {
+      message: "Enter a valid UPI ID.",
+      path: ["upiId"],
+    })
+    .refine((v: CollectionAccountFieldsInput) => !v.ifsc || isValidIfsc(v.ifsc), {
+      message: "Enter a valid IFSC code.",
+      path: ["ifsc"],
+    })
+    .refine(
+      (v: CollectionAccountFieldsInput) =>
+        !v.accountNumber || isValidAccountNumber(v.accountNumber),
+      { message: "Enter a valid account number.", path: ["accountNumber"] },
+    )
+    .refine(
+      (v: CollectionAccountFieldsInput) =>
+        (v.accountNumber ?? "") === (v.confirmAccountNumber ?? ""),
+      {
+        message: "Account numbers don't match.",
+        path: ["confirmAccountNumber"],
+      },
+    );
+}
+
+export const createCollectionAccountSchema = refineCollectionAccountFields(
+  z.object(collectionAccountFields),
+);
+
+export const updateCollectionAccountSchema = refineCollectionAccountFields(
+  z.object({ ...collectionAccountFields, accountId: z.string().uuid() }),
+);
+
+export const setDefaultCollectionAccountSchema = z.object({
+  accountId: z.string().uuid(),
 });

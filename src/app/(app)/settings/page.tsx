@@ -4,7 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getAcademicYears, getBranches } from "@/lib/supabase/queries";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getTeachersWithBranch } from "@/lib/settings/queries";
+import {
+  getCollectionAccountsWithLatestChange,
+  getTeachersWithBranch,
+} from "@/lib/settings/queries";
 import { internalEmailToUsername } from "@/lib/auth/username";
 import { AddAcademicYearForm } from "@/components/settings/add-academic-year-form";
 import { AcademicYearRow } from "@/components/settings/academic-year-row";
@@ -13,6 +16,8 @@ import { BranchRow } from "@/components/settings/branch-row";
 import { AddTeacherForm } from "@/components/settings/add-teacher-form";
 import { TeacherRow } from "@/components/settings/teacher-row";
 import { MyCredentialsForm } from "@/components/settings/my-credentials-form";
+import { CollectionAccountRow } from "@/components/settings/collection-account-row";
+import { CollectionAccountForm } from "@/components/settings/collection-account-form";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -38,6 +43,10 @@ export default async function SettingsPage() {
   } catch {
     teachersUnavailable = true;
   }
+
+  const collectionAccounts = await getCollectionAccountsWithLatestChange(
+    supabase,
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -102,6 +111,38 @@ export default async function SettingsPage() {
         )}
 
         <AddTeacherForm branches={branches} />
+      </section>
+
+      <section className="flex flex-col gap-4 rounded-md border border-border bg-surface p-5">
+        <div>
+          <h2 className="text-sm font-medium text-ink">
+            Collection accounts
+          </h2>
+          <p className="text-sm text-ink-secondary">
+            Where parents pay a fee request into. Changing an account&apos;s
+            UPI id or bank details cancels every open payment link against
+            it, so a parent is never holding a message whose details no
+            longer match.
+          </p>
+        </div>
+
+        {collectionAccounts.length > 0 ? (
+          <ul className="flex flex-col divide-y divide-hairline">
+            {collectionAccounts.map((account) => (
+              <CollectionAccountRow
+                key={account.id}
+                account={account}
+                branches={branches}
+              />
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-ink-secondary">
+            No collection accounts yet — add the first one below.
+          </p>
+        )}
+
+        <CollectionAccountForm branches={branches} />
       </section>
 
       <section className="flex max-w-md flex-col gap-3 rounded-md border border-border bg-surface p-5">

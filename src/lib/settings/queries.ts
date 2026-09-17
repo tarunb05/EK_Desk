@@ -50,6 +50,82 @@ export async function getTeachersWithBranch(
   });
 }
 
+export interface CollectionAccountRow {
+  id: string;
+  branchId: string;
+  branchName: string;
+  label: string;
+  upiId: string | null;
+  payeeName: string;
+  bankName: string | null;
+  accountHolder: string | null;
+  accountNumber: string | null;
+  ifsc: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+  lastChangedBy: string | null;
+  lastChangedAt: string | null;
+}
+
+// The audit trail (collection_account_change_log) is written one row per
+// save, not one row per account -- this picks the most recent row per
+// account in JS rather than a dedicated "latest change" view, since the
+// row counts here (a handful of accounts, a modest number of edits) don't
+// justify one.
+export async function getCollectionAccountsWithLatestChange(
+  supabase: SupabaseClient<Database>,
+): Promise<CollectionAccountRow[]> {
+  const [{ data: accounts, error: accountsError }, { data: changes }] =
+    await Promise.all([
+      supabase
+        .from("collection_account")
+        .select("*, branch:branch_id (name)")
+        .order("branch_id")
+        .order("label"),
+      supabase
+        .from("collection_account_change_log")
+        .select("collection_account_id, created_at, actor:actor (full_name)")
+        .order("created_at", { ascending: false }),
+    ]);
+
+  if (accountsError || !accounts) {
+    throw new Error("Could not load collection accounts.");
+  }
+
+  const latestChangeByAccount = new Map<
+    string,
+    { actorName: string | null; createdAt: string }
+  >();
+  for (const change of changes ?? []) {
+    if (!latestChangeByAccount.has(change.collection_account_id)) {
+      latestChangeByAccount.set(change.collection_account_id, {
+        actorName: change.actor?.full_name ?? null,
+        createdAt: change.created_at,
+      });
+    }
+  }
+
+  return accounts.map((account) => {
+    const latest = latestChangeByAccount.get(account.id);
+    return {
+      id: account.id,
+      branchId: account.branch_id,
+      branchName: account.branch?.name ?? "",
+      label: account.label,
+      upiId: account.upi_id,
+      payeeName: account.payee_name,
+      bankName: account.bank_name,
+      accountHolder: account.account_holder,
+      accountNumber: account.account_number,
+      ifsc: account.ifsc,
+      isDefault: account.is_default,
+      isActive: account.is_active,
+      lastChangedBy: latest?.actorName ?? null,
+      lastChangedAt: latest?.createdAt ?? null,
+    };
+  });
+}
+
 export interface ExpenseCategoryWithStats {
   id: string;
   name: string;
