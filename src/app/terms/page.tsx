@@ -86,6 +86,28 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-medium text-ink">
+              Payment requests and confirmation
+            </h2>
+            <p className="mt-3 text-sm text-ink-secondary">
+              A payment request sent to a guardian, and any claim they report
+              through the pay page or WhatsApp, is a claim only — it doesn&apos;t
+              become a recorded payment until a member of staff checks the
+              bank account and confirms it. Money always moves directly
+              between the guardian and the school&apos;s own account; EK Desk
+              never handles or holds funds itself.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-medium text-ink">Card payments</h2>
+            <p className="mt-3 text-sm text-ink-secondary">
+              Card payments are accepted in person at the office only, never
+              online or through this tool.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-medium text-ink">
               No warranty, provided as-is
             </h2>
             <p className="mt-3 text-sm text-ink-secondary">

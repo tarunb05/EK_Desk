@@ -36,6 +36,32 @@ export interface PaymentHistoryEntry {
   voidedAt: string | null;
   voidReason: string | null;
   runningPendingPaise: bigint | null;
+  // Set when this payment came from a confirmed claim (Phase 15.5) --
+  // "UPI, ref ending 4821, confirmed by <admin>" instead of the plain
+  // method label, per the brief.
+  confirmedByLabel: string | null;
+}
+
+export interface RequestClaim {
+  id: string;
+  utr: string;
+  claimedAmountPaise: bigint;
+  claimedPaidOn: string;
+  status: string;
+  source: string;
+}
+
+export interface RequestTimelineEntry {
+  id: string;
+  referenceCode: string;
+  amountPaise: bigint;
+  status: string;
+  closedReason: string | null;
+  createdAt: string;
+  sharedAt: string | null;
+  sharedVia: string | null;
+  sharedToLast4: string | null;
+  claims: RequestClaim[];
 }
 
 export interface StudentFeeAccountDetail {
@@ -47,6 +73,11 @@ export interface StudentFeeAccountDetail {
   dueDate: string;
   status: string;
   payments: PaymentHistoryEntry[];
+  // Every payment_request ever created against this account, newest
+  // first -- decision 6 (Phase 15.5 plan): shows what the schema actually
+  // recorded (created, latest share, every claim, terminal reason), not a
+  // per-reminder history that was never stored.
+  paymentRequests: RequestTimelineEntry[];
 }
 
 export interface StudentDetail {
@@ -112,6 +143,74 @@ export async function getStudentDetail(
     paymentsByAccount.set(payment.fee_account_id, list);
   }
 
+  // Every payment_request against these accounts, with its own claims
+  // nested -- the request timeline (Phase 15.5) and the "confirmed by"
+  // label on the payment history table both come from this one query.
+  const { data: requests } =
+    feeAccountIds.length > 0
+      ? await supabase
+          .from("payment_request")
+          .select(
+            `id, fee_account_id, reference_code, amount_paise, status, closed_reason,
+             created_at, shared_at, shared_via, shared_to_last4,
+             payment_claim ( id, utr, claimed_amount_paise, claimed_paid_on, status, source, payment_id, reviewed_by )`,
+          )
+          .in("fee_account_id", feeAccountIds)
+          .order("created_at", { ascending: false })
+      : { data: [] };
+
+  const reviewedByIds = Array.from(
+    new Set(
+      (requests ?? []).flatMap((r) =>
+        r.payment_claim
+          .filter((c) => c.status === "confirmed" && c.payment_id && c.reviewed_by)
+          .map((c) => c.reviewed_by as string),
+      ),
+    ),
+  );
+  const { data: reviewers } =
+    reviewedByIds.length > 0
+      ? await supabase.from("profile").select("id, full_name").in("id", reviewedByIds)
+      : { data: [] };
+  const reviewerName = new Map((reviewers ?? []).map((p) => [p.id, p.full_name]));
+
+  const confirmedByLabelByPaymentId = new Map<string, string>();
+  for (const request of requests ?? []) {
+    for (const claim of request.payment_claim) {
+      if (claim.status === "confirmed" && claim.payment_id && claim.reviewed_by) {
+        confirmedByLabelByPaymentId.set(
+          claim.payment_id,
+          reviewerName.get(claim.reviewed_by) ?? "Admin",
+        );
+      }
+    }
+  }
+
+  const requestsByAccount = new Map<string, RequestTimelineEntry[]>();
+  for (const request of requests ?? []) {
+    const list = requestsByAccount.get(request.fee_account_id) ?? [];
+    list.push({
+      id: request.id,
+      referenceCode: request.reference_code,
+      amountPaise: BigInt(request.amount_paise),
+      status: request.status,
+      closedReason: request.closed_reason,
+      createdAt: request.created_at,
+      sharedAt: request.shared_at,
+      sharedVia: request.shared_via,
+      sharedToLast4: request.shared_to_last4,
+      claims: request.payment_claim.map((c) => ({
+        id: c.id,
+        utr: c.utr,
+        claimedAmountPaise: BigInt(c.claimed_amount_paise),
+        claimedPaidOn: c.claimed_paid_on,
+        status: c.status,
+        source: c.source,
+      })),
+    });
+    requestsByAccount.set(request.fee_account_id, list);
+  }
+
   const feeAccountDetails: StudentFeeAccountDetail[] = feeAccounts.map((fa) => {
     const accountPayments =
       paymentsByAccount.get(fa.fee_account_id ?? "") ?? [];
@@ -134,6 +233,7 @@ export async function getStudentDetail(
           : null,
         voidReason: entry.payment.voidReason,
         runningPendingPaise: entry.runningPendingPaise,
+        confirmedByLabel: confirmedByLabelByPaymentId.get(entry.payment.id) ?? null,
       }))
       .reverse();
 
@@ -146,6 +246,7 @@ export async function getStudentDetail(
       dueDate: fa.due_date ?? "",
       status: fa.status ?? "active",
       payments: history,
+      paymentRequests: requestsByAccount.get(fa.fee_account_id ?? "") ?? [],
     };
   });
 

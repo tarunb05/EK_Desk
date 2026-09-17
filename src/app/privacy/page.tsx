@@ -109,6 +109,120 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <h2 className="text-lg font-medium text-ink">
+              WhatsApp and SMS
+            </h2>
+            <p className="mt-3 text-sm text-ink-secondary">
+              When an admin asks for a fee payment, the message is sent from
+              the school&apos;s own phone number to the guardian&apos;s
+              number, over WhatsApp&apos;s own service (or, as a fallback,
+              the guardian&apos;s mobile carrier&apos;s SMS service). The
+              message contains the amount due, a payment link, and a
+              reference code — WhatsApp and the carrier each handle delivery
+              of that message the way they would for any other message sent
+              through them; EK Desk itself only records that a message was
+              sent, through which channel, and to which number, never its
+              delivery or read status.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-medium text-ink">The pay page</h2>
+            <p className="mt-3 text-sm text-ink-secondary">
+              The link in a payment message opens a page showing the
+              amount due, a QR code, and the school&apos;s payment details —
+              nothing else about the student or family. It expires after a
+              short period or once the school confirms the payment. If a
+              guardian reports having paid, we collect only the reference
+              number (UTR) or bank reference, the amount, and the date they
+              enter — there is no tracking, analytics, or advertising script
+              on this page.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-medium text-ink">What we keep</h2>
+            <p className="mt-3 text-sm text-ink-secondary">
+              Payment reference numbers and the school&apos;s own
+              confirmation records (who checked the bank, when, and what was
+              received) are kept as financial records, the same way any
+              other payment record is. The specific retention period for
+              these is{" "}
+              <span className="font-medium text-ink">
+                [placeholder — to be set by the school&apos;s accountant]
+              </span>
+              .
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-medium text-ink">
+              Payments and confirmation
+            </h2>
+            <p className="mt-3 text-sm text-ink-secondary">
+              A payment always goes directly to the account shown in the
+              message or on the pay page — never through EK Desk itself, and
+              never through a third-party gateway. The school will never ask
+              for a UPI PIN, one-time password, account password, or card
+              details over WhatsApp, SMS, or this site. A guardian reporting
+              a payment (by tapping &quot;I&apos;ve paid&quot; or replying on
+              WhatsApp) creates a claim only — it counts as a payment only
+              once a member of staff has checked the bank account and
+              confirmed it.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-medium text-ink">
+              Refunds and corrections
+            </h2>
+            <p className="mt-3 text-sm text-ink-secondary">
+              Refunds and corrections to a payment are handled directly by
+              the branch office, by bank transfer — contact{" "}
+              <span className="font-medium text-ink">
+                [placeholder — branch office contact details]
+              </span>
+              .
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-medium text-ink">Card payments</h2>
+            <p className="mt-3 text-sm text-ink-secondary">
+              Card payments are only ever taken in person at the office, on
+              a card machine the school controls. EK Desk never asks for
+              card details online, over WhatsApp, or by SMS, and a guardian
+              should never send them through any of those channels even if
+              asked.
+            </p>
+          </section>
+
+          <section className="rounded-md border border-attention bg-attention-fill/20 p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-attention">
+              This section needs review by someone qualified in Indian
+              data-protection law before this page is published externally —
+              the DPDP Rules, 2025 commencement timeline should be confirmed
+              at that time.
+            </p>
+            <h2 className="mt-3 text-lg font-medium text-ink">
+              Your data under the DPDP Act, 2023
+            </h2>
+            <p className="mt-3 text-sm text-ink-secondary">
+              Some of the information above is a child&apos;s personal data,
+              provided by a parent or guardian. The school operating EK Desk
+              is the data fiduciary for that information. Supabase (database
+              hosting) and Vercel (application hosting) act as data
+              processors on the school&apos;s behalf, solely to provide that
+              infrastructure. A parent or guardian who wants to access,
+              correct, or ask for erasure of their child&apos;s information
+              should contact their branch office directly, as described
+              under &quot;Requesting a correction&quot; below — EK Desk does
+              not claim to be, and should not be described as, &quot;DPDP
+              compliant.&quot;
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-medium text-ink">
               Where it&apos;s stored
             </h2>
             <p className="mt-3 text-sm text-ink-secondary">

@@ -554,16 +554,23 @@ export async function permanentlyDeleteStudent(
   const value = parsed.data;
   const supabase = await createClient();
 
-  const { error, count } = await supabase
-    .from("student")
-    .delete({ count: "exact" })
-    .eq("id", value.studentId);
+  // Phase 15.5: money that arrived should never silently disappear from
+  // the record, the same way a payment row itself never can -- this now
+  // goes through hard_delete_student, which blocks the delete outright if
+  // the student has a confirmed payment claim on record, rather than the
+  // raw table delete this used to be.
+  const { error } = await supabase.rpc("hard_delete_student", {
+    p_student_id: value.studentId,
+  });
 
   if (error) {
-    return { error: "Could not delete this student." };
-  }
-  if (!count) {
-    return { error: "This student no longer exists." };
+    return {
+      error: error.message.includes("confirmed payment")
+        ? "This student has a confirmed payment on record and can't be deleted."
+        : error.message.includes("no longer exists")
+          ? "This student no longer exists."
+          : "Could not delete this student.",
+    };
   }
 
   revalidatePath("/students", "page");

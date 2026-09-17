@@ -1664,6 +1664,16 @@ export type Database = {
       auth_is_admin: { Args: never; Returns: boolean }
       auth_role: { Args: never; Returns: string }
       cancel_payment_request: { Args: { p_id: string }; Returns: undefined }
+      confirm_payment_claim: {
+        Args: {
+          p_claim_id: string
+          p_close_request: boolean
+          p_method: string
+          p_received_amount_paise: number
+          p_received_paid_on: string
+        }
+        Returns: Json
+      }
       create_payment_request: {
         Args: {
           p_amount_paise: number
@@ -1741,6 +1751,19 @@ export type Database = {
           total_receivable_paise: number
         }[]
       }
+      enter_and_confirm_claim: {
+        Args: {
+          p_claimed_amount_paise: number
+          p_claimed_paid_on: string
+          p_close_request: boolean
+          p_method: string
+          p_payment_request_id: string
+          p_received_amount_paise: number
+          p_received_paid_on: string
+          p_utr: string
+        }
+        Returns: Json
+      }
       expense_category_breakdown: {
         Args: { p_academic_year_id: string; p_branch_code?: string }
         Returns: {
@@ -1748,6 +1771,10 @@ export type Database = {
           category_id: string
           category_name: string
         }[]
+      }
+      hard_delete_student: {
+        Args: { p_student_id: string }
+        Returns: undefined
       }
       lookup_payment_request_by_token_hash: {
         Args: { p_ip_hash: string; p_token_hash: string }

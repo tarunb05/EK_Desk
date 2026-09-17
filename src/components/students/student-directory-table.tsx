@@ -107,10 +107,17 @@ function RowActions({ row, role }: { row: StudentDirectoryRow; role: Role }) {
               role={role}
             />
             {role === "admin" && account.status === "active" ? (
-              <RequestPaymentButton
-                feeAccountId={account.feeAccountId}
-                studentId={row.id}
-              />
+              <>
+                <RequestPaymentButton
+                  feeAccountId={account.feeAccountId}
+                  studentId={row.id}
+                />
+                {account.paymentRequestStatus === "open" ? (
+                  <span className="text-2xs text-ink-muted">Request open</span>
+                ) : account.paymentRequestStatus === "reported" ? (
+                  <span className="text-2xs text-attention">Payment reported</span>
+                ) : null}
+              </>
             ) : null}
           </div>
         );

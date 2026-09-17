@@ -13,6 +13,10 @@ export interface StudentFeeAccountRef {
   serviceType: ServiceType;
   academicYearLabel: string;
   status: "active" | "discontinued";
+  // Phase 15.5: "none" (no open request), "open" (a request is open, no
+  // pending claim yet), or "reported" (a claim is pending review) --
+  // backs the Students-list "Request open"/"Payment reported" markers.
+  paymentRequestStatus: "none" | "open" | "reported";
 }
 
 export interface StudentDirectoryRow {
@@ -172,6 +176,7 @@ export async function getStudentDirectory(
               serviceType: string | null;
               academicYearLabel: string | null;
               status: string | null;
+              paymentRequestStatus: string | null;
             }[]
           )
             .filter(
@@ -182,6 +187,7 @@ export async function getStudentDirectory(
                 serviceType: string;
                 academicYearLabel: string;
                 status: string;
+                paymentRequestStatus: string | null;
               } => !!fa.feeAccountId && !!fa.serviceType,
             )
             .map((fa) => ({
@@ -189,6 +195,10 @@ export async function getStudentDirectory(
               serviceType: fa.serviceType as ServiceType,
               academicYearLabel: fa.academicYearLabel ?? "",
               status: (fa.status ?? "active") as "active" | "discontinued",
+              paymentRequestStatus: (fa.paymentRequestStatus ?? "none") as
+                | "none"
+                | "open"
+                | "reported",
             }))
         : [];
 

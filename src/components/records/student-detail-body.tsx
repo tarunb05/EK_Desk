@@ -2,6 +2,7 @@ import { formatPaise } from "@/lib/domain/money";
 import type { StudentDetail } from "@/lib/records/student-detail";
 import type { Role } from "@/lib/auth/routes";
 import { DeleteStudentButton } from "./delete-student-button";
+import { RequestTimeline } from "./request-timeline";
 
 export function StudentDetailBody({
   detail,
@@ -60,6 +61,9 @@ export function StudentDetailBody({
               {account.serviceType} — pending{" "}
               {formatPaise(account.pendingPaise)}
             </h3>
+
+            <RequestTimeline requests={account.paymentRequests} role={role} />
+
             {account.payments.length === 0 ? (
               <p className="text-sm text-ink-muted">
                 No payments recorded yet.
@@ -84,7 +88,11 @@ export function StudentDetailBody({
                       }`}
                     >
                       <td>{payment.paidOn}</td>
-                      <td className="text-ink-secondary">{payment.method}</td>
+                      <td className="text-ink-secondary">
+                        {payment.confirmedByLabel && payment.reference
+                          ? `${payment.method}, ref ending ${payment.reference.slice(-4)}, confirmed by ${payment.confirmedByLabel}`
+                          : payment.method}
+                      </td>
                       <td className="text-right tabular-nums">
                         {formatPaise(payment.amountPaise)}
                       </td>

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   ActivityLogIcon,
   ApprovalsIcon,
+  CheckIcon,
   DaycareIcon,
   SettingsIcon,
   StudentsIcon,
@@ -25,6 +26,9 @@ export const NAV_LINKS = [
   { href: "/students", label: "Students", Icon: StudentsIcon },
   { href: "/expenses", label: "Expenses", Icon: WalletIcon },
   { href: "/approvals", label: "Approvals", Icon: ApprovalsIcon },
+  // Admin-only (see ROUTE_ACCESS) -- a teacher never sees this link, same
+  // stricter standard as the payment_request/payment_claim tables it reads.
+  { href: "/verify", label: "To verify", Icon: CheckIcon },
   { href: "/support", label: "Support", Icon: SupportIcon },
   // Admin-only (see ROUTE_ACCESS) -- sits right before Settings, after
   // every screen with work to action, since this one has nothing to
@@ -45,11 +49,13 @@ export function NavLinks({
   role,
   pendingApprovalsCount = 0,
   openSupportCount = 0,
+  pendingClaimsCount = 0,
 }: {
   collapsed?: boolean;
   role: Role;
   pendingApprovalsCount?: number;
   openSupportCount?: number;
+  pendingClaimsCount?: number;
 }) {
   const pathname = usePathname();
   const { setMobileOpen } = useSidebarContext();
@@ -73,7 +79,9 @@ export function NavLinks({
             ? pendingApprovalsCount
             : href === "/support"
               ? openSupportCount
-              : 0;
+              : href === "/verify"
+                ? pendingClaimsCount
+                : 0;
         return (
           <Link
             key={href}

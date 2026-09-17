@@ -28,6 +28,11 @@ export const ROUTE_ACCESS: Record<string, readonly Role[]> = {
   // route, branched by role the same way /approvals is: RLS already scopes
   // a teacher's own read to their own requests.
   "/support": ["admin", "teacher"],
+  // The to-verify queue: payment_request/payment_claim/collection_account
+  // are all admin-only tables (Phase 15.1's own RLS, no teacher policy at
+  // all) -- a teacher gets no button, no queue, no request data, matching
+  // that stricter standard rather than /approvals' shared-route pattern.
+  "/verify": ["admin"],
   // The three Excel exports (Route Handlers, not pages) -- same role split
   // as the dashboard/expenses/log page each one's data comes from.
   "/api/export/fee-accounts": ["admin"],

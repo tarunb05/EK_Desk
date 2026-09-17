@@ -12,10 +12,12 @@ export function Sidebar({
   role,
   pendingApprovalsCount = 0,
   openSupportCount = 0,
+  pendingClaimsCount = 0,
 }: {
   role: Role;
   pendingApprovalsCount?: number;
   openSupportCount?: number;
+  pendingClaimsCount?: number;
 }) {
   const { mobileOpen, setMobileOpen } = useSidebarContext();
   const [collapsed, setCollapsed] = useState(false);
@@ -94,6 +96,7 @@ export function Sidebar({
           role={role}
           pendingApprovalsCount={pendingApprovalsCount}
           openSupportCount={openSupportCount}
+          pendingClaimsCount={pendingClaimsCount}
         />
       </aside>
     </>
