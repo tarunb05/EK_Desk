@@ -61,7 +61,17 @@ export default async function AppLayout({
             <RouteRestrictedBanner />
             <main
               id="main-content"
-              className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-4 md:px-6 md:py-6"
+              // pb well beyond py-4/py-6 -- a DateField's calendar popover
+              // (~340px tall) opens below its trigger button (date-field.tsx),
+              // and a date field near the bottom of a form (Ends on, the
+              // last field on Add student) had nowhere to render: the page
+              // ended right at the button, so the popover was clipped, and
+              // dragging the scrollbar to see the rest fired a mousedown
+              // outside the popover's own container, which its outside-click
+              // handler treated as "closed it". Extra room below every
+              // page's content means that popover almost always fits without
+              // needing to scroll into it at all.
+              className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-4 pb-64 md:px-6 md:py-6 md:pb-64"
             >
               {children}
             </main>
