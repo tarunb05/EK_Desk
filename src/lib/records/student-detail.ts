@@ -9,6 +9,7 @@ export interface StudentInfo {
   fullName: string;
   guardianName: string;
   phone: string;
+  whatsappPhone: string | null;
   classSection: string;
   admissionNo: string;
   branchName: string;
@@ -92,7 +93,7 @@ export async function getStudentDetail(
   const { data: student, error: studentError } = await supabase
     .from("student")
     .select(
-      "id, full_name, guardian_name, phone, class_section, admission_no, status, notes, branch:branch_id(name)",
+      "id, full_name, guardian_name, phone, whatsapp_phone, class_section, admission_no, status, notes, branch:branch_id(name)",
     )
     .eq("id", studentId)
     .single();
@@ -258,6 +259,7 @@ export async function getStudentDetail(
       fullName: student.full_name,
       guardianName: student.guardian_name,
       phone: student.phone,
+      whatsappPhone: student.whatsapp_phone,
       classSection: student.class_section,
       admissionNo: student.admission_no,
       branchName: branch?.name ?? "",

@@ -20,6 +20,7 @@ function mapFeeAccountRecordRow(
     studentAdmissionNo: row.student_admission_no ?? "",
     guardianName: row.student_guardian_name ?? "",
     phone: row.student_phone ?? "",
+    whatsappPhone: row.student_whatsapp_phone,
     notes: row.student_notes,
     classSection: row.class_section ?? "",
     branchCode: row.branch_code ?? "",

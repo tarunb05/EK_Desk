@@ -22,6 +22,8 @@ export function StudentDetailBody({
         <dd className="text-ink">{detail.student.guardianName}</dd>
         <dt className="text-ink-muted">Phone</dt>
         <dd className="text-ink">{detail.student.phone}</dd>
+        <dt className="text-ink-muted">WhatsApp number</dt>
+        <dd className="text-ink">{detail.student.whatsappPhone || "—"}</dd>
         <dt className="text-ink-muted">Class</dt>
         <dd className="text-ink">{detail.student.classSection}</dd>
         <dt className="text-ink-muted">Branch</dt>

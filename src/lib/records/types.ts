@@ -7,6 +7,7 @@ export interface FeeAccountRecordRow {
   studentAdmissionNo: string;
   guardianName: string;
   phone: string;
+  whatsappPhone: string | null;
   notes: string | null;
   classSection: string;
   branchCode: string;

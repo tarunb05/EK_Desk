@@ -71,6 +71,18 @@ export function EditFeeAccountForm({
         />
       </Field>
 
+      <Field
+        label="WhatsApp number (optional)"
+        error={state.fieldErrors?.whatsappPhone}
+      >
+        <input
+          name="whatsappPhone"
+          defaultValue={record.whatsappPhone ?? ""}
+          className={inputClassName}
+          placeholder="If different from Phone above"
+        />
+      </Field>
+
       <Field label="Grade" error={state.fieldErrors?.classSection}>
         <Select
           name="classSection"

@@ -51,6 +51,11 @@ export const createStudentWithFeeAccountSchema = z
     fullName: z.string().trim().min(1, "Enter the student's name."),
     guardianName: z.string().trim().min(1, "Enter the guardian's name."),
     phone: z.string().trim().min(1, "Enter a phone number."),
+    // Optional second contact number, used as the WhatsApp target instead
+    // of `phone` when the request dialog's picker selects it -- most
+    // useful when the school's WhatsApp contact isn't the same number as
+    // the primary phone on file.
+    whatsappPhone: z.string().trim().optional(),
     classSection: z.enum(CLASS_SECTIONS, "Choose a grade."),
     notes: z.string().trim().optional(),
     academicYearId: z.string().uuid(),
@@ -92,6 +97,7 @@ export const updateFeeAccountSchema = z.object({
   fullName: z.string().trim().min(1, "Enter the student's name."),
   guardianName: z.string().trim().min(1, "Enter the guardian's name."),
   phone: z.string().trim().min(1, "Enter a phone number."),
+  whatsappPhone: z.string().trim().optional(),
   classSection: z.enum(CLASS_SECTIONS, "Choose a grade."),
   notes: z.string().trim().optional(),
   totalReceivable: rupeesAmount,

@@ -49,6 +49,7 @@ export function AddStudentForm({
   const [fullName, setFullName] = useState("");
   const [guardianName, setGuardianName] = useState("");
   const [phone, setPhone] = useState("");
+  const [whatsappPhone, setWhatsappPhone] = useState("");
   const [pickupPoint, setPickupPoint] = useState("");
   const [slot, setSlot] = useState("");
   const [notes, setNotes] = useState("");
@@ -127,6 +128,19 @@ export function AddStudentForm({
           value={phone}
           onChange={(event) => setPhone(event.target.value)}
           className={inputClassName}
+        />
+      </Field>
+
+      <Field
+        label="WhatsApp number (optional)"
+        error={state.fieldErrors?.whatsappPhone}
+      >
+        <input
+          name="whatsappPhone"
+          value={whatsappPhone}
+          onChange={(event) => setWhatsappPhone(event.target.value)}
+          className={inputClassName}
+          placeholder="If different from Phone above"
         />
       </Field>
 

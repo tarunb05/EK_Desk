@@ -171,6 +171,7 @@ export async function createStudentWithFeeAccount(
       full_name: value.fullName,
       guardian_name: value.guardianName,
       phone: value.phone,
+      whatsapp_phone: value.whatsappPhone || null,
       class_section: value.classSection,
       notes: value.notes ?? null,
       academic_year_id: value.academicYearId,
@@ -216,6 +217,7 @@ export async function createStudentWithFeeAccount(
         full_name: value.fullName,
         guardian_name: value.guardianName,
         phone: value.phone,
+        whatsapp_phone: value.whatsappPhone || null,
         class_section: value.classSection,
         notes: value.notes ?? null,
       })
@@ -290,6 +292,7 @@ export async function updateFeeAccount(
       full_name: value.fullName,
       guardian_name: value.guardianName,
       phone: value.phone,
+      whatsapp_phone: value.whatsappPhone || null,
       class_section: value.classSection,
       notes: value.notes ?? null,
       total_receivable_paise: Number(value.totalReceivable),
@@ -324,6 +327,7 @@ export async function updateFeeAccount(
       full_name: value.fullName,
       guardian_name: value.guardianName,
       phone: value.phone,
+      whatsapp_phone: value.whatsappPhone || null,
       class_section: value.classSection,
       notes: value.notes ?? null,
     })
