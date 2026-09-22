@@ -105,9 +105,7 @@ function RowActions({ row, role }: { row: StudentDirectoryRow; role: Role }) {
               studentName={row.fullName}
               role={role}
               requestPaymentFeeAccountId={
-                role === "admin" && account.status === "active"
-                  ? account.feeAccountId
-                  : undefined
+                account.status === "active" ? account.feeAccountId : undefined
               }
             />
             {account.paymentRequestStatus === "open" ? (

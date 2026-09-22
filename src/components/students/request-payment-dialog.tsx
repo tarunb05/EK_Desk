@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import {
   Field,
   FormError,
@@ -9,6 +9,7 @@ import {
 } from "@/components/forms/field";
 import { Select } from "@/components/forms/select";
 import {
+  cancelPaymentRequest,
   createPaymentRequest,
   getPaymentRequestDialogData,
   markNumberUnreachable,
@@ -84,6 +85,70 @@ function PhonePicker({
         </label>
       ))}
     </fieldset>
+  );
+}
+
+// Available to admin and teacher alike (both scoped server-side to their
+// own branch by cancel_payment_request itself) -- the two-step confirm
+// mirrors the identical pattern the /verify page's own OpenRequestRow
+// already uses for the same action, so a request cancelled from either
+// screen feels the same.
+function CancelRequestButton({
+  paymentRequestId,
+  onCancelled,
+}: {
+  paymentRequestId: string;
+  onCancelled: () => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  if (!confirming) {
+    return (
+      <button
+        type="button"
+        onClick={() => setConfirming(true)}
+        className="self-start text-xs text-attention hover:underline"
+      >
+        Cancel this request
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-md border border-border bg-canvas p-3">
+      <p className="text-sm text-ink">
+        Cancel this request? The link stops working immediately.
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setConfirming(false)}
+          className="h-8 rounded-md border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+        >
+          Keep it
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              const result = await cancelPaymentRequest(paymentRequestId);
+              if (result.error) {
+                setError(result.error);
+              } else {
+                onCancelled();
+              }
+            })
+          }
+          className="h-8 rounded-md border border-attention px-3 text-xs text-attention transition-colors duration-150 hover:bg-attention-fill/30"
+        >
+          {pending ? "Cancelling…" : "Confirm cancel"}
+        </button>
+      </div>
+      <FormError error={error} size="2xs" />
+    </div>
   );
 }
 
@@ -323,13 +388,21 @@ export function RequestPaymentDialog({
             </p>
             <PhonePicker data={data} value={phoneField} onChange={setPhoneField} />
             <FormError error={shareError} />
-            <button
-              type="button"
-              onClick={() => handleShareAgain(data.existingRequest!.id)}
-              className={`${primaryButtonClassName} h-9 self-start px-3 text-sm`}
-            >
-              Share again
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => handleShareAgain(data.existingRequest!.id)}
+                className={`${primaryButtonClassName} h-9 px-3 text-sm`}
+              >
+                Share again
+              </button>
+              <CancelRequestButton
+                paymentRequestId={data.existingRequest.id}
+                onCancelled={() =>
+                  setData({ ...data, existingRequest: null })
+                }
+              />
+            </div>
             <p className="text-2xs text-ink-muted">
               Creating a new link below cancels this one first.
             </p>

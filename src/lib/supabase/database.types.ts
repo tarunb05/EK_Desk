@@ -1130,6 +1130,7 @@ export type Database = {
           submitted_by: string
           total_receivable_paise: number
           updated_at: string
+          whatsapp_phone: string | null
         }
         Insert: {
           applied_at?: string | null
@@ -1158,6 +1159,7 @@ export type Database = {
           submitted_by: string
           total_receivable_paise: number
           updated_at?: string
+          whatsapp_phone?: string | null
         }
         Update: {
           applied_at?: string | null
@@ -1186,6 +1188,7 @@ export type Database = {
           submitted_by?: string
           total_receivable_paise?: number
           updated_at?: string
+          whatsapp_phone?: string | null
         }
         Relationships: [
           {
@@ -1281,6 +1284,7 @@ export type Database = {
           submitted_by: string
           total_receivable_paise: number
           updated_at: string
+          whatsapp_phone: string | null
         }
         Insert: {
           academic_year_id: string
@@ -1309,6 +1313,7 @@ export type Database = {
           submitted_by: string
           total_receivable_paise: number
           updated_at?: string
+          whatsapp_phone?: string | null
         }
         Update: {
           academic_year_id?: string
@@ -1337,6 +1342,7 @@ export type Database = {
           submitted_by?: string
           total_receivable_paise?: number
           updated_at?: string
+          whatsapp_phone?: string | null
         }
         Relationships: [
           {
@@ -1606,6 +1612,7 @@ export type Database = {
           student_notes: string | null
           student_phone: string | null
           student_status: string | null
+          student_whatsapp_phone: string | null
           total_receivable_paise: number | null
         }
         Relationships: [
@@ -1796,7 +1803,15 @@ export type Database = {
           upi_id: string
         }[]
       }
+      mark_student_phone_unreachable: {
+        Args: { p_field: string; p_student_id: string }
+        Returns: undefined
+      }
       profile_full_name: { Args: { p_id: string }; Returns: string }
+      record_payment_request_share: {
+        Args: { p_id: string; p_shared_to_last4: string; p_shared_via: string }
+        Returns: undefined
+      }
       reissue_payment_request_token: {
         Args: { p_id: string; p_token_hash: string }
         Returns: undefined

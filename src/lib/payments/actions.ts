@@ -3,7 +3,7 @@
 import { randomBytes, createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireRole } from "@/lib/auth/require-role";
+import { requireAuth } from "@/lib/auth/require-role";
 import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
 import { formatPaise, paiseToRupeesInputString, parseRupeesToPaise } from "@/lib/domain/money";
 import { formatLogDate } from "@/lib/domain/datetime";
@@ -92,7 +92,7 @@ export interface PaymentRequestDialogData {
 export async function getPaymentRequestDialogData(
   feeAccountId: string,
 ): Promise<PaymentRequestDialogData | null> {
-  await requireRole("admin");
+  const authed = await requireAuth();
   const supabase = await createClient();
 
   const { data: feeAccount } = await supabase
@@ -108,6 +108,14 @@ export async function getPaymentRequestDialogData(
     .maybeSingle();
 
   if (!feeAccount || !feeAccount.student) {
+    return null;
+  }
+
+  // A teacher only ever sees this dialog on their own branch's rows, but
+  // this is called directly as a Server Action, not gated by a route --
+  // re-checked here the same way every other teacher-branch check in this
+  // codebase is, rather than trusted from the caller's own UI state.
+  if (authed.role === "teacher" && feeAccount.student.branch.id !== authed.branchId) {
     return null;
   }
 
@@ -277,7 +285,7 @@ export async function createPaymentRequest(
     return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
   }
   const value = parsed.data;
-  const authed = await requireRole("admin");
+  const authed = await requireAuth();
   const supabase = await createClient();
 
   if (!(await checkRateLimit(supabase, authed.userId))) {
@@ -335,7 +343,7 @@ export async function shareAgainPaymentRequest(
   paymentRequestId: string,
   phoneField: "phone" | "whatsappPhone",
 ): Promise<PaymentRequestActionState> {
-  await requireRole("admin");
+  await requireAuth();
   const supabase = await createClient();
 
   const rawToken = randomBytes(32).toString("base64url");
@@ -370,7 +378,7 @@ export async function shareAgainPaymentRequest(
 export async function cancelPaymentRequest(
   paymentRequestId: string,
 ): Promise<{ error: string | null }> {
-  await requireRole("admin");
+  await requireAuth();
   const supabase = await createClient();
 
   const { error } = await supabase.rpc("cancel_payment_request", {
@@ -393,7 +401,7 @@ export async function sendReminder(
   if (!parsed.success) {
     return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
   }
-  await requireRole("admin");
+  await requireAuth();
   const supabase = await createClient();
 
   // A reminder needs a working link too, and only the token's hash is ever
@@ -434,18 +442,16 @@ export async function markNumberUnreachable(
   if (!parsed.success) {
     return { error: "Could not save this." };
   }
-  await requireRole("admin");
+  await requireAuth();
   const supabase = await createClient();
 
-  const now = new Date().toISOString();
-  const { error } = await supabase
-    .from("student")
-    .update(
-      parsed.data.phoneField === "whatsappPhone"
-        ? { whatsapp_phone_not_on_whatsapp_at: now }
-        : { phone_not_on_whatsapp_at: now },
-    )
-    .eq("id", parsed.data.studentId);
+  // Routed through a security-definer function, not a raw update: CLAUDE.md
+  // rule 6 says a teacher writes nothing directly to `student`, and this
+  // action is now reachable by a teacher for their own branch's students.
+  const { error } = await supabase.rpc("mark_student_phone_unreachable", {
+    p_student_id: parsed.data.studentId,
+    p_field: parsed.data.phoneField,
+  });
 
   if (error) {
     return { error: "Could not save this." };
@@ -457,20 +463,19 @@ export async function markNumberUnreachable(
 export async function recordShareChannel(formData: FormData): Promise<void> {
   const parsed = recordShareChannelSchema.safeParse(formEntries(formData));
   if (!parsed.success) return;
-  await requireRole("admin");
+  await requireAuth();
   const supabase = await createClient();
 
   // Records what happened, not what we hope (brief) -- this fires right
-  // after the admin presses Send/Copy, not on any confirmation WhatsApp
-  // itself could give (there isn't one).
-  await supabase
-    .from("payment_request")
-    .update({
-      shared_at: new Date().toISOString(),
-      shared_via: parsed.data.sharedVia,
-      shared_to_last4: parsed.data.sharedToLast4,
-    })
-    .eq("id", parsed.data.paymentRequestId);
+  // after the admin/teacher presses Send/Copy, not on any confirmation
+  // WhatsApp itself could give (there isn't one). Routed through a
+  // security-definer function so a teacher's own-branch write doesn't need
+  // a raw RLS UPDATE grant on payment_request.
+  await supabase.rpc("record_payment_request_share", {
+    p_id: parsed.data.paymentRequestId,
+    p_shared_via: parsed.data.sharedVia,
+    p_shared_to_last4: parsed.data.sharedToLast4,
+  });
 }
 
 export interface PayPageData {

@@ -117,22 +117,9 @@ describe("whatsapp payment requests (phase 15.1)", () => {
     };
   }
 
-  it("a teacher can't read collection_account, payment_request, payment_claim, or the change log", async () => {
+  it("a teacher can read collection_account/payment_request/payment_claim for their own branch, but not another branch's, and still can't read the change log", async () => {
     await withRollback(client, async () => {
       const fixture = await seedRequestFixture(client);
-      await impersonate(client, TEACHER_ID);
-
-      // Reading past RLS is a silent empty result, not an error -- these
-      // aren't expected to throw, so no savepoint dance needed here.
-      const accounts = await client.query("select 1 from collection_account");
-      expect(accounts.rows).toHaveLength(0);
-
-      const requests = await client.query("select 1 from payment_request");
-      expect(requests.rows).toHaveLength(0);
-
-      const claims = await client.query("select 1 from payment_claim");
-      expect(claims.rows).toHaveLength(0);
-
       await impersonate(client, ADMIN_ID);
       await client.query(
         `insert into payment_claim
@@ -140,7 +127,75 @@ describe("whatsapp payment requests (phase 15.1)", () => {
          values ($1, 'parent_page', 'UTR000000001', 400000, current_date)`,
         [fixture.paymentRequestId],
       );
+
+      // A second fixture in a different branch, so "own branch only" is
+      // actually exercised rather than just "a teacher can read something".
+      const otherBranch = await client.query<{ id: string }>(
+        "select id from branch where code = 'BR-B' limit 1",
+      );
+      const otherStudent = await client.query<{ id: string }>(
+        `insert into student (branch_id, admission_no, full_name, guardian_name, phone, class_section)
+         values ($1, 'WA-OTHER-BRANCH-1', 'Other Branch Child', 'Guardian', '9000000202', 'Nursery-A')
+         returning id`,
+        [otherBranch.rows[0]!.id],
+      );
+      const otherFeeAccount = await client.query<{ id: string }>(
+        `insert into fee_account
+           (student_id, academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, route_name, pickup_point)
+         values ($1, $2, 'transport', 1000000, '2026-06-01', '2026-04-01', '2027-03-31', 'Route 1', 'Gate')
+         returning id`,
+        [otherStudent.rows[0]!.id, academicYearId],
+      );
+      const otherCollectionAccount = await client.query<{ id: string }>(
+        `insert into collection_account (branch_id, label, upi_id, payee_name, updated_by)
+         values ($1, 'Other Branch Account', 'other@upi', 'Other Payee', $2)
+         returning id`,
+        [otherBranch.rows[0]!.id, ADMIN_ID],
+      );
+      const otherRequest = await client.query<{ id: string }>(
+        `insert into payment_request
+           (fee_account_id, collection_account_id, reference_code, amount_paise,
+            include_upi, include_bank, status, token_hash, expires_at, created_by)
+         values ($1, $2, $3, 400000, true, false, 'open', $4, now() + interval '7 days', $5)
+         returning id`,
+        [
+          otherFeeAccount.rows[0]!.id,
+          otherCollectionAccount.rows[0]!.id,
+          `EK-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
+          Buffer.from(Math.random().toString(36).slice(2, 10), "utf8"),
+          ADMIN_ID,
+        ],
+      );
+
       await impersonate(client, TEACHER_ID);
+
+      const ownAccount = await client.query("select 1 from collection_account where id = $1", [
+        fixture.collectionAccountId,
+      ]);
+      expect(ownAccount.rows).toHaveLength(1);
+      const ownRequest = await client.query("select 1 from payment_request where id = $1", [
+        fixture.paymentRequestId,
+      ]);
+      expect(ownRequest.rows).toHaveLength(1);
+      const ownClaim = await client.query(
+        "select 1 from payment_claim where payment_request_id = $1",
+        [fixture.paymentRequestId],
+      );
+      expect(ownClaim.rows).toHaveLength(1);
+
+      const otherAccountRead = await client.query(
+        "select 1 from collection_account where id = $1",
+        [otherCollectionAccount.rows[0]!.id],
+      );
+      expect(otherAccountRead.rows).toHaveLength(0);
+      const otherRequestRead = await client.query(
+        "select 1 from payment_request where id = $1",
+        [otherRequest.rows[0]!.id],
+      );
+      expect(otherRequestRead.rows).toHaveLength(0);
+
+      // Reading past RLS is a silent empty result, not an error -- the
+      // change log has no teacher policy at all, own branch or otherwise.
       const changeLog = await client.query(
         "select 1 from collection_account_change_log",
       );

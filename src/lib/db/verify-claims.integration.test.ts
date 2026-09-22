@@ -628,14 +628,64 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
     });
   });
 
-  it("a teacher can't call cancel_payment_request", async () => {
+  it("a teacher can cancel an open request in their own branch, but not another branch's", async () => {
     await withRollback(client, async () => {
       const fixture = await seedClaim(client, { admissionNo: "VC-CANCEL-TEACHER" });
+
+      // A second request in a different branch -- TEACHER_ID (profiled
+      // against branchId, 'BR-A') must not be able to touch it.
+      await impersonate(client, ADMIN_ID);
+      const otherBranch = await client.query<{ id: string }>(
+        "select id from branch where code = 'BR-B' limit 1",
+      );
+      const otherStudent = await client.query<{ id: string }>(
+        `insert into student (branch_id, admission_no, full_name, guardian_name, phone, class_section)
+         values ($1, 'VC-CANCEL-OTHER-BRANCH', 'Other Branch Child', 'Guardian', '9000000702', 'Nursery-A')
+         returning id`,
+        [otherBranch.rows[0]!.id],
+      );
+      const otherFeeAccount = await client.query<{ id: string }>(
+        `insert into fee_account
+           (student_id, academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, route_name, pickup_point)
+         values ($1, $2, 'transport', 1000000, '2026-06-01', '2026-04-01', '2027-03-31', 'Route 1', 'Gate')
+         returning id`,
+        [otherStudent.rows[0]!.id, academicYearId],
+      );
+      const otherCollectionAccount = await client.query<{ id: string }>(
+        `insert into collection_account (branch_id, label, upi_id, payee_name, updated_by)
+         values ($1, 'Other Branch Account', 'other@upi', 'Other Payee', $2)
+         returning id`,
+        [otherBranch.rows[0]!.id, ADMIN_ID],
+      );
+      const otherRequest = await client.query<{ id: string }>(
+        `insert into payment_request
+           (fee_account_id, collection_account_id, reference_code, amount_paise,
+            include_upi, include_bank, status, token_hash, expires_at, created_by)
+         values ($1, $2, $3, 400000, true, false, 'open', $4, now() + interval '7 days', $5)
+         returning id`,
+        [
+          otherFeeAccount.rows[0]!.id,
+          otherCollectionAccount.rows[0]!.id,
+          `EK-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
+          Buffer.from(Math.random().toString(36).slice(2, 10), "utf8"),
+          ADMIN_ID,
+        ],
+      );
+
       await impersonate(client, TEACHER_ID);
 
+      await client.query("savepoint before_cross_branch_cancel");
       await expect(
-        client.query(`select cancel_payment_request($1)`, [fixture.paymentRequestId]),
-      ).rejects.toThrow(/only an admin/i);
+        client.query(`select cancel_payment_request($1)`, [otherRequest.rows[0]!.id]),
+      ).rejects.toThrow(/not allowed/i);
+      await client.query("rollback to savepoint before_cross_branch_cancel");
+
+      await client.query(`select cancel_payment_request($1)`, [fixture.paymentRequestId]);
+      const cancelled = await client.query(
+        "select status, closed_reason from payment_request where id = $1",
+        [fixture.paymentRequestId],
+      );
+      expect(cancelled.rows[0]).toEqual({ status: "cancelled", closed_reason: "cancelled" });
     });
   });
 
