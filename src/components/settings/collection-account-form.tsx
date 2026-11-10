@@ -210,7 +210,10 @@ export function CollectionAccountForm({
         <button
           type="submit"
           disabled={isPending}
-          className={primaryButtonClassName}
+          // Sits in a row beside Cancel, so it shrinks to its text; the
+          // shared primary style has no side padding (it expects to stretch
+          // full width in a column), which left the label touching the edges.
+          className={`${primaryButtonClassName} px-4`}
         >
           {isPending ? "Saving…" : account ? "Save" : "Add collection account"}
         </button>
@@ -218,7 +221,7 @@ export function CollectionAccountForm({
           <button
             type="button"
             onClick={onCancel}
-            className="h-9 rounded-md border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+            className="h-10 rounded-md border border-border px-4 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
           >
             Cancel
           </button>
