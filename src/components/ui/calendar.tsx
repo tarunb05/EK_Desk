@@ -43,10 +43,12 @@ const dayVariants = cva(
       variant: {
         default: "text-ink hover:bg-surface-accent",
         selected: "bg-accent font-medium text-surface hover:bg-accent/90",
-        today: "bg-surface-accent font-medium text-ink hover:bg-surface-accent/70",
+        today:
+          "bg-surface-accent font-medium text-ink hover:bg-surface-accent/70",
         outside: "text-ink-muted opacity-50 hover:bg-surface-accent",
         disabled: "text-ink-muted opacity-30",
-        "range-start": "rounded-r-none bg-accent text-surface hover:bg-accent/90",
+        "range-start":
+          "rounded-r-none bg-accent text-surface hover:bg-accent/90",
         "range-end": "rounded-l-none bg-accent text-surface hover:bg-accent/90",
         "range-middle": "rounded-none bg-accent/20 text-ink hover:bg-accent/30",
       },
@@ -91,8 +93,18 @@ type DayVariant =
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 function isSameDay(date1: Date, date2: Date): boolean {
@@ -142,7 +154,8 @@ export function Calendar({
 
   const totalCells = 42;
   const currentMonthDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  const remainingCells = totalCells - prevMonthDays.length - currentMonthDays.length;
+  const remainingCells =
+    totalCells - prevMonthDays.length - currentMonthDays.length;
   const nextMonthDays = Array.from({ length: remainingCells }, (_, i) => i + 1);
 
   // Commits immediately and derives the next month from the previous state
@@ -182,11 +195,14 @@ export function Calendar({
 
   function isDateSelected(date: Date) {
     if (mode === "single") return selected ? isSameDay(date, selected) : false;
-    if (mode === "multiple") return selectedDates.some((d) => isSameDay(d, date));
+    if (mode === "multiple")
+      return selectedDates.some((d) => isSameDay(d, date));
     if (mode === "range" && selectedRange) {
       if (!selectedRange.to) return isSameDay(date, selectedRange.from);
       const t = date.getTime();
-      return t >= selectedRange.from.getTime() && t <= selectedRange.to.getTime();
+      return (
+        t >= selectedRange.from.getTime() && t <= selectedRange.to.getTime()
+      );
     }
     return false;
   }
@@ -218,7 +234,8 @@ export function Calendar({
       if (!selectedRange || (selectedRange.from && selectedRange.to)) {
         onSelectRange?.({ from: clicked });
       } else {
-        const from = selectedRange.from <= clicked ? selectedRange.from : clicked;
+        const from =
+          selectedRange.from <= clicked ? selectedRange.from : clicked;
         const to = selectedRange.from <= clicked ? clicked : selectedRange.from;
         onSelectRange?.({ from, to });
       }
@@ -240,7 +257,8 @@ export function Calendar({
     if (isDateDisabled(date)) return "disabled";
     if (mode === "range" && selectedRange) {
       if (isSameDay(date, selectedRange.from)) return "range-start";
-      if (selectedRange.to && isSameDay(date, selectedRange.to)) return "range-end";
+      if (selectedRange.to && isSameDay(date, selectedRange.to))
+        return "range-end";
       if (isDateInRange(date)) return "range-middle";
     }
     if (isDateSelected(date)) return "selected";
@@ -264,7 +282,10 @@ export function Calendar({
         <div className="flex min-w-0 flex-1 items-center justify-center gap-1">
           {showMonthYearPickers ? (
             <div className="flex items-center gap-1.5">
-              <Select value={String(currentMonth)} onValueChange={handleMonthChange}>
+              <Select
+                value={String(currentMonth)}
+                onValueChange={handleMonthChange}
+              >
                 <SelectTrigger size="sm" className="h-7 w-[108px] text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -276,7 +297,10 @@ export function Calendar({
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={String(currentYear)} onValueChange={handleYearChange}>
+              <Select
+                value={String(currentYear)}
+                onValueChange={handleYearChange}
+              >
                 <SelectTrigger size="sm" className="h-7 w-[76px] text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -340,7 +364,9 @@ export function Calendar({
               key={`prev-${day}`}
               type="button"
               onClick={() => handleDateClick(day, -1)}
-              disabled={isDateDisabled(new Date(currentYear, currentMonth - 1, day))}
+              disabled={isDateDisabled(
+                new Date(currentYear, currentMonth - 1, day),
+              )}
               aria-label={dayAriaLabel(day, -1)}
               className={dayVariants({ variant: getDayVariant(day, -1), size })}
             >
@@ -365,7 +391,9 @@ export function Calendar({
               key={`next-${day}`}
               type="button"
               onClick={() => handleDateClick(day, 1)}
-              disabled={isDateDisabled(new Date(currentYear, currentMonth + 1, day))}
+              disabled={isDateDisabled(
+                new Date(currentYear, currentMonth + 1, day),
+              )}
               aria-label={dayAriaLabel(day, 1)}
               className={dayVariants({ variant: getDayVariant(day, 1), size })}
             >

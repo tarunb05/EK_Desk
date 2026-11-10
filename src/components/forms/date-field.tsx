@@ -126,7 +126,12 @@ export function DateField({
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       {name ? (
-        <input type="hidden" name={name} value={currentIso} required={required} />
+        <input
+          type="hidden"
+          name={name}
+          value={currentIso}
+          required={required}
+        />
       ) : null}
       <button
         type="button"

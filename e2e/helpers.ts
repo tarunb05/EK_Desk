@@ -1,8 +1,18 @@
 import type { Locator, Page } from "@playwright/test";
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 // Replaces `.getByLabel(label).fill("YYYY-MM-DD")`, which worked against
@@ -32,8 +42,7 @@ export async function pickDate(
     const shown = (await heading.textContent())?.trim() ?? "";
     const match = /^(\w+) (\d+)$/.exec(shown);
     if (!match) break;
-    const shownIndex =
-      MONTHS.indexOf(match[1]!) + Number(match[2]) * 12;
+    const shownIndex = MONTHS.indexOf(match[1]!) + Number(match[2]) * 12;
     if (shownIndex === targetIndex) break;
     await page
       .getByRole("button", {
@@ -43,7 +52,10 @@ export async function pickDate(
   }
 
   await page
-    .getByRole("button", { name: `${MONTHS[month! - 1]} ${day}, ${year}`, exact: true })
+    .getByRole("button", {
+      name: `${MONTHS[month! - 1]} ${day}, ${year}`,
+      exact: true,
+    })
     .click();
 }
 
