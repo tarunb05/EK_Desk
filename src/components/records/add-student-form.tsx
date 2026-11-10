@@ -8,7 +8,7 @@ import {
   primaryButtonClassName,
 } from "@/components/forms/field";
 import { Select } from "@/components/forms/select";
-import { DateField } from "@/components/forms/date-field";
+import { DateField, toIso } from "@/components/forms/date-field";
 import { Checkbox } from "@/components/forms/checkbox";
 import { METHOD_OPTIONS } from "@/components/records/record-payment-form";
 import {
@@ -32,13 +32,6 @@ const PERIOD_OPTIONS: { value: EnrollmentPeriod | ""; label: string }[] = [
   { value: "monthly", label: "Monthly" },
   { value: "yearly", label: "Yearly" },
 ];
-
-// Today as a local-calendar "YYYY-MM-DD", the default Starts on once a
-// period is picked.
-function todayIso(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
 
 interface AddStudentFormProps {
   serviceType: ServiceType;
@@ -93,14 +86,23 @@ export function AddStudentForm({
     setPaid(next);
     if (!next) return;
     if (!paidAmount) setPaidAmount(totalReceivable);
-    if (!paidOn) setPaidOn(todayIso());
+    if (!paidOn) setPaidOn(toIso(new Date()));
+  }
+
+  // Keeps Amount paid following Total receivable until staff type their
+  // own amount (a part-payment) -- after that it's left alone.
+  function handleTotalReceivableChange(next: string) {
+    if (paidAmount === "" || paidAmount === totalReceivable) {
+      setPaidAmount(next);
+    }
+    setTotalReceivable(next);
   }
 
   function handlePeriodChange(next: string) {
     const nextPeriod = next as EnrollmentPeriod | "";
     setPeriod(nextPeriod);
     if (!nextPeriod) return;
-    const start = startsOn || todayIso();
+    const start = startsOn || toIso(new Date());
     setStartsOn(start);
     setEndsOn(enrollmentEndsOn(start, nextPeriod, academicYearEndsOn));
   }
@@ -261,7 +263,7 @@ export function AddStudentForm({
           step="1"
           required
           value={totalReceivable}
-          onChange={(event) => setTotalReceivable(event.target.value)}
+          onChange={(event) => handleTotalReceivableChange(event.target.value)}
           className={inputClassName}
         />
       </Field>

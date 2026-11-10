@@ -61,6 +61,15 @@ const EXCLUSION_VIOLATION = "23P01";
 const DAYCARE_OVERLAP_ERROR =
   "These dates overlap another daycare enrollment for this student.";
 
+// payment_reference_unique_upi_non_voided (20260919000000) rejects a UPI
+// reference already on another non-voided payment.
+function isDuplicateUpiReference(error: { code: string; message: string }) {
+  return (
+    error.code === "23505" &&
+    error.message.includes("payment_reference_unique_upi_non_voided")
+  );
+}
+
 interface ActiveFeeAccount {
   service_type: string;
   starts_on: string;
@@ -353,8 +362,11 @@ export async function createStudentWithFeeAccount(
     if (paymentError) {
       revalidatePath(`/${value.serviceType}`);
       revalidatePath("/students");
+      const reason = isDuplicateUpiReference(paymentError)
+        ? " — that UPI reference is already on another payment"
+        : "";
       return {
-        error: `${value.fullName} was added, but the payment couldn't be recorded. Record it from their student page instead of adding them again.`,
+        error: `${value.fullName} was added, but the payment couldn't be recorded${reason}. Record it from their student page instead of adding them again.`,
       };
     }
   }
@@ -777,6 +789,12 @@ export async function approveSubmission(
     if (error.code === EXCLUSION_VIOLATION) {
       return {
         error: `Could not approve this — ${DAYCARE_OVERLAP_ERROR.toLowerCase()} Reject it or change the other enrollment first.`,
+      };
+    }
+    if (isDuplicateUpiReference(error)) {
+      return {
+        error:
+          "Could not approve this — its UPI reference is already on another payment. Reject it and ask for the correct reference.",
       };
     }
     return {
