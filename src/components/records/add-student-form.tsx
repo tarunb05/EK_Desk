@@ -16,20 +16,40 @@ import {
 import type { ServiceType } from "@/lib/records/types";
 import type { BranchOption } from "@/lib/shell/resolve-year-branch";
 import { CLASS_SECTIONS } from "@/lib/records/class-sections";
+import {
+  enrollmentEndsOn,
+  type EnrollmentPeriod,
+} from "@/lib/domain/enrollment-period";
 import { useToast } from "@/components/shell/toast-context";
 
 const initialState: ActionState = { error: null };
+
+const PERIOD_OPTIONS: { value: EnrollmentPeriod | ""; label: string }[] = [
+  { value: "", label: "Choose a period" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+];
+
+// Today as a local-calendar "YYYY-MM-DD", the default Starts on once a
+// period is picked.
+function todayIso(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
 
 interface AddStudentFormProps {
   serviceType: ServiceType;
   branches: BranchOption[];
   academicYearId: string;
+  academicYearEndsOn: string;
 }
 
 export function AddStudentForm({
   serviceType,
   branches,
   academicYearId,
+  academicYearEndsOn,
 }: AddStudentFormProps) {
   const [state, formAction, isPending] = useActionState(
     createStudentWithFeeAccount,
@@ -54,7 +74,25 @@ export function AddStudentForm({
   const [slot, setSlot] = useState("");
   const [notes, setNotes] = useState("");
   const [totalReceivable, setTotalReceivable] = useState("");
+  // Daycare only: picking a period fills both dates, which stay editable.
+  const [period, setPeriod] = useState<EnrollmentPeriod | "">("");
+  const [startsOn, setStartsOn] = useState("");
+  const [endsOn, setEndsOn] = useState("");
   const { showToast } = useToast();
+
+  function handlePeriodChange(next: string) {
+    const nextPeriod = next as EnrollmentPeriod | "";
+    setPeriod(nextPeriod);
+    if (!nextPeriod) return;
+    const start = startsOn || todayIso();
+    setStartsOn(start);
+    setEndsOn(enrollmentEndsOn(start, nextPeriod, academicYearEndsOn));
+  }
+
+  function handleStartsOnChange(next: string) {
+    setStartsOn(next);
+    if (period) setEndsOn(enrollmentEndsOn(next, period, academicYearEndsOn));
+  }
 
   // The admin path redirects on success (see actions.ts's setToastNotice +
   // ToastNoticeReader for that toast) -- a teacher's request-add doesn't
@@ -211,12 +249,35 @@ export function AddStudentForm({
         <DateField name="dueDate" required ariaLabel="Due date" />
       </Field>
 
+      {serviceType === "daycare" ? (
+        <Field label="Enrollment period">
+          <Select
+            ariaLabel="Enrollment period"
+            value={period}
+            onChange={handlePeriodChange}
+            options={PERIOD_OPTIONS}
+          />
+        </Field>
+      ) : null}
+
       <Field label="Starts on" error={state.fieldErrors?.startsOn}>
-        <DateField name="startsOn" required ariaLabel="Starts on" />
+        <DateField
+          name="startsOn"
+          required
+          ariaLabel="Starts on"
+          value={startsOn}
+          onChange={handleStartsOnChange}
+        />
       </Field>
 
       <Field label="Ends on" error={state.fieldErrors?.endsOn}>
-        <DateField name="endsOn" required ariaLabel="Ends on" />
+        <DateField
+          name="endsOn"
+          required
+          ariaLabel="Ends on"
+          value={endsOn}
+          onChange={setEndsOn}
+        />
       </Field>
 
       <FormError error={state.error} />

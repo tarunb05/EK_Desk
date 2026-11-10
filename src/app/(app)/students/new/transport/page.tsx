@@ -42,6 +42,7 @@ export default async function NewTransportStudentFromStudentsPage({
         serviceType="transport"
         branches={branches}
         academicYearId={scope.year.id}
+        academicYearEndsOn={scope.year.endsOn}
       />
     </div>
   );

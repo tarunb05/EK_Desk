@@ -8,6 +8,8 @@ import { setToastNotice } from "@/lib/shell/toast-cookie";
 import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
 import { EXPENSE_SANITY_CEILING_PAISE } from "@/lib/domain/money";
 import { isWithinAcademicYear } from "@/lib/domain/academic-year";
+import { formatLogDate } from "@/lib/domain/datetime";
+import { enrollmentsOverlap } from "@/lib/domain/enrollment-period";
 import {
   canTransitionStudentStatus,
   type StudentStatus,
@@ -51,14 +53,27 @@ function formEntries(formData: FormData): Record<string, string> {
   );
 }
 
+// Postgres's exclusion_violation -- raised by fee_account_daycare_no_overlap
+// when two active daycare accounts for one student would cover the same day.
+const EXCLUSION_VIOLATION = "23P01";
+
+const DAYCARE_OVERLAP_ERROR =
+  "These dates overlap another daycare enrollment for this student.";
+
+interface ActiveFeeAccount {
+  service_type: string;
+  starts_on: string;
+  ends_on: string;
+}
+
 // A student is one `student` row that can carry both a transport AND a
-// daycare `fee_account` (CLAUDE.md rule 5) -- the same admission number is
-// allowed to appear once per service, never twice in the same one. Looks up
-// the existing student for this branch+admission number (if any) and, when
-// found, whether they already have an active fee_account in the service
-// being submitted. Shared by both the admin's direct-insert path and the
-// teacher's submission path so the same admission number can't queue a
-// second active transport (or daycare) account either.
+// daycare `fee_account` (CLAUDE.md rule 5). Transport allows one active
+// account per student; daycare allows several, as long as their dates
+// don't overlap (fee_account_daycare_no_overlap enforces the same rule in
+// the database). Looks up the existing student for this branch+admission
+// number (if any) and, when found, their active fee_accounts. Shared by
+// both the admin's direct-insert path and the teacher's submission path so
+// a teacher can't queue a duplicate either.
 async function findExistingStudentForAdmissionNo(
   supabase: Awaited<ReturnType<typeof createClient>>,
   branchId: string,
@@ -66,7 +81,7 @@ async function findExistingStudentForAdmissionNo(
 ): Promise<
   | { error: string }
   | { student: null }
-  | { student: { id: string; activeServiceTypes: string[] } }
+  | { student: { id: string; activeAccounts: ActiveFeeAccount[] } }
 > {
   const { data: student, error: studentLookupError } = await supabase
     .from("student")
@@ -85,7 +100,7 @@ async function findExistingStudentForAdmissionNo(
   const { data: activeFeeAccounts, error: feeAccountLookupError } =
     await supabase
       .from("fee_account")
-      .select("service_type")
+      .select("service_type, starts_on, ends_on")
       .eq("student_id", student.id)
       .eq("status", "active");
 
@@ -93,10 +108,39 @@ async function findExistingStudentForAdmissionNo(
     return { error: "Could not check the admission number." };
   }
 
+  return { student: { id: student.id, activeAccounts: activeFeeAccounts } };
+}
+
+// Returns the form error for a new enrollment that would duplicate an
+// existing one, or null when it's fine to add.
+function duplicateEnrollmentError(
+  activeAccounts: ActiveFeeAccount[],
+  value: {
+    admissionNo: string;
+    serviceType: string;
+    startsOn: string;
+    endsOn: string;
+  },
+): ActionState | null {
+  const sameService = activeAccounts.filter(
+    (account) => account.service_type === value.serviceType,
+  );
+  if (value.serviceType === "transport") {
+    return sameService.length > 0
+      ? duplicateServiceError(value.admissionNo, value.serviceType)
+      : null;
+  }
+  const overlapping = sameService.find((account) =>
+    enrollmentsOverlap(
+      { startsOn: account.starts_on, endsOn: account.ends_on },
+      value,
+    ),
+  );
+  if (!overlapping) return null;
   return {
-    student: {
-      id: student.id,
-      activeServiceTypes: activeFeeAccounts.map((fa) => fa.service_type),
+    error: null,
+    fieldErrors: {
+      startsOn: `This student is already enrolled in daycare from ${formatLogDate(overlapping.starts_on)} to ${formatLogDate(overlapping.ends_on)}. Pick dates that don't overlap.`,
     },
   };
 }
@@ -149,11 +193,12 @@ export async function createStudentWithFeeAccount(
   if ("error" in existingLookup) {
     return { error: existingLookup.error };
   }
-  if (
-    existingLookup.student &&
-    existingLookup.student.activeServiceTypes.includes(value.serviceType)
-  ) {
-    return duplicateServiceError(value.admissionNo, value.serviceType);
+  if (existingLookup.student) {
+    const duplicate = duplicateEnrollmentError(
+      existingLookup.student.activeAccounts,
+      value,
+    );
+    if (duplicate) return duplicate;
   }
 
   if (authed.role === "teacher") {
@@ -199,7 +244,7 @@ export async function createStudentWithFeeAccount(
   }
 
   // Reuse the existing student row for this admission number if one exists
-  // (already confirmed above to have no active fee_account in this service)
+  // (already confirmed above not to duplicate an enrollment in this service)
   // rather than inserting a second one -- a second row with the same
   // (branch_id, admission_no) would trip the DB's own
   // student_admission_no_unique_per_branch constraint, which is exactly the
@@ -249,6 +294,11 @@ export async function createStudentWithFeeAccount(
   });
 
   if (feeAccountError) {
+    // Only reachable if another enrollment was saved between the check
+    // above and this insert.
+    if (feeAccountError.code === EXCLUSION_VIOLATION) {
+      return { error: null, fieldErrors: { startsOn: DAYCARE_OVERLAP_ERROR } };
+    }
     return { error: "Could not save the fee account." };
   }
 
@@ -358,6 +408,9 @@ export async function updateFeeAccount(
     .eq("id", value.feeAccountId);
 
   if (error) {
+    if (error.code === EXCLUSION_VIOLATION) {
+      return { error: null, fieldErrors: { startsOn: DAYCARE_OVERLAP_ERROR } };
+    }
     return { error: "Could not update the fee account." };
   }
 
@@ -664,6 +717,11 @@ export async function approveSubmission(
   });
 
   if (error) {
+    if (error.code === EXCLUSION_VIOLATION) {
+      return {
+        error: `Could not approve this — ${DAYCARE_OVERLAP_ERROR.toLowerCase()} Reject it or change the other enrollment first.`,
+      };
+    }
     return {
       error: "Could not approve this — it may have already been reviewed.",
     };
