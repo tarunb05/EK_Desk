@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useFocusFirstError } from "@/components/forms/use-focus-first-error";
 import {
   Field,
   FormError,
@@ -26,10 +27,11 @@ export function RecordPaymentForm({ feeAccountId }: { feeAccountId: string }) {
     recordPayment,
     initialState,
   );
+  const formRef = useFocusFirstError(state.fieldErrors);
   const [method, setMethod] = useState("cash");
 
   return (
-    <form action={formAction} noValidate className="flex flex-col gap-4">
+    <form ref={formRef} action={formAction} noValidate className="flex flex-col gap-4">
       <input type="hidden" name="feeAccountId" value={feeAccountId} />
 
       <Field label="Amount (₹)" error={state.fieldErrors?.amount}>

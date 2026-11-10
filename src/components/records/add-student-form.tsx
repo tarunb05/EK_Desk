@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useFocusFirstError } from "@/components/forms/use-focus-first-error";
 import {
   Field,
   FormError,
@@ -49,6 +50,7 @@ export function AddStudentForm({
     createStudentWithFeeAccount,
     initialState,
   );
+  const formRef = useFocusFirstError(state.fieldErrors);
   const [branchId, setBranchId] = useState(branches[0]?.id ?? "");
   const [classSection, setClassSection] = useState("");
   // React resets every *uncontrolled* field in a <form action={...}> once
@@ -111,7 +113,7 @@ export function AddStudentForm({
   }
 
   return (
-    <form action={formAction} noValidate className="flex flex-col gap-4">
+    <form ref={formRef} action={formAction} noValidate className="flex flex-col gap-4">
       <input type="hidden" name="serviceType" value={serviceType} />
       <input type="hidden" name="academicYearId" value={academicYearId} />
 

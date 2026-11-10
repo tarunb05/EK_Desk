@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useFocusFirstError } from "@/components/forms/use-focus-first-error";
 import {
   Field,
   FormError,
@@ -25,11 +26,12 @@ export function EditFeeAccountForm({
     updateFeeAccount,
     initialState,
   );
+  const formRef = useFocusFirstError(state.fieldErrors);
   const [status, setStatus] = useState(record.status);
   const [classSection, setClassSection] = useState(record.classSection);
 
   return (
-    <form action={formAction} noValidate className="flex flex-col gap-4">
+    <form ref={formRef} action={formAction} noValidate className="flex flex-col gap-4">
       <input type="hidden" name="feeAccountId" value={record.feeAccountId} />
 
       <Field
