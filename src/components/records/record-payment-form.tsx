@@ -28,15 +28,6 @@ export function RecordPaymentForm({ feeAccountId }: { feeAccountId: string }) {
   );
   const [method, setMethod] = useState("cash");
 
-  if (state.submitted) {
-    return (
-      <p className="text-sm text-ink">
-        Submitted for approval. An admin will review this payment before
-        it&apos;s recorded.
-      </p>
-    );
-  }
-
   return (
     <form action={formAction} noValidate className="flex flex-col gap-4">
       <input type="hidden" name="feeAccountId" value={feeAccountId} />

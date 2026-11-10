@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import {
   Field,
   FormError,
@@ -22,7 +22,6 @@ import {
   enrollmentEndsOn,
   type EnrollmentPeriod,
 } from "@/lib/domain/enrollment-period";
-import { useToast } from "@/components/shell/toast-context";
 
 const initialState: ActionState = { error: null };
 
@@ -80,7 +79,6 @@ export function AddStudentForm({
   const [paidOn, setPaidOn] = useState("");
   const [paidMethod, setPaidMethod] = useState("cash");
   const [paidReference, setPaidReference] = useState("");
-  const { showToast } = useToast();
 
   function handlePaidChange(next: boolean) {
     setPaid(next);
@@ -110,23 +108,6 @@ export function AddStudentForm({
   function handleStartsOnChange(next: string) {
     setStartsOn(next);
     if (period) setEndsOn(enrollmentEndsOn(next, period, academicYearEndsOn));
-  }
-
-  // The admin path redirects on success (see actions.ts's setToastNotice +
-  // ToastNoticeReader for that toast) -- a teacher's request-add doesn't
-  // navigate anywhere, so this is the only toast trigger for that path,
-  // fired once when submitted flips true rather than on every render.
-  useEffect(() => {
-    if (state.submitted) showToast("Submitted for approval.");
-  }, [state.submitted, showToast]);
-
-  if (state.submitted) {
-    return (
-      <p className="text-sm text-ink">
-        Submitted for approval. An admin will review this student before
-        they&apos;re added.
-      </p>
-    );
   }
 
   return (

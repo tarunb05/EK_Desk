@@ -97,8 +97,8 @@ export default function PrivacyPolicyPage() {
                 accounts, and payments — never another branch&apos;s.
               </li>
               <li>
-                A teacher&apos;s own additions or edits don&apos;t take effect
-                until an admin reviews and approves them.
+                A teacher can delete a student only after an admin reviews
+                and approves it, and every change anyone makes is logged.
               </li>
               <li>
                 Nobody outside the school&apos;s own admin/teacher staff has an

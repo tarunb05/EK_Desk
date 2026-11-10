@@ -173,42 +173,104 @@ describe("role-based RLS (phase 8.1)", () => {
     });
   });
 
-  it("a teacher cannot insert or update student directly", async () => {
+  it("a teacher can add a student to their own branch but not another", async () => {
     await withRollback(client, async () => {
       await seedProfiles(client);
       await impersonate(client, TEACHER_A_ID);
 
+      await client.query(
+        `insert into student (branch_id, admission_no, full_name, guardian_name, phone, class_section)
+         values ($1, 'ROLE-OWN', 'X', 'Y', '5555555555', 'Nursery-A')`,
+        [branchAId],
+      );
+
+      await client.query("savepoint before_other_branch");
       await expect(
         client.query(
           `insert into student (branch_id, admission_no, full_name, guardian_name, phone, class_section)
            values ($1, 'ROLE-DENIED', 'X', 'Y', '5555555555', 'Nursery-A')`,
-          [branchAId],
+          [branchBId],
         ),
-      ).rejects.toThrow();
+      ).rejects.toThrow(/row-level security/);
+      await client.query("rollback to savepoint before_other_branch");
     });
   });
 
-  it("a teacher cannot insert or update fee_account directly -- read access doesn't imply write", async () => {
+  it("a teacher can add a fee_account and payment for their own branch's student but not another branch's", async () => {
     await withRollback(client, async () => {
       await seedProfiles(client);
-      const student = await client.query<{ id: string }>(
+      const students = await client.query<{ id: string; branch_id: string }>(
         `insert into student (branch_id, admission_no, full_name, guardian_name, phone, class_section)
-         values ($1, 'ROLE-A-WRITE', 'Student', 'Guardian', '7777777777', 'Nursery-A')
-         returning id`,
-        [branchAId],
+         values ($1, 'ROLE-A-WRITE', 'Student', 'Guardian', '7777777777', 'Nursery-A'),
+                ($2, 'ROLE-B-WRITE', 'Student', 'Guardian', '7777777778', 'Nursery-A')
+         returning id, branch_id`,
+        [branchAId, branchBId],
       );
-
-      await impersonate(client, TEACHER_A_ID);
-
-      await expect(
-        client.query(
+      const ownStudent = students.rows.find((row) => row.branch_id === branchAId)!;
+      const otherStudent = students.rows.find((row) => row.branch_id === branchBId)!;
+      const insertFeeAccount = (studentId: string) =>
+        client.query<{ id: string }>(
           `insert into fee_account
              (student_id, academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, route_name, pickup_point)
            select $1, id, 'transport', 1000000, '2026-06-01', '2026-04-01', '2027-03-31', 'Route 1', 'Gate'
-           from academic_year where is_current = true limit 1`,
-          [student.rows[0]!.id],
-        ),
-      ).rejects.toThrow();
+           from academic_year where is_current = true limit 1
+           returning id`,
+          [studentId],
+        );
+
+      await impersonate(client, TEACHER_A_ID);
+
+      const feeAccount = await insertFeeAccount(ownStudent.id);
+      await client.query(
+        `insert into payment (fee_account_id, amount_paise, paid_on, method, recorded_by)
+         values ($1, 50000, '2026-06-01', 'cash', 'Teacher A')`,
+        [feeAccount.rows[0]!.id],
+      );
+
+      await client.query("savepoint before_other_branch");
+      await expect(insertFeeAccount(otherStudent.id)).rejects.toThrow(
+        /row-level security/,
+      );
+      await client.query("rollback to savepoint before_other_branch");
+    });
+  });
+
+  it("a teacher can void their own branch's payment, and can't touch another branch's", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      const payments = await client.query<{ id: string; branch_id: string }>(
+        `with s as (
+           insert into student (branch_id, admission_no, full_name, guardian_name, phone, class_section)
+           values ($1, 'ROLE-VOID-A', 'Student', 'Guardian', '7777777779', 'Nursery-A'),
+                  ($2, 'ROLE-VOID-B', 'Student', 'Guardian', '7777777780', 'Nursery-A')
+           returning id, branch_id
+         ), fa as (
+           insert into fee_account
+             (student_id, academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, route_name, pickup_point)
+           select s.id, (select id from academic_year where is_current = true limit 1),
+                  'transport', 1000000, '2026-06-01', '2026-04-01', '2027-03-31', 'Route 1', 'Gate'
+           from s
+           returning id, student_id
+         )
+         insert into payment (fee_account_id, amount_paise, paid_on, method, recorded_by)
+         select fa.id, 50000, '2026-06-01', 'cash', 'Admin' from fa
+         returning id, (select s.branch_id from s join fa on fa.student_id = s.id where fa.id = payment.fee_account_id) as branch_id`,
+        [branchAId, branchBId],
+      );
+      const ownPayment = payments.rows.find((row) => row.branch_id === branchAId)!;
+      const otherPayment = payments.rows.find((row) => row.branch_id === branchBId)!;
+
+      await impersonate(client, TEACHER_A_ID);
+      const voidPayment = (id: string) =>
+        client.query(
+          `update payment set voided_at = now(), void_reason = 'Entered twice'
+           where id = $1`,
+          [id],
+        );
+
+      expect((await voidPayment(ownPayment.id)).rowCount).toBe(1);
+      // RLS hides another branch's row entirely -- the update matches nothing.
+      expect((await voidPayment(otherPayment.id)).rowCount).toBe(0);
     });
   });
 

@@ -110,21 +110,26 @@ export function StudentDetailBody({
                           <span className="text-2xs text-ink-muted">
                             {payment.voidReason}
                           </span>
-                        ) : role === "admin" ? (
+                        ) : (
                           // A plain anchor, not next/link's Link: this can be
                           // reached from inside the student drawer, and a
                           // client-side transition to a route the @drawer
                           // parallel slot doesn't intercept leaves the
                           // drawer's full-screen backdrop rendered on top of
                           // the void page. A full navigation resets it.
+                          // A teacher's copy of the page lives under
+                          // /students, since /transport and /daycare are
+                          // admin-only routes.
                           <a
-                            href={`/${account.serviceType}/payment/${payment.id}/void`}
+                            href={
+                              role === "admin"
+                                ? `/${account.serviceType}/payment/${payment.id}/void`
+                                : `/students/payment/${payment.id}/void`
+                            }
                             className="text-accent hover:underline"
                           >
                             Void
                           </a>
-                        ) : (
-                          <span className="text-2xs text-ink-muted">—</span>
                         )}
                       </td>
                     </tr>

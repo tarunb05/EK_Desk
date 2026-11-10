@@ -76,11 +76,10 @@ export default function TermsPage() {
             </h2>
             <p className="mt-3 text-sm text-ink-secondary">
               Fee accounts, payments, and expenses recorded in EK Desk are
-              only as accurate as what staff enter. A teacher&apos;s addition
-              or edit to a student or fee account is reviewed and approved by
-              an admin before it takes effect; payments and expenses are
-              recorded directly by whoever enters them and are expected to
-              reflect real transactions.
+              only as accurate as what staff enter. Students, fee accounts,
+              payments and expenses are recorded directly by whoever enters
+              them and are expected to reflect real transactions; deleting a
+              student requires an admin&apos;s approval.
             </p>
           </section>
 

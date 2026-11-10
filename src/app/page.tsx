@@ -34,8 +34,8 @@ const FEATURES: {
     Icon: StudentsIcon,
   },
   {
-    title: "Teacher submissions, admin approval",
-    body: "A teacher can add a student or propose an edit from their own branch; nothing takes effect until an admin reviews and approves it.",
+    title: "Teachers work their own branch",
+    body: "A teacher adds students, edits them and records payments for their own branch directly; deleting a student still needs an admin's approval, and every change is logged.",
     Icon: ApprovalsIcon,
   },
   {
@@ -106,8 +106,7 @@ export default function LandingPage() {
           >
             Record payments, see who&apos;s paid, who&apos;s pending, and
             who&apos;s overdue, and track office expenses — across every
-            branch and academic year, with an approval workflow for what
-            teachers submit.
+            branch and academic year, with every change logged.
           </p>
         </section>
 

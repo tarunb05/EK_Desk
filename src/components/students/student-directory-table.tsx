@@ -67,11 +67,9 @@ function RowActions({ row, role }: { row: StudentDirectoryRow; role: Role }) {
   return (
     <div className="flex flex-col gap-1">
       {row.feeAccounts.map((account) => {
-        // Admin and teacher see an identical Students page -- the only
-        // difference is that a teacher's edit/payment lands in the
-        // approval queue instead of taking effect immediately, which is
-        // invisible here: it's just a different route target for the same
-        // two menu options, not a different control.
+        // Admin and teacher see an identical Students page -- a teacher's
+        // edit/payment pages just live under /students, since /transport
+        // and /daycare are admin-only routes.
         const [editHref, paymentHref] =
           role === "admin"
             ? [
