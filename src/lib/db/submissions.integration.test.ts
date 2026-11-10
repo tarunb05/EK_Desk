@@ -429,6 +429,69 @@ describe("submission and approval flow", () => {
     });
   });
 
+  it("approving a student submission marked as paid records the payment in the same step", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      await impersonate(client, TEACHER_A_ID);
+      const submission = await client.query<{ id: string }>(
+        `insert into student_submission
+           (branch_id, submitted_by, admission_no, full_name, guardian_name, phone, class_section,
+            academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, slot,
+            paid_amount_paise, paid_on, paid_method, paid_reference)
+         values ($1, $2, 'PAID-1', 'Paid Kid', 'Guardian', '9000000013', 'Daycare',
+                 $3, 'daycare', 400000, '2026-11-11', '2026-11-11', '2026-12-10', 'Afternoon',
+                 150000, '2026-11-11', 'upi', '')
+         returning id`,
+        [branchAId, TEACHER_A_ID, academicYearId],
+      );
+
+      await impersonate(client, ADMIN_ID);
+      await client.query("select approve_student_submission($1)", [
+        submission.rows[0]!.id,
+      ]);
+
+      const payments = await client.query<{
+        amount_paise: string;
+        method: string;
+        reference: string | null;
+        recorded_by: string;
+      }>(
+        `select p.amount_paise, p.method, p.reference, p.recorded_by
+         from payment p
+         join fee_account fa on fa.id = p.fee_account_id
+         join student s on s.id = fa.student_id
+         where s.admission_no = 'PAID-1'`,
+      );
+      expect(payments.rows).toEqual([
+        {
+          amount_paise: "150000",
+          method: "upi",
+          reference: null,
+          recorded_by: "Test Teacher A",
+        },
+      ]);
+    });
+  });
+
+  it("rejects a student submission whose payment is more than the total receivable", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      await impersonate(client, TEACHER_A_ID);
+      await expect(
+        client.query(
+          `insert into student_submission
+             (branch_id, submitted_by, admission_no, full_name, guardian_name, phone, class_section,
+              academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, slot,
+              paid_amount_paise, paid_on, paid_method)
+           values ($1, $2, 'PAID-2', 'Paid Kid', 'Guardian', '9000000014', 'Daycare',
+                   $3, 'daycare', 400000, '2026-11-11', '2026-11-11', '2026-12-10', 'Afternoon',
+                   400100, '2026-11-11', 'cash')`,
+          [branchAId, TEACHER_A_ID, academicYearId],
+        ),
+      ).rejects.toThrow(/student_submission_paid_amount_in_range/);
+    });
+  });
+
   it("rejecting a submission creates nothing and records the reason", async () => {
     await withRollback(client, async () => {
       await seedProfiles(client);

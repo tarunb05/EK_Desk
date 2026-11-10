@@ -18,6 +18,7 @@ import {
   approveSubmissionSchema,
   archiveStudentSchema,
   createStudentWithFeeAccountSchema,
+  initialPaymentSchema,
   deleteExpenseSchema,
   permanentlyDeleteStudentSchema,
   recordExpenseSchema,
@@ -163,8 +164,17 @@ export async function createStudentWithFeeAccount(
 ): Promise<ActionState> {
   const raw = formEntries(formData);
   const parsed = createStudentWithFeeAccountSchema.safeParse(raw);
+  const paymentParsed =
+    raw.paid === "on" ? initialPaymentSchema.safeParse(raw) : null;
+  const paymentErrors =
+    paymentParsed && !paymentParsed.success
+      ? fieldErrorsFromZod(paymentParsed.error)
+      : {};
   if (!parsed.success) {
-    const fieldErrors = fieldErrorsFromZod(parsed.error);
+    const fieldErrors = {
+      ...paymentErrors,
+      ...fieldErrorsFromZod(parsed.error),
+    };
     // The schema's own superRefine (pickupPoint required for transport,
     // slot required for daycare) only fires when the rest of the object
     // already parsed cleanly -- Zod skips a superRefine's checks once any
@@ -181,7 +191,19 @@ export async function createStudentWithFeeAccount(
     }
     return { error: null, fieldErrors };
   }
+  if (paymentParsed && !paymentParsed.success) {
+    return { error: null, fieldErrors: paymentErrors };
+  }
   const value = parsed.data;
+  const payment = paymentParsed?.data ?? null;
+  if (payment && payment.paidAmount > value.totalReceivable) {
+    return {
+      error: null,
+      fieldErrors: {
+        paidAmount: "The amount paid can't be more than Total receivable.",
+      },
+    };
+  }
   const authed = await requireAuth();
   const supabase = await createClient();
 
@@ -230,6 +252,11 @@ export async function createStudentWithFeeAccount(
       pickup_point:
         value.serviceType === "transport" ? (value.pickupPoint ?? null) : null,
       slot: value.serviceType === "daycare" ? (value.slot ?? null) : null,
+      paid_amount_paise: payment ? Number(payment.paidAmount) : null,
+      paid_on: payment?.paidOn ?? null,
+      paid_method: payment?.paidMethod ?? null,
+      // `|| null`, not `??` -- a blank field parses as "", see recordPayment.
+      paid_reference: payment?.paidReference || null,
     });
 
     if (error) {
@@ -278,28 +305,58 @@ export async function createStudentWithFeeAccount(
     studentId = student.id;
   }
 
-  const { error: feeAccountError } = await supabase.from("fee_account").insert({
-    student_id: studentId,
-    academic_year_id: value.academicYearId,
-    service_type: value.serviceType,
-    total_receivable_paise: Number(value.totalReceivable),
-    due_date: value.dueDate,
-    starts_on: value.startsOn,
-    ends_on: value.endsOn,
-    route_name:
-      value.serviceType === "transport" ? (value.routeName ?? null) : null,
-    pickup_point:
-      value.serviceType === "transport" ? (value.pickupPoint ?? null) : null,
-    slot: value.serviceType === "daycare" ? (value.slot ?? null) : null,
-  });
+  const { data: feeAccount, error: feeAccountError } = await supabase
+    .from("fee_account")
+    .insert({
+      student_id: studentId,
+      academic_year_id: value.academicYearId,
+      service_type: value.serviceType,
+      total_receivable_paise: Number(value.totalReceivable),
+      due_date: value.dueDate,
+      starts_on: value.startsOn,
+      ends_on: value.endsOn,
+      route_name:
+        value.serviceType === "transport" ? (value.routeName ?? null) : null,
+      pickup_point:
+        value.serviceType === "transport" ? (value.pickupPoint ?? null) : null,
+      slot: value.serviceType === "daycare" ? (value.slot ?? null) : null,
+    })
+    .select("id")
+    .single();
 
-  if (feeAccountError) {
+  if (feeAccountError || !feeAccount) {
     // Only reachable if another enrollment was saved between the check
     // above and this insert.
-    if (feeAccountError.code === EXCLUSION_VIOLATION) {
+    if (feeAccountError?.code === EXCLUSION_VIOLATION) {
       return { error: null, fieldErrors: { startsOn: DAYCARE_OVERLAP_ERROR } };
     }
     return { error: "Could not save the fee account." };
+  }
+
+  if (payment) {
+    const { data: profile } = await supabase
+      .from("profile")
+      .select("full_name")
+      .eq("id", authed.userId)
+      .maybeSingle();
+    const { error: paymentError } = await supabase.from("payment").insert({
+      fee_account_id: feeAccount.id,
+      amount_paise: Number(payment.paidAmount),
+      paid_on: payment.paidOn,
+      method: payment.paidMethod,
+      // `|| null`, not `??` -- see recordPayment.
+      reference: payment.paidReference || null,
+      recorded_by: profile?.full_name ?? "Admin",
+    });
+    // The student and enrollment are already saved at this point, so say
+    // exactly that rather than a failure that invites adding them twice.
+    if (paymentError) {
+      revalidatePath(`/${value.serviceType}`);
+      revalidatePath("/students");
+      return {
+        error: `${value.fullName} was added, but the payment couldn't be recorded. Record it from their student page instead of adding them again.`,
+      };
+    }
   }
 
   revalidatePath(`/${value.serviceType}`);

@@ -9,6 +9,8 @@ import {
 } from "@/components/forms/field";
 import { Select } from "@/components/forms/select";
 import { DateField } from "@/components/forms/date-field";
+import { Checkbox } from "@/components/forms/checkbox";
+import { METHOD_OPTIONS } from "@/components/records/record-payment-form";
 import {
   createStudentWithFeeAccount,
   type ActionState,
@@ -78,7 +80,21 @@ export function AddStudentForm({
   const [period, setPeriod] = useState<EnrollmentPeriod | "">("");
   const [startsOn, setStartsOn] = useState("");
   const [endsOn, setEndsOn] = useState("");
+  // Optional payment taken while adding the student; the amount starts at
+  // Total receivable and can be lowered for a part-payment.
+  const [paid, setPaid] = useState(false);
+  const [paidAmount, setPaidAmount] = useState("");
+  const [paidOn, setPaidOn] = useState("");
+  const [paidMethod, setPaidMethod] = useState("cash");
+  const [paidReference, setPaidReference] = useState("");
   const { showToast } = useToast();
+
+  function handlePaidChange(next: boolean) {
+    setPaid(next);
+    if (!next) return;
+    if (!paidAmount) setPaidAmount(totalReceivable);
+    if (!paidOn) setPaidOn(todayIso());
+  }
 
   function handlePeriodChange(next: string) {
     const nextPeriod = next as EnrollmentPeriod | "";
@@ -284,6 +300,64 @@ export function AddStudentForm({
           onChange={setEndsOn}
         />
       </Field>
+
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="paid"
+          name="paid"
+          checked={paid}
+          onChange={handlePaidChange}
+        />
+        <label htmlFor="paid" className="text-sm text-ink-secondary">
+          Paid — record a payment now
+        </label>
+      </div>
+
+      {paid ? (
+        <>
+          <Field label="Amount paid (₹)" error={state.fieldErrors?.paidAmount}>
+            <input
+              name="paidAmount"
+              type="number"
+              min="0"
+              step="1"
+              required
+              value={paidAmount}
+              onChange={(event) => setPaidAmount(event.target.value)}
+              className={inputClassName}
+            />
+          </Field>
+
+          <Field label="Paid on" error={state.fieldErrors?.paidOn}>
+            <DateField
+              name="paidOn"
+              required
+              ariaLabel="Paid on"
+              value={paidOn}
+              onChange={setPaidOn}
+            />
+          </Field>
+
+          <Field label="Method" error={state.fieldErrors?.paidMethod}>
+            <Select
+              name="paidMethod"
+              ariaLabel="Method"
+              value={paidMethod}
+              onChange={setPaidMethod}
+              options={METHOD_OPTIONS}
+            />
+          </Field>
+
+          <Field label="Reference (optional)">
+            <input
+              name="paidReference"
+              value={paidReference}
+              onChange={(event) => setPaidReference(event.target.value)}
+              className={inputClassName}
+            />
+          </Field>
+        </>
+      ) : null}
 
       <FormError error={state.error} />
 

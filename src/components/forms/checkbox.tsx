@@ -12,11 +12,16 @@ export function Checkbox({
   id,
   name,
   defaultChecked,
+  checked,
+  onChange,
   className = "",
 }: {
   id: string;
   name?: string;
   defaultChecked?: boolean;
+  // Controlled mode, for a checkbox that shows or hides other fields.
+  checked?: boolean;
+  onChange?: (checked: boolean) => void;
   className?: string;
 }) {
   return (
@@ -28,6 +33,10 @@ export function Checkbox({
         name={name}
         type="checkbox"
         defaultChecked={defaultChecked}
+        checked={checked}
+        onChange={
+          onChange ? (event) => onChange(event.target.checked) : undefined
+        }
         className="peer h-4 w-4 shrink-0 appearance-none rounded border border-border bg-surface transition-colors duration-150 checked:border-accent checked:bg-accent focus-visible:outline-2 focus-visible:outline-accent"
       />
       <CheckIcon

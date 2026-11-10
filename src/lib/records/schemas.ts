@@ -88,6 +88,20 @@ export const createStudentWithFeeAccountSchema = z
     }
   });
 
+// The optional "Paid" section of the add-student form, parsed separately
+// from the student itself (and only when the box is ticked) so its errors
+// show alongside the rest of the form's -- a superRefine would be skipped
+// whenever any other field had already failed. The amount's upper bound
+// (no more than Total receivable) is checked in the action, which has both.
+export const initialPaymentSchema = z.object({
+  paidAmount: rupeesAmount.refine((paise) => paise > 0n, {
+    message: "Enter an amount greater than zero.",
+  }),
+  paidOn: dateField,
+  paidMethod: z.enum(PAYMENT_METHODS, "Choose a payment method."),
+  paidReference: z.string().trim().optional(),
+});
+
 // Covers both the student's own details and the fee-account terms in one
 // form/schema -- there was no student-detail edit UI at all before this,
 // only fee-account terms; teacher edit-submissions and the admin's direct

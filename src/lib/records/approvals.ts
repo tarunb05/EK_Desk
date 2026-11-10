@@ -208,6 +208,15 @@ export async function getPendingSubmissions(
               { label: "Pickup point", value: row.pickup_point ?? "" },
             ]
           : [{ label: "Slot", value: row.slot ?? "" }]),
+        ...(row.paid_amount_paise !== null
+          ? [
+              {
+                label: "Paid",
+                value: `${formatPaise(BigInt(row.paid_amount_paise))} by ${row.paid_method ?? ""} on ${row.paid_on ?? ""}`,
+              },
+              { label: "Payment reference", value: row.paid_reference ?? "" },
+            ]
+          : [{ label: "Paid", value: "Not yet" }]),
       ],
     }),
   );
