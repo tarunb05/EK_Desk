@@ -165,6 +165,9 @@ export function AddStudentForm({
       <Field label="Phone" error={state.fieldErrors?.phone}>
         <input
           name="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
           required
           value={phone}
           onChange={(event) => setPhone(event.target.value)}
@@ -178,6 +181,9 @@ export function AddStudentForm({
       >
         <input
           name="whatsappPhone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
           value={whatsappPhone}
           onChange={(event) => setWhatsappPhone(event.target.value)}
           className={inputClassName}

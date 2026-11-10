@@ -60,6 +60,9 @@ export function EditFeeAccountForm({
       <Field label="Phone" error={state.fieldErrors?.phone}>
         <input
           name="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
           required
           defaultValue={record.phone}
           className={inputClassName}
@@ -72,6 +75,9 @@ export function EditFeeAccountForm({
       >
         <input
           name="whatsappPhone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
           defaultValue={record.whatsappPhone ?? ""}
           className={inputClassName}
           placeholder="If different from Phone above"
