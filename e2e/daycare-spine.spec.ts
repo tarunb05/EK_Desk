@@ -54,8 +54,8 @@ test.describe("daycare spine", () => {
       .fill("Playwright Daycare Student");
     await form.getByLabel("Guardian name").fill("Playwright Guardian");
     await form.getByLabel("Phone").fill("9000000456");
-    await form.getByLabel("Grade").click();
-    await page.getByRole("option", { name: "Euro Senior" }).click();
+    // Every daycare student's grade is "Daycare" -- there's nothing to pick.
+    await expect(form.getByLabel("Grade")).toHaveCount(0);
     await form.getByLabel("Slot").fill("Morning (8-1)");
     await form.getByLabel("Total receivable (₹)").fill("12000");
     await pickDate(form, "Due date", "2026-06-01");
