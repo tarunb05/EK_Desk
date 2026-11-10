@@ -28,15 +28,6 @@ export function EditFeeAccountForm({
   const [status, setStatus] = useState(record.status);
   const [classSection, setClassSection] = useState(record.classSection);
 
-  if (state.submitted) {
-    return (
-      <p className="text-sm text-ink">
-        Submitted for approval. An admin will review this change before it
-        takes effect.
-      </p>
-    );
-  }
-
   return (
     <form action={formAction} noValidate className="flex flex-col gap-4">
       <input type="hidden" name="feeAccountId" value={record.feeAccountId} />

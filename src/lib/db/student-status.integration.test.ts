@@ -99,22 +99,30 @@ describe("student status transitions (phase 9.1)", () => {
     });
   });
 
-  it("a teacher cannot change any other column alongside status", async () => {
+  it("a teacher can edit a student's details but not their branch or admission number", async () => {
     await withRollback(client, async () => {
       await seedProfiles(client);
       const studentId = await insertStudent(client, branchAId, "STATUS-A-2");
 
       await impersonate(client, TEACHER_A_ID);
+      const result = await client.query(
+        "update student set status = 'inactive', full_name = 'Changed Name' where id = $1",
+        [studentId],
+      );
+      expect(result.rowCount).toBe(1);
+
+      await client.query("savepoint before_renumber");
       await expect(
         client.query(
-          "update student set status = 'inactive', full_name = 'Changed Name' where id = $1",
+          "update student set admission_no = 'RENUMBERED' where id = $1",
           [studentId],
         ),
-      ).rejects.toThrow(/only change a student's status/);
+      ).rejects.toThrow(/may not change a student's branch or admission number/);
+      await client.query("rollback to savepoint before_renumber");
     });
   });
 
-  it("a teacher's update to fee_account.status matches zero rows -- no write policy applies at all", async () => {
+  it("a teacher can discontinue their own branch's fee_account", async () => {
     await withRollback(client, async () => {
       await seedProfiles(client);
       const studentId = await insertStudent(client, branchAId, "STATUS-A-3");
@@ -131,7 +139,7 @@ describe("student status transitions (phase 9.1)", () => {
         "update fee_account set status = 'discontinued' where id = $1",
         [feeAccount.rows[0]!.id],
       );
-      expect(result.rowCount).toBe(0);
+      expect(result.rowCount).toBe(1);
     });
   });
 

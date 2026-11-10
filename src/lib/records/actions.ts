@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth, requireRole } from "@/lib/auth/require-role";
+import type { Role } from "@/lib/auth/routes";
 import { setToastNotice } from "@/lib/shell/toast-cookie";
 import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
 import { EXPENSE_SANITY_CEILING_PAISE } from "@/lib/domain/money";
@@ -58,6 +59,12 @@ function formEntries(formData: FormData): Record<string, string> {
 // when two active daycare accounts for one student would cover the same day.
 const EXCLUSION_VIOLATION = "23P01";
 
+// Where a save lands: the service's dashboard for an admin; the Students
+// page for a teacher, since /transport and /daycare are admin-only routes.
+function afterSaveRoute(role: Role, serviceType: string): string {
+  return role === "teacher" ? "/students" : `/${serviceType}`;
+}
+
 const DAYCARE_OVERLAP_ERROR =
   "These dates overlap another daycare enrollment for this student.";
 
@@ -81,9 +88,7 @@ interface ActiveFeeAccount {
 // account per student; daycare allows several, as long as their dates
 // don't overlap (fee_account_daycare_no_overlap enforces the same rule in
 // the database). Looks up the existing student for this branch+admission
-// number (if any) and, when found, their active fee_accounts. Shared by
-// both the admin's direct-insert path and the teacher's submission path so
-// a teacher can't queue a duplicate either.
+// number (if any) and, when found, their active fee_accounts.
 async function findExistingStudentForAdmissionNo(
   supabase: Awaited<ReturnType<typeof createClient>>,
   branchId: string,
@@ -232,51 +237,11 @@ export async function createStudentWithFeeAccount(
     if (duplicate) return duplicate;
   }
 
-  if (authed.role === "teacher") {
-    // Never trust the submitted branchId over the caller's own profile,
-    // even though RLS would also reject a mismatch -- this gives a
-    // readable error instead of a generic "not saved" one.
-    if (value.branchId !== authed.branchId) {
-      return { error: "You can only add students for your own branch." };
-    }
-
-    const { error } = await supabase.from("student_submission").insert({
-      branch_id: value.branchId,
-      submitted_by: authed.userId,
-      admission_no: value.admissionNo,
-      full_name: value.fullName,
-      guardian_name: value.guardianName,
-      phone: value.phone,
-      whatsapp_phone: value.whatsappPhone || null,
-      class_section: value.classSection,
-      notes: value.notes ?? null,
-      academic_year_id: value.academicYearId,
-      service_type: value.serviceType,
-      total_receivable_paise: Number(value.totalReceivable),
-      due_date: value.dueDate,
-      starts_on: value.startsOn,
-      ends_on: value.endsOn,
-      route_name:
-        value.serviceType === "transport" ? (value.routeName ?? null) : null,
-      pickup_point:
-        value.serviceType === "transport" ? (value.pickupPoint ?? null) : null,
-      slot: value.serviceType === "daycare" ? (value.slot ?? null) : null,
-      paid_amount_paise: payment ? Number(payment.paidAmount) : null,
-      paid_on: payment?.paidOn ?? null,
-      paid_method: payment?.paidMethod ?? null,
-      // `|| null`, not `??` -- a blank field parses as "", see recordPayment.
-      paid_reference: payment?.paidReference || null,
-    });
-
-    if (error) {
-      return {
-        error:
-          "Could not submit this student — check the admission number isn't already queued.",
-      };
-    }
-
-    revalidatePath("/students");
-    return { error: null, submitted: true };
+  // Never trust the submitted branchId over the caller's own profile, even
+  // though RLS would also reject a mismatch -- this gives a readable error
+  // instead of a generic "not saved" one.
+  if (authed.role === "teacher" && value.branchId !== authed.branchId) {
+    return { error: "You can only add students for your own branch." };
   }
 
   // Reuse the existing student row for this admission number if one exists
@@ -374,7 +339,7 @@ export async function createStudentWithFeeAccount(
   revalidatePath(`/${value.serviceType}`);
   revalidatePath("/students");
   await setToastNotice(`${value.fullName} added.`);
-  redirect(`/${value.serviceType}`);
+  redirect(afterSaveRoute(authed.role, value.serviceType));
 }
 
 export async function updateFeeAccount(
@@ -397,47 +362,6 @@ export async function updateFeeAccount(
 
   if (fetchError || !feeAccount) {
     return { error: "Could not find that fee account." };
-  }
-
-  if (authed.role === "teacher") {
-    if (!authed.branchId) {
-      return { error: "Your account has no branch assigned — ask an admin." };
-    }
-    const { error } = await supabase.from("student_edit_submission").insert({
-      student_id: feeAccount.student_id,
-      fee_account_id: value.feeAccountId,
-      branch_id: authed.branchId,
-      submitted_by: authed.userId,
-      full_name: value.fullName,
-      guardian_name: value.guardianName,
-      phone: value.phone,
-      whatsapp_phone: value.whatsappPhone || null,
-      class_section: value.classSection,
-      notes: value.notes ?? null,
-      total_receivable_paise: Number(value.totalReceivable),
-      due_date: value.dueDate,
-      starts_on: value.startsOn,
-      ends_on: value.endsOn,
-      fee_account_status: value.status,
-      route_name:
-        feeAccount.service_type === "transport"
-          ? (value.routeName ?? null)
-          : null,
-      pickup_point:
-        feeAccount.service_type === "transport"
-          ? (value.pickupPoint ?? null)
-          : null,
-      slot: feeAccount.service_type === "daycare" ? (value.slot ?? null) : null,
-    });
-
-    if (error) {
-      return {
-        error: "Could not submit this edit — is this student in your branch?",
-      };
-    }
-
-    revalidatePath("/students");
-    return { error: null, submitted: true };
   }
 
   const { error: studentError } = await supabase
@@ -485,7 +409,7 @@ export async function updateFeeAccount(
 
   revalidatePath(`/${feeAccount.service_type}`);
   revalidatePath("/students");
-  redirect(`/${feeAccount.service_type}`);
+  redirect(afterSaveRoute(authed.role, feeAccount.service_type));
 }
 
 export async function recordPayment(
@@ -510,44 +434,14 @@ export async function recordPayment(
     return { error: "Could not find that fee account." };
   }
 
-  if (authed.role === "teacher") {
-    if (!authed.branchId) {
-      return { error: "Your account has no branch assigned — ask an admin." };
-    }
-    const { error } = await supabase.from("payment_submission").insert({
-      fee_account_id: value.feeAccountId,
-      branch_id: authed.branchId,
-      submitted_by: authed.userId,
-      amount_paise: Number(value.amount),
-      paid_on: value.paidOn,
-      method: value.method,
-      // `|| null`, not `??` -- a blank field parses as "" (a valid,
-      // non-nullish string), which `??` would store verbatim instead of as
-      // NULL. This row's reference is copied straight into `payment.reference`
-      // on approval (approve_payment_submission), so a stray '' here would
-      // reach the new partial-unique-on-non-voided-UPI-reference index too.
-      reference: value.reference || null,
-      note: value.note ?? null,
-    });
-
-    if (error) {
-      return {
-        error: "Could not submit this payment — is this student in your branch?",
-      };
-    }
-
-    revalidatePath("/students");
-    return { error: null, submitted: true };
-  }
-
   const { error } = await supabase.from("payment").insert({
     fee_account_id: value.feeAccountId,
     amount_paise: Number(value.amount),
     paid_on: value.paidOn,
     method: value.method,
-    // `|| null`, not `??` -- see the payment_submission insert above for
-    // why: a blank field parses as "", which a unique index treats as a
-    // real, colliding value, unlike NULL.
+    // `|| null`, not `??` -- a blank field parses as "" (a valid,
+    // non-nullish string), which a unique index treats as a real, colliding
+    // value, unlike NULL.
     reference: value.reference || null,
     note: value.note ?? null,
     recorded_by: value.recordedBy,
@@ -559,7 +453,7 @@ export async function recordPayment(
 
   revalidatePath(`/${feeAccount.service_type}`);
   revalidatePath("/students");
-  redirect(`/${feeAccount.service_type}`);
+  redirect(afterSaveRoute(authed.role, feeAccount.service_type));
 }
 
 export async function voidPayment(
@@ -571,7 +465,7 @@ export async function voidPayment(
     return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
   }
   const value = parsed.data;
-
+  const authed = await requireAuth();
   const supabase = await createClient();
   const { data: payment, error: fetchError } = await supabase
     .from("payment")
@@ -603,7 +497,8 @@ export async function voidPayment(
 
   const serviceType = feeAccount?.service_type ?? "transport";
   revalidatePath(`/${serviceType}`);
-  redirect(`/${serviceType}`);
+  revalidatePath("/students");
+  redirect(afterSaveRoute(authed.role, serviceType));
 }
 
 // Soft delete: sets student.status = 'inactive' rather than removing the

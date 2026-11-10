@@ -33,10 +33,9 @@ export const MONEY_METHODS = ["cash", "upi", "cheque", "bank_transfer"] as const
 export type MoneyMethod = (typeof MONEY_METHODS)[number];
 
 // payment only: 'card' means a parent paid at the office on a POS machine
-// (Phase 15, office card payments) -- money coming in, recorded directly by
-// an admin, never something the school spent (expense) or something a
-// teacher submits for approval (payment_submission keeps the plain
-// MONEY_METHODS list). Forked here rather than widening MONEY_METHODS
+// (Phase 15, office card payments) -- money coming in, never something the
+// school spent (expense). The legacy payment_submission table keeps the
+// plain MONEY_METHODS list. Forked here rather than widening MONEY_METHODS
 // itself, so expense.method can't accidentally grow a method that has no
 // meaning for money going out.
 export const PAYMENT_METHODS = [...MONEY_METHODS, "card"] as const;
