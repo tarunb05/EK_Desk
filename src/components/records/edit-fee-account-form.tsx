@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { useFocusFirstError } from "@/components/forms/use-focus-first-error";
+import { useUnsavedChangesWarning } from "@/components/forms/use-unsaved-changes-warning";
 import {
   Field,
   FormError,
@@ -27,6 +28,7 @@ export function EditFeeAccountForm({
     initialState,
   );
   const formRef = useFocusFirstError(state.fieldErrors);
+  useUnsavedChangesWarning(formRef, isPending);
   const [status, setStatus] = useState(record.status);
   const [classSection, setClassSection] = useState(record.classSection);
 
