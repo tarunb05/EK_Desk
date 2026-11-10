@@ -27,10 +27,12 @@ export function SupportRequestButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+        className="flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink max-sm:h-10 max-sm:w-10 max-sm:justify-center max-sm:px-0"
       >
         <SupportIcon size={14} />
-        Support
+        {/* Icon-only on phones to fit the top bar; the label stays for
+            screen readers. */}
+        <span className="max-sm:sr-only">Support</span>
       </button>
 
       {/* Mounted only while open, not just visually toggled -- useActionState's

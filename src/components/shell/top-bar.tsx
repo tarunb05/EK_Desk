@@ -30,24 +30,28 @@ export function TopBar({ username, role }: TopBarProps) {
         >
           <MenuIcon />
         </button>
-        <span className="text-sm font-medium text-ink">EK Desk</span>
+        <span className="whitespace-nowrap text-sm font-medium text-ink">
+          EK Desk
+        </span>
       </div>
 
-      <div className="flex items-center gap-3">
+      {/* On phones Support and Sign out go icon-only (labels kept for screen
+          readers) so the bar fits on one line instead of wrapping. */}
+      <div className="flex min-w-0 items-center gap-3 max-sm:gap-2">
         {role === "teacher" ? <SupportRequestButton /> : null}
         {username ? (
-          <span className="flex items-center gap-1.5 rounded-md bg-surface-accent px-2.5 py-1 text-sm text-ink-secondary">
-            <UserIcon size={14} />
-            {username}
+          <span className="flex min-w-0 items-center gap-1.5 rounded-md bg-surface-accent px-2.5 py-1 text-sm text-ink-secondary">
+            <UserIcon size={14} className="shrink-0" />
+            <span className="truncate">{username}</span>
           </span>
         ) : null}
         <form action={signOut}>
           <button
             type="submit"
-            className="flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+            className="flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink max-sm:h-10 max-sm:w-10 max-sm:justify-center max-sm:px-0"
           >
             <SignOutIcon size={14} />
-            Sign out
+            <span className="max-sm:sr-only">Sign out</span>
           </button>
         </form>
       </div>
