@@ -4,19 +4,12 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "@/components/forms/select";
 
 // Adapted from the shadcn-style reference the user pasted -- re-themed onto
-// this app's tokens (see select.tsx's comment for the --accent/--primary
-// naming collision this also has to navigate: "selected day" uses this
-// app's real --accent, "today"/hover use --surface-accent, the existing
-// hover tint, not a second brand color). Filename fixed from the pasted
+// this app's tokens ("selected day" uses this app's real --accent,
+// "today"/hover use --surface-accent, the existing hover tint, not a second
+// brand color). Filename fixed from the pasted
 // "calender.tsx" typo. Radius capped at rounded-md (6px, CLAUDE.md's
 // ceiling) instead of the reference's rounded-ele.
 
@@ -43,10 +36,12 @@ const dayVariants = cva(
       variant: {
         default: "text-ink hover:bg-surface-accent",
         selected: "bg-accent font-medium text-surface hover:bg-accent/90",
-        today: "bg-surface-accent font-medium text-ink hover:bg-surface-accent/70",
+        today:
+          "bg-surface-accent font-medium text-ink hover:bg-surface-accent/70",
         outside: "text-ink-muted opacity-50 hover:bg-surface-accent",
         disabled: "text-ink-muted opacity-30",
-        "range-start": "rounded-r-none bg-accent text-surface hover:bg-accent/90",
+        "range-start":
+          "rounded-r-none bg-accent text-surface hover:bg-accent/90",
         "range-end": "rounded-l-none bg-accent text-surface hover:bg-accent/90",
         "range-middle": "rounded-none bg-accent/20 text-ink hover:bg-accent/30",
       },
@@ -91,8 +86,18 @@ type DayVariant =
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 function isSameDay(date1: Date, date2: Date): boolean {
@@ -142,7 +147,8 @@ export function Calendar({
 
   const totalCells = 42;
   const currentMonthDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  const remainingCells = totalCells - prevMonthDays.length - currentMonthDays.length;
+  const remainingCells =
+    totalCells - prevMonthDays.length - currentMonthDays.length;
   const nextMonthDays = Array.from({ length: remainingCells }, (_, i) => i + 1);
 
   // Commits immediately and derives the next month from the previous state
@@ -154,23 +160,25 @@ export function Calendar({
   // all of them, arriving faster than 150ms apart) was silently dropped --
   // nine clicks advanced the calendar by one month.
   function navigateMonth(dir: "prev" | "next") {
-    setCurrentDate((prev) => {
-      const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() + (dir === "prev" ? -1 : 1));
-      return newDate;
-    });
+    // Day 1 for the same reason as handleMonthChange below.
+    setCurrentDate(
+      (prev) =>
+        new Date(
+          prev.getFullYear(),
+          prev.getMonth() + (dir === "prev" ? -1 : 1),
+          1,
+        ),
+    );
   }
 
+  // Day 1, not the shown date's own day -- from the 31st, setMonth(1) would
+  // roll over into March instead of showing February.
   function handleMonthChange(month: string) {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(parseInt(month, 10));
-    setCurrentDate(newDate);
+    setCurrentDate(new Date(currentYear, parseInt(month, 10), 1));
   }
 
   function handleYearChange(year: string) {
-    const newDate = new Date(currentDate);
-    newDate.setFullYear(parseInt(year, 10));
-    setCurrentDate(newDate);
+    setCurrentDate(new Date(parseInt(year, 10), currentMonth, 1));
   }
 
   function isDateDisabled(date: Date) {
@@ -182,11 +190,14 @@ export function Calendar({
 
   function isDateSelected(date: Date) {
     if (mode === "single") return selected ? isSameDay(date, selected) : false;
-    if (mode === "multiple") return selectedDates.some((d) => isSameDay(d, date));
+    if (mode === "multiple")
+      return selectedDates.some((d) => isSameDay(d, date));
     if (mode === "range" && selectedRange) {
       if (!selectedRange.to) return isSameDay(date, selectedRange.from);
       const t = date.getTime();
-      return t >= selectedRange.from.getTime() && t <= selectedRange.to.getTime();
+      return (
+        t >= selectedRange.from.getTime() && t <= selectedRange.to.getTime()
+      );
     }
     return false;
   }
@@ -218,7 +229,8 @@ export function Calendar({
       if (!selectedRange || (selectedRange.from && selectedRange.to)) {
         onSelectRange?.({ from: clicked });
       } else {
-        const from = selectedRange.from <= clicked ? selectedRange.from : clicked;
+        const from =
+          selectedRange.from <= clicked ? selectedRange.from : clicked;
         const to = selectedRange.from <= clicked ? clicked : selectedRange.from;
         onSelectRange?.({ from, to });
       }
@@ -240,7 +252,8 @@ export function Calendar({
     if (isDateDisabled(date)) return "disabled";
     if (mode === "range" && selectedRange) {
       if (isSameDay(date, selectedRange.from)) return "range-start";
-      if (selectedRange.to && isSameDay(date, selectedRange.to)) return "range-end";
+      if (selectedRange.to && isSameDay(date, selectedRange.to))
+        return "range-end";
       if (isDateInRange(date)) return "range-middle";
     }
     if (isDateSelected(date)) return "selected";
@@ -263,31 +276,32 @@ export function Calendar({
 
         <div className="flex min-w-0 flex-1 items-center justify-center gap-1">
           {showMonthYearPickers ? (
+            // The app's own listbox, not a portalled one: its options render
+            // inside DateField's popover, so picking one isn't mistaken for a
+            // click outside the popover (which closes it).
             <div className="flex items-center gap-1.5">
-              <Select value={String(currentMonth)} onValueChange={handleMonthChange}>
-                <SelectTrigger size="sm" className="h-7 w-[108px] text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTHS.map((month, index) => (
-                    <SelectItem key={month} value={String(index)}>
-                      {month}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={String(currentYear)} onValueChange={handleYearChange}>
-                <SelectTrigger size="sm" className="h-7 w-[76px] text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearRange.map((year) => (
-                    <SelectItem key={year} value={String(year)}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Select
+                ariaLabel="Month"
+                value={String(currentMonth)}
+                onChange={handleMonthChange}
+                options={MONTHS.map((month, index) => ({
+                  value: String(index),
+                  label: month,
+                }))}
+                className="w-[112px]"
+                triggerClassName="h-7 text-xs"
+              />
+              <Select
+                ariaLabel="Year"
+                value={String(currentYear)}
+                onChange={handleYearChange}
+                options={yearRange.map((year) => ({
+                  value: String(year),
+                  label: String(year),
+                }))}
+                className="w-[80px]"
+                triggerClassName="h-7 text-xs"
+              />
             </div>
           ) : (
             <span
@@ -340,7 +354,9 @@ export function Calendar({
               key={`prev-${day}`}
               type="button"
               onClick={() => handleDateClick(day, -1)}
-              disabled={isDateDisabled(new Date(currentYear, currentMonth - 1, day))}
+              disabled={isDateDisabled(
+                new Date(currentYear, currentMonth - 1, day),
+              )}
               aria-label={dayAriaLabel(day, -1)}
               className={dayVariants({ variant: getDayVariant(day, -1), size })}
             >
@@ -365,7 +381,9 @@ export function Calendar({
               key={`next-${day}`}
               type="button"
               onClick={() => handleDateClick(day, 1)}
-              disabled={isDateDisabled(new Date(currentYear, currentMonth + 1, day))}
+              disabled={isDateDisabled(
+                new Date(currentYear, currentMonth + 1, day),
+              )}
               aria-label={dayAriaLabel(day, 1)}
               className={dayVariants({ variant: getDayVariant(day, 1), size })}
             >

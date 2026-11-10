@@ -126,7 +126,12 @@ export function DateField({
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       {name ? (
-        <input type="hidden" name={name} value={currentIso} required={required} />
+        <input
+          type="hidden"
+          name={name}
+          value={currentIso}
+          required={required}
+        />
       ) : null}
       <button
         type="button"
@@ -157,6 +162,9 @@ export function DateField({
             onSelect={handleSelect}
             minDate={minDate}
             maxDate={maxDate}
+            // Month and year dropdowns, so a date months or years away is
+            // two picks rather than a click per month.
+            showMonthYearPickers
           />
         </div>
       ) : null}

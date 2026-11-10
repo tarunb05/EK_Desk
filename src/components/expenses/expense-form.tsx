@@ -11,6 +11,8 @@ import { Select } from "@/components/forms/select";
 import { DateField } from "@/components/forms/date-field";
 import {
   EXPENSE_SANITY_CEILING_PAISE,
+  METHOD_LABELS,
+  MONEY_METHODS,
   formatPaise,
   parseRupeesToPaise,
 } from "@/lib/domain/money";
@@ -25,12 +27,10 @@ import type { ExpenseCategoryOption } from "@/lib/records/expense-directory";
 
 const initialState: ActionState = { error: null };
 
-const METHOD_OPTIONS = [
-  { value: "cash", label: "Cash" },
-  { value: "upi", label: "UPI" },
-  { value: "cheque", label: "Cheque" },
-  { value: "bank_transfer", label: "Bank transfer" },
-];
+const METHOD_OPTIONS = MONEY_METHODS.map((value) => ({
+  value,
+  label: METHOD_LABELS[value],
+}));
 
 interface ExpenseFormDefaults {
   categoryId: string;

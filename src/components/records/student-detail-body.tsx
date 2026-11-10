@@ -1,4 +1,4 @@
-import { formatPaise } from "@/lib/domain/money";
+import { formatMethod, formatPaise } from "@/lib/domain/money";
 import type { StudentDetail } from "@/lib/records/student-detail";
 import type { Role } from "@/lib/auth/routes";
 import { DeleteStudentButton } from "./delete-student-button";
@@ -92,8 +92,8 @@ export function StudentDetailBody({
                       <td>{payment.paidOn}</td>
                       <td className="text-ink-secondary">
                         {payment.confirmedByLabel && payment.reference
-                          ? `${payment.method}, ref ending ${payment.reference.slice(-4)}, confirmed by ${payment.confirmedByLabel}`
-                          : payment.method}
+                          ? `${formatMethod(payment.method)}, ref ending ${payment.reference.slice(-4)}, confirmed by ${payment.confirmedByLabel}`
+                          : formatMethod(payment.method)}
                       </td>
                       <td className="text-right tabular-nums">
                         {formatPaise(payment.amountPaise)}

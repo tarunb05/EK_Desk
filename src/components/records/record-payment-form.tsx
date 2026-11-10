@@ -1,6 +1,9 @@
 "use client";
 
+import { METHOD_LABELS, PAYMENT_METHODS } from "@/lib/domain/money";
 import { useActionState, useState } from "react";
+import { useFocusFirstError } from "@/components/forms/use-focus-first-error";
+import { useUnsavedChangesWarning } from "@/components/forms/use-unsaved-changes-warning";
 import {
   Field,
   FormError,
@@ -13,23 +16,27 @@ import { type ActionState, recordPayment } from "@/lib/records/actions";
 
 const initialState: ActionState = { error: null };
 
-export const METHOD_OPTIONS = [
-  { value: "cash", label: "Cash" },
-  { value: "upi", label: "UPI" },
-  { value: "cheque", label: "Cheque" },
-  { value: "bank_transfer", label: "Bank transfer" },
-  { value: "card", label: "Card (at office)" },
-];
+export const METHOD_OPTIONS = PAYMENT_METHODS.map((value) => ({
+  value,
+  label: METHOD_LABELS[value],
+}));
 
 export function RecordPaymentForm({ feeAccountId }: { feeAccountId: string }) {
   const [state, formAction, isPending] = useActionState(
     recordPayment,
     initialState,
   );
+  const formRef = useFocusFirstError(state.fieldErrors);
+  useUnsavedChangesWarning(formRef, isPending);
   const [method, setMethod] = useState("cash");
 
   return (
-    <form action={formAction} noValidate className="flex flex-col gap-4">
+    <form
+      ref={formRef}
+      action={formAction}
+      noValidate
+      className="flex flex-col gap-4"
+    >
       <input type="hidden" name="feeAccountId" value={feeAccountId} />
 
       <Field label="Amount (₹)" error={state.fieldErrors?.amount}>

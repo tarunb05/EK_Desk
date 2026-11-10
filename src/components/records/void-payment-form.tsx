@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useFocusFirstError } from "@/components/forms/use-focus-first-error";
 import {
   Field,
   FormError,
@@ -16,9 +17,15 @@ export function VoidPaymentForm({ paymentId }: { paymentId: string }) {
     voidPayment,
     initialState,
   );
+  const formRef = useFocusFirstError(state.fieldErrors);
 
   return (
-    <form action={formAction} noValidate className="flex flex-col gap-4">
+    <form
+      ref={formRef}
+      action={formAction}
+      noValidate
+      className="flex flex-col gap-4"
+    >
       <input type="hidden" name="paymentId" value={paymentId} />
 
       <Field label="Reason for voiding" error={state.fieldErrors?.voidReason}>

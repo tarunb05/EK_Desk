@@ -27,7 +27,6 @@
     "screenshots": "tsx scripts/capture-screenshots.ts"
   },
   "dependencies": {
-    "@radix-ui/react-select": "^2.3.7",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
     "class-variance-authority": "^0.7.1",

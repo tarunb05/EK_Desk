@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { formatPaise } from "@/lib/domain/money";
+import { formatMethod, formatPaise } from "@/lib/domain/money";
 
 export type SubmissionActionType =
   | "Student added"
@@ -212,7 +212,7 @@ export async function getPendingSubmissions(
           ? [
               {
                 label: "Paid",
-                value: `${formatPaise(BigInt(row.paid_amount_paise))} by ${row.paid_method ?? ""} on ${row.paid_on ?? ""}`,
+                value: `${formatPaise(BigInt(row.paid_amount_paise))} by ${formatMethod(row.paid_method ?? "")} on ${row.paid_on ?? ""}`,
               },
               { label: "Payment reference", value: row.paid_reference ?? "" },
             ]
@@ -278,8 +278,8 @@ export async function getPendingSubmissions(
         submittedAt: row.submitted_at,
         branchId: row.branch_id,
         summary: feeAccount
-          ? `Payment — ${feeAccount.student_full_name} — ${formatPaise(BigInt(row.amount_paise))} (${row.method})`
-          : `Payment — ${formatPaise(BigInt(row.amount_paise))} (${row.method})`,
+          ? `Payment — ${feeAccount.student_full_name} — ${formatPaise(BigInt(row.amount_paise))} (${formatMethod(row.method)})`
+          : `Payment — ${formatPaise(BigInt(row.amount_paise))} (${formatMethod(row.method)})`,
         detail: [
           {
             label: "Submitted by",
@@ -287,7 +287,7 @@ export async function getPendingSubmissions(
           },
           { label: "Amount", value: formatPaise(BigInt(row.amount_paise)) },
           { label: "Paid on", value: row.paid_on },
-          { label: "Method", value: row.method },
+          { label: "Method", value: formatMethod(row.method) },
           { label: "Reference", value: row.reference ?? "" },
           { label: "Note", value: row.note ?? "" },
           {

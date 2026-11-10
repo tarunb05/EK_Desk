@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useFocusFirstError } from "@/components/forms/use-focus-first-error";
+import { useUnsavedChangesWarning } from "@/components/forms/use-unsaved-changes-warning";
 import {
   Field,
   FormError,
@@ -25,11 +27,13 @@ export function EditFeeAccountForm({
     updateFeeAccount,
     initialState,
   );
+  const formRef = useFocusFirstError(state.fieldErrors);
+  useUnsavedChangesWarning(formRef, isPending);
   const [status, setStatus] = useState(record.status);
   const [classSection, setClassSection] = useState(record.classSection);
 
   return (
-    <form action={formAction} noValidate className="flex flex-col gap-4">
+    <form ref={formRef} action={formAction} noValidate className="flex flex-col gap-4">
       <input type="hidden" name="feeAccountId" value={record.feeAccountId} />
 
       <Field
@@ -56,6 +60,9 @@ export function EditFeeAccountForm({
       <Field label="Phone" error={state.fieldErrors?.phone}>
         <input
           name="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
           required
           defaultValue={record.phone}
           className={inputClassName}
@@ -68,6 +75,9 @@ export function EditFeeAccountForm({
       >
         <input
           name="whatsappPhone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
           defaultValue={record.whatsappPhone ?? ""}
           className={inputClassName}
           placeholder="If different from Phone above"

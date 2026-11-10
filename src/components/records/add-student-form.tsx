@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useFocusFirstError } from "@/components/forms/use-focus-first-error";
+import { useUnsavedChangesWarning } from "@/components/forms/use-unsaved-changes-warning";
 import {
   Field,
   FormError,
@@ -49,6 +51,8 @@ export function AddStudentForm({
     createStudentWithFeeAccount,
     initialState,
   );
+  const formRef = useFocusFirstError(state.fieldErrors);
+  useUnsavedChangesWarning(formRef, isPending);
   const [branchId, setBranchId] = useState(branches[0]?.id ?? "");
   const [classSection, setClassSection] = useState("");
   // React resets every *uncontrolled* field in a <form action={...}> once
@@ -111,7 +115,12 @@ export function AddStudentForm({
   }
 
   return (
-    <form action={formAction} noValidate className="flex flex-col gap-4">
+    <form
+      ref={formRef}
+      action={formAction}
+      noValidate
+      className="flex flex-col gap-4"
+    >
       <input type="hidden" name="serviceType" value={serviceType} />
       <input type="hidden" name="academicYearId" value={academicYearId} />
 
@@ -161,6 +170,9 @@ export function AddStudentForm({
       <Field label="Phone" error={state.fieldErrors?.phone}>
         <input
           name="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
           required
           value={phone}
           onChange={(event) => setPhone(event.target.value)}
@@ -174,6 +186,9 @@ export function AddStudentForm({
       >
         <input
           name="whatsappPhone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
           value={whatsappPhone}
           onChange={(event) => setWhatsappPhone(event.target.value)}
           className={inputClassName}

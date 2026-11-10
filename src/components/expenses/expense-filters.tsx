@@ -1,18 +1,15 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { MONEY_METHODS } from "@/lib/domain/money";
+import { METHOD_LABELS, MONEY_METHODS } from "@/lib/domain/money";
 import { FilterIcon, WalletIcon } from "@/components/shell/nav-icons";
 import { Select } from "@/components/forms/select";
 import { DateField } from "@/components/forms/date-field";
 import type { ExpenseCategoryOption } from "@/lib/records/expense-directory";
 
-const METHOD_LABELS: Record<string, string> = {
+const METHOD_FILTER_LABELS: Record<string, string> = {
   all: "All methods",
-  cash: "Cash",
-  upi: "UPI",
-  cheque: "Cheque",
-  bank_transfer: "Bank transfer",
+  ...METHOD_LABELS,
 };
 
 // Search lives outside this panel now (see SearchField, rendered to the
@@ -62,7 +59,7 @@ export function ExpenseFilters({
         onChange={(next) => updateParam("method", next)}
         options={["all", ...MONEY_METHODS].map((method) => ({
           value: method,
-          label: METHOD_LABELS[method] ?? method,
+          label: METHOD_FILTER_LABELS[method] ?? method,
         }))}
         className="w-full"
       />
