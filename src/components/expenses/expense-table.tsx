@@ -1,4 +1,4 @@
-import { formatPaise } from "@/lib/domain/money";
+import { formatMethod, formatPaise } from "@/lib/domain/money";
 import type { ExpenseDirectoryRow } from "@/lib/records/expense-directory";
 import type { ExpenseSortKey } from "@/lib/shell/expense-table-params";
 import type { Role } from "@/lib/auth/routes";
@@ -7,13 +7,6 @@ import { PaginationControls } from "@/components/records/pagination-controls";
 import { TableTransitionProvider } from "@/components/records/table-transition";
 import { PendingTbody } from "@/components/records/pending-tbody";
 import { ExpenseRowActions } from "@/components/expenses/expense-row-actions";
-
-const METHOD_LABEL: Record<string, string> = {
-  cash: "Cash",
-  upi: "UPI",
-  cheque: "Cheque",
-  bank_transfer: "Bank transfer",
-};
 
 interface ExpenseTableProps {
   rows: ExpenseDirectoryRow[];
@@ -122,7 +115,7 @@ export function ExpenseTable({
                     {formatPaise(row.amountPaise)}
                   </td>
                   <td className="px-3 text-ink-secondary">
-                    {METHOD_LABEL[row.method] ?? row.method}
+                    {formatMethod(row.method)}
                   </td>
                   <td className="px-3 text-ink-secondary">
                     {row.reference || "—"}

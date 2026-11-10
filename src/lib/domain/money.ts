@@ -41,6 +41,22 @@ export type MoneyMethod = (typeof MONEY_METHODS)[number];
 export const PAYMENT_METHODS = [...MONEY_METHODS, "card"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
+// The one place a method's display name lives -- every list, option and
+// table reads this rather than its own copy.
+export const METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: "Cash",
+  upi: "UPI",
+  cheque: "Cheque",
+  bank_transfer: "Bank transfer",
+  card: "Card (at office)",
+};
+
+// For a value read from the database as a plain string; falls back to the
+// raw value so an unexpected method still shows rather than disappearing.
+export function formatMethod(method: string): string {
+  return METHOD_LABELS[method as PaymentMethod] ?? method;
+}
+
 export const EXPENSE_SANITY_CEILING_PAISE = 50_000_000n; // ₹5,00,000
 
 // Parses a rupee amount typed by hand -- deliberately never touches

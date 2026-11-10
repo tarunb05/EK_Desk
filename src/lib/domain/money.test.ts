@@ -1,10 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatMethod,
   formatPaise,
   paiseToRupees,
   parseRupeesToPaise,
   rupeesToPaise,
 } from "./money";
+
+describe("formatMethod", () => {
+  it("turns stored method codes into display names", () => {
+    expect(formatMethod("upi")).toBe("UPI");
+    expect(formatMethod("bank_transfer")).toBe("Bank transfer");
+  });
+
+  it("shows an unknown method as-is rather than blank", () => {
+    expect(formatMethod("barter")).toBe("barter");
+  });
+});
 
 describe("paiseToRupees", () => {
   it("converts whole rupees", () => {
