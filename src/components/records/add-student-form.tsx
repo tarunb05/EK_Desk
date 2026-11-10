@@ -182,21 +182,26 @@ export function AddStudentForm({
         />
       </Field>
 
-      <Field label="Grade" error={state.fieldErrors?.classSection}>
-        <Select
-          name="classSection"
-          ariaLabel="Grade"
-          value={classSection}
-          onChange={setClassSection}
-          options={[
-            { value: "", label: "Choose a grade" },
-            ...CLASS_SECTIONS.map((section) => ({
-              value: section,
-              label: section,
-            })),
-          ]}
-        />
-      </Field>
+      {/* Every daycare student's grade is "Daycare", so there's nothing to pick. */}
+      {serviceType === "daycare" ? (
+        <input type="hidden" name="classSection" value="Daycare" />
+      ) : (
+        <Field label="Grade" error={state.fieldErrors?.classSection}>
+          <Select
+            name="classSection"
+            ariaLabel="Grade"
+            value={classSection}
+            onChange={setClassSection}
+            options={[
+              { value: "", label: "Choose a grade" },
+              ...CLASS_SECTIONS.map((section) => ({
+                value: section,
+                label: section,
+              })),
+            ]}
+          />
+        </Field>
+      )}
 
       <Field label="Notes (optional)" error={state.fieldErrors?.notes}>
         <input
