@@ -4,19 +4,12 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "@/components/forms/select";
 
 // Adapted from the shadcn-style reference the user pasted -- re-themed onto
-// this app's tokens (see select.tsx's comment for the --accent/--primary
-// naming collision this also has to navigate: "selected day" uses this
-// app's real --accent, "today"/hover use --surface-accent, the existing
-// hover tint, not a second brand color). Filename fixed from the pasted
+// this app's tokens ("selected day" uses this app's real --accent,
+// "today"/hover use --surface-accent, the existing hover tint, not a second
+// brand color). Filename fixed from the pasted
 // "calender.tsx" typo. Radius capped at rounded-md (6px, CLAUDE.md's
 // ceiling) instead of the reference's rounded-ele.
 
@@ -167,23 +160,25 @@ export function Calendar({
   // all of them, arriving faster than 150ms apart) was silently dropped --
   // nine clicks advanced the calendar by one month.
   function navigateMonth(dir: "prev" | "next") {
-    setCurrentDate((prev) => {
-      const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() + (dir === "prev" ? -1 : 1));
-      return newDate;
-    });
+    // Day 1 for the same reason as handleMonthChange below.
+    setCurrentDate(
+      (prev) =>
+        new Date(
+          prev.getFullYear(),
+          prev.getMonth() + (dir === "prev" ? -1 : 1),
+          1,
+        ),
+    );
   }
 
+  // Day 1, not the shown date's own day -- from the 31st, setMonth(1) would
+  // roll over into March instead of showing February.
   function handleMonthChange(month: string) {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(parseInt(month, 10));
-    setCurrentDate(newDate);
+    setCurrentDate(new Date(currentYear, parseInt(month, 10), 1));
   }
 
   function handleYearChange(year: string) {
-    const newDate = new Date(currentDate);
-    newDate.setFullYear(parseInt(year, 10));
-    setCurrentDate(newDate);
+    setCurrentDate(new Date(parseInt(year, 10), currentMonth, 1));
   }
 
   function isDateDisabled(date: Date) {
@@ -281,37 +276,32 @@ export function Calendar({
 
         <div className="flex min-w-0 flex-1 items-center justify-center gap-1">
           {showMonthYearPickers ? (
+            // The app's own listbox, not a portalled one: its options render
+            // inside DateField's popover, so picking one isn't mistaken for a
+            // click outside the popover (which closes it).
             <div className="flex items-center gap-1.5">
               <Select
+                ariaLabel="Month"
                 value={String(currentMonth)}
-                onValueChange={handleMonthChange}
-              >
-                <SelectTrigger size="sm" className="h-7 w-[108px] text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTHS.map((month, index) => (
-                    <SelectItem key={month} value={String(index)}>
-                      {month}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={handleMonthChange}
+                options={MONTHS.map((month, index) => ({
+                  value: String(index),
+                  label: month,
+                }))}
+                className="w-[112px]"
+                triggerClassName="h-7 text-xs"
+              />
               <Select
+                ariaLabel="Year"
                 value={String(currentYear)}
-                onValueChange={handleYearChange}
-              >
-                <SelectTrigger size="sm" className="h-7 w-[76px] text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearRange.map((year) => (
-                    <SelectItem key={year} value={String(year)}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={handleYearChange}
+                options={yearRange.map((year) => ({
+                  value: String(year),
+                  label: String(year),
+                }))}
+                className="w-[80px]"
+                triggerClassName="h-7 text-xs"
+              />
             </div>
           ) : (
             <span

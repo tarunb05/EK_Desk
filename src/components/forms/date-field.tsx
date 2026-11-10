@@ -162,6 +162,9 @@ export function DateField({
             onSelect={handleSelect}
             minDate={minDate}
             maxDate={maxDate}
+            // Month and year dropdowns, so a date months or years away is
+            // two picks rather than a click per month.
+            showMonthYearPickers
           />
         </div>
       ) : null}
