@@ -20,7 +20,12 @@ export function VoidPaymentForm({ paymentId }: { paymentId: string }) {
   const formRef = useFocusFirstError(state.fieldErrors);
 
   return (
-    <form ref={formRef} action={formAction} noValidate className="flex flex-col gap-4">
+    <form
+      ref={formRef}
+      action={formAction}
+      noValidate
+      className="flex flex-col gap-4"
+    >
       <input type="hidden" name="paymentId" value={paymentId} />
 
       <Field label="Reason for voiding" error={state.fieldErrors?.voidReason}>

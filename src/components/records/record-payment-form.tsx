@@ -31,7 +31,12 @@ export function RecordPaymentForm({ feeAccountId }: { feeAccountId: string }) {
   const [method, setMethod] = useState("cash");
 
   return (
-    <form ref={formRef} action={formAction} noValidate className="flex flex-col gap-4">
+    <form
+      ref={formRef}
+      action={formAction}
+      noValidate
+      className="flex flex-col gap-4"
+    >
       <input type="hidden" name="feeAccountId" value={feeAccountId} />
 
       <Field label="Amount (₹)" error={state.fieldErrors?.amount}>
