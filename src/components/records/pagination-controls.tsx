@@ -8,12 +8,13 @@ interface PaginationControlsProps {
   searchParams: Record<string, string | undefined>;
 }
 
+// max-md sizes: 40px tap targets on phones; desktop stays compact.
 const disabledClassName =
-  "rounded-md border border-border px-3 py-1 text-ink-muted opacity-40";
+  "rounded-md border border-border px-3 py-1 text-ink-muted opacity-40 max-md:py-2.5";
 const enabledClassName =
-  "rounded-md border border-border px-3 py-1 transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent";
+  "rounded-md border border-border px-3 py-1 transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent max-md:py-2.5";
 const pageNumberClassName =
-  "flex h-7 w-7 items-center justify-center rounded-md text-sm transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-accent";
+  "flex h-7 w-7 items-center justify-center rounded-md text-sm transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-accent max-md:h-10 max-md:w-10";
 
 // A window of 1 … current-1, current, current+1 … totalPages, collapsing
 // the ellipsis away once the run of numbers on either side reaches the end.

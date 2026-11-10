@@ -95,7 +95,7 @@ export function ActionMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
-        className="flex h-7 items-center gap-1 rounded-md border border-border bg-surface px-2 text-2xs text-ink-secondary outline-none transition-colors hover:bg-surface-accent hover:text-ink focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60"
+        className="flex h-7 items-center gap-1 rounded-md border border-border bg-surface px-2 text-2xs max-md:h-10 max-md:px-3 max-md:text-xs text-ink-secondary outline-none transition-colors hover:bg-surface-accent hover:text-ink focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60"
       >
         {triggerLabel}
         <ChevronDownIcon

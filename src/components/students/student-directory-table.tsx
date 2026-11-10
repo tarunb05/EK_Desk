@@ -222,7 +222,10 @@ export function StudentDirectoryTable({
                   <td className="px-3 max-md:order-1 max-md:min-w-0 max-md:truncate max-md:font-medium">
                     <Link
                       href={`/students/student/${row.id}`}
-                      className="text-accent hover:underline"
+                      // On phones, padding with a matching negative margin
+                      // gives the name a ~40px tap target without making
+                      // the card taller.
+                      className="text-accent hover:underline max-md:-my-3 max-md:inline-block max-md:py-3"
                     >
                       {row.fullName}
                     </Link>
