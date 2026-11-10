@@ -13,7 +13,7 @@ import { type ActionState, recordPayment } from "@/lib/records/actions";
 
 const initialState: ActionState = { error: null };
 
-const METHOD_OPTIONS = [
+export const METHOD_OPTIONS = [
   { value: "cash", label: "Cash" },
   { value: "upi", label: "UPI" },
   { value: "cheque", label: "Cheque" },

@@ -39,6 +39,7 @@ export default async function NewDaycareStudentFromStudentsPage({
         serviceType="daycare"
         branches={branches}
         academicYearId={scope.year.id}
+        academicYearEndsOn={scope.year.endsOn}
       />
     </div>
   );

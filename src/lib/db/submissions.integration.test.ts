@@ -342,6 +342,156 @@ describe("submission and approval flow", () => {
     });
   });
 
+  // Submits as teacher A, approves as admin, one daycare stint per call.
+  async function submitAndApproveDaycare(
+    admissionNo: string,
+    startsOn: string,
+    endsOn: string,
+  ) {
+    await impersonate(client, TEACHER_A_ID);
+    const submission = await client.query<{ id: string }>(
+      `insert into student_submission
+         (branch_id, submitted_by, admission_no, full_name, guardian_name, phone, class_section,
+          academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, slot)
+       values ($1, $2, $3, 'Daycare Kid', 'Guardian', '9000000012', 'Nursery-A',
+               $4, 'daycare', 400000, $5, $5, $6, 'Afternoon')
+       returning id`,
+      [branchAId, TEACHER_A_ID, admissionNo, academicYearId, startsOn, endsOn],
+    );
+    await impersonate(client, ADMIN_ID);
+    return client.query("select approve_student_submission($1)", [
+      submission.rows[0]!.id,
+    ]);
+  }
+
+  it("approves several non-overlapping daycare enrollments for the same student in one year", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      await submitAndApproveDaycare("DC-MULTI-1", "2026-11-01", "2026-11-30");
+      // Starts the day after the first one ends -- back to back, no overlap.
+      await submitAndApproveDaycare("DC-MULTI-1", "2026-12-01", "2026-12-07");
+
+      const accounts = await client.query(
+        `select fa.id from fee_account fa
+         join student s on s.id = fa.student_id
+         where s.admission_no = 'DC-MULTI-1' and fa.service_type = 'daycare'`,
+      );
+      expect(accounts.rows).toHaveLength(2);
+      const students = await client.query(
+        "select id from student where admission_no = 'DC-MULTI-1'",
+      );
+      expect(students.rows).toHaveLength(1);
+    });
+  });
+
+  it("rejects approving a daycare enrollment that overlaps an active one", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      await submitAndApproveDaycare("DC-OVERLAP-1", "2026-11-01", "2026-11-30");
+
+      await client.query("savepoint before_overlap_approve");
+      // Shares 30 Nov with the first enrollment -- both ends are inclusive.
+      await expect(
+        submitAndApproveDaycare("DC-OVERLAP-1", "2026-11-30", "2026-12-06"),
+      ).rejects.toMatchObject({ code: "23P01" });
+      await client.query("rollback to savepoint before_overlap_approve");
+
+      const accounts = await client.query(
+        `select fa.id from fee_account fa
+         join student s on s.id = fa.student_id
+         where s.admission_no = 'DC-OVERLAP-1' and fa.service_type = 'daycare'`,
+      );
+      expect(accounts.rows).toHaveLength(1);
+    });
+  });
+
+  it("lets a discontinued daycare enrollment be replaced by one with overlapping dates", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      await submitAndApproveDaycare("DC-REPLACE-1", "2026-11-01", "2026-11-30");
+      await client.query(
+        `update fee_account set status = 'discontinued'
+         where student_id = (select id from student where admission_no = 'DC-REPLACE-1')`,
+      );
+
+      await submitAndApproveDaycare("DC-REPLACE-1", "2026-11-15", "2026-12-14");
+
+      // Reactivating the discontinued one now overlaps the replacement.
+      await client.query("savepoint before_reactivate");
+      await expect(
+        client.query(
+          `update fee_account set status = 'active'
+           where student_id = (select id from student where admission_no = 'DC-REPLACE-1')
+             and status = 'discontinued'`,
+        ),
+      ).rejects.toMatchObject({ code: "23P01" });
+      await client.query("rollback to savepoint before_reactivate");
+    });
+  });
+
+  it("approving a student submission marked as paid records the payment in the same step", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      await impersonate(client, TEACHER_A_ID);
+      const submission = await client.query<{ id: string }>(
+        `insert into student_submission
+           (branch_id, submitted_by, admission_no, full_name, guardian_name, phone, class_section,
+            academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, slot,
+            paid_amount_paise, paid_on, paid_method, paid_reference)
+         values ($1, $2, 'PAID-1', 'Paid Kid', 'Guardian', '9000000013', 'Daycare',
+                 $3, 'daycare', 400000, '2026-11-11', '2026-11-11', '2026-12-10', 'Afternoon',
+                 150000, '2026-11-11', 'upi', '')
+         returning id`,
+        [branchAId, TEACHER_A_ID, academicYearId],
+      );
+
+      await impersonate(client, ADMIN_ID);
+      await client.query("select approve_student_submission($1)", [
+        submission.rows[0]!.id,
+      ]);
+
+      const payments = await client.query<{
+        amount_paise: string;
+        method: string;
+        reference: string | null;
+        recorded_by: string;
+      }>(
+        `select p.amount_paise, p.method, p.reference, p.recorded_by
+         from payment p
+         join fee_account fa on fa.id = p.fee_account_id
+         join student s on s.id = fa.student_id
+         where s.admission_no = 'PAID-1'`,
+      );
+      expect(payments.rows).toEqual([
+        {
+          amount_paise: "150000",
+          method: "upi",
+          reference: null,
+          recorded_by: "Test Teacher A",
+        },
+      ]);
+    });
+  });
+
+  it("rejects a student submission whose payment is more than the total receivable", async () => {
+    await withRollback(client, async () => {
+      await seedProfiles(client);
+      await impersonate(client, TEACHER_A_ID);
+      await expect(
+        client.query(
+          `insert into student_submission
+             (branch_id, submitted_by, admission_no, full_name, guardian_name, phone, class_section,
+              academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, slot,
+              paid_amount_paise, paid_on, paid_method)
+           values ($1, $2, 'PAID-2', 'Paid Kid', 'Guardian', '9000000014', 'Daycare',
+                   $3, 'daycare', 400000, '2026-11-11', '2026-11-11', '2026-12-10', 'Afternoon',
+                   400100, '2026-11-11', 'cash')`,
+          [branchAId, TEACHER_A_ID, academicYearId],
+        ),
+      ).rejects.toThrow(/student_submission_paid_amount_in_range/);
+    });
+  });
+
   it("rejecting a submission creates nothing and records the reason", async () => {
     await withRollback(client, async () => {
       await seedProfiles(client);

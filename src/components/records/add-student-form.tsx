@@ -8,7 +8,9 @@ import {
   primaryButtonClassName,
 } from "@/components/forms/field";
 import { Select } from "@/components/forms/select";
-import { DateField } from "@/components/forms/date-field";
+import { DateField, toIso } from "@/components/forms/date-field";
+import { Checkbox } from "@/components/forms/checkbox";
+import { METHOD_OPTIONS } from "@/components/records/record-payment-form";
 import {
   createStudentWithFeeAccount,
   type ActionState,
@@ -16,20 +18,33 @@ import {
 import type { ServiceType } from "@/lib/records/types";
 import type { BranchOption } from "@/lib/shell/resolve-year-branch";
 import { CLASS_SECTIONS } from "@/lib/records/class-sections";
+import {
+  enrollmentEndsOn,
+  type EnrollmentPeriod,
+} from "@/lib/domain/enrollment-period";
 import { useToast } from "@/components/shell/toast-context";
 
 const initialState: ActionState = { error: null };
+
+const PERIOD_OPTIONS: { value: EnrollmentPeriod | ""; label: string }[] = [
+  { value: "", label: "Choose a period" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+];
 
 interface AddStudentFormProps {
   serviceType: ServiceType;
   branches: BranchOption[];
   academicYearId: string;
+  academicYearEndsOn: string;
 }
 
 export function AddStudentForm({
   serviceType,
   branches,
   academicYearId,
+  academicYearEndsOn,
 }: AddStudentFormProps) {
   const [state, formAction, isPending] = useActionState(
     createStudentWithFeeAccount,
@@ -54,7 +69,48 @@ export function AddStudentForm({
   const [slot, setSlot] = useState("");
   const [notes, setNotes] = useState("");
   const [totalReceivable, setTotalReceivable] = useState("");
+  // Daycare only: picking a period fills both dates, which stay editable.
+  const [period, setPeriod] = useState<EnrollmentPeriod | "">("");
+  const [startsOn, setStartsOn] = useState("");
+  const [endsOn, setEndsOn] = useState("");
+  // Optional payment taken while adding the student; the amount starts at
+  // Total receivable and can be lowered for a part-payment.
+  const [paid, setPaid] = useState(false);
+  const [paidAmount, setPaidAmount] = useState("");
+  const [paidOn, setPaidOn] = useState("");
+  const [paidMethod, setPaidMethod] = useState("cash");
+  const [paidReference, setPaidReference] = useState("");
   const { showToast } = useToast();
+
+  function handlePaidChange(next: boolean) {
+    setPaid(next);
+    if (!next) return;
+    if (!paidAmount) setPaidAmount(totalReceivable);
+    if (!paidOn) setPaidOn(toIso(new Date()));
+  }
+
+  // Keeps Amount paid following Total receivable until staff type their
+  // own amount (a part-payment) -- after that it's left alone.
+  function handleTotalReceivableChange(next: string) {
+    if (paidAmount === "" || paidAmount === totalReceivable) {
+      setPaidAmount(next);
+    }
+    setTotalReceivable(next);
+  }
+
+  function handlePeriodChange(next: string) {
+    const nextPeriod = next as EnrollmentPeriod | "";
+    setPeriod(nextPeriod);
+    if (!nextPeriod) return;
+    const start = startsOn || toIso(new Date());
+    setStartsOn(start);
+    setEndsOn(enrollmentEndsOn(start, nextPeriod, academicYearEndsOn));
+  }
+
+  function handleStartsOnChange(next: string) {
+    setStartsOn(next);
+    if (period) setEndsOn(enrollmentEndsOn(next, period, academicYearEndsOn));
+  }
 
   // The admin path redirects on success (see actions.ts's setToastNotice +
   // ToastNoticeReader for that toast) -- a teacher's request-add doesn't
@@ -144,21 +200,26 @@ export function AddStudentForm({
         />
       </Field>
 
-      <Field label="Grade" error={state.fieldErrors?.classSection}>
-        <Select
-          name="classSection"
-          ariaLabel="Grade"
-          value={classSection}
-          onChange={setClassSection}
-          options={[
-            { value: "", label: "Choose a grade" },
-            ...CLASS_SECTIONS.map((section) => ({
-              value: section,
-              label: section,
-            })),
-          ]}
-        />
-      </Field>
+      {/* Every daycare student's grade is "Daycare", so there's nothing to pick. */}
+      {serviceType === "daycare" ? (
+        <input type="hidden" name="classSection" value="Daycare" />
+      ) : (
+        <Field label="Grade" error={state.fieldErrors?.classSection}>
+          <Select
+            name="classSection"
+            ariaLabel="Grade"
+            value={classSection}
+            onChange={setClassSection}
+            options={[
+              { value: "", label: "Choose a grade" },
+              ...CLASS_SECTIONS.map((section) => ({
+                value: section,
+                label: section,
+              })),
+            ]}
+          />
+        </Field>
+      )}
 
       <Field label="Notes (optional)" error={state.fieldErrors?.notes}>
         <input
@@ -202,7 +263,7 @@ export function AddStudentForm({
           step="1"
           required
           value={totalReceivable}
-          onChange={(event) => setTotalReceivable(event.target.value)}
+          onChange={(event) => handleTotalReceivableChange(event.target.value)}
           className={inputClassName}
         />
       </Field>
@@ -211,13 +272,94 @@ export function AddStudentForm({
         <DateField name="dueDate" required ariaLabel="Due date" />
       </Field>
 
+      {serviceType === "daycare" ? (
+        <Field label="Enrollment period">
+          <Select
+            ariaLabel="Enrollment period"
+            value={period}
+            onChange={handlePeriodChange}
+            options={PERIOD_OPTIONS}
+          />
+        </Field>
+      ) : null}
+
       <Field label="Starts on" error={state.fieldErrors?.startsOn}>
-        <DateField name="startsOn" required ariaLabel="Starts on" />
+        <DateField
+          name="startsOn"
+          required
+          ariaLabel="Starts on"
+          value={startsOn}
+          onChange={handleStartsOnChange}
+        />
       </Field>
 
       <Field label="Ends on" error={state.fieldErrors?.endsOn}>
-        <DateField name="endsOn" required ariaLabel="Ends on" />
+        <DateField
+          name="endsOn"
+          required
+          ariaLabel="Ends on"
+          value={endsOn}
+          onChange={setEndsOn}
+        />
       </Field>
+
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="paid"
+          name="paid"
+          checked={paid}
+          onChange={handlePaidChange}
+        />
+        <label htmlFor="paid" className="text-sm text-ink-secondary">
+          Paid — record a payment now
+        </label>
+      </div>
+
+      {paid ? (
+        <>
+          <Field label="Amount paid (₹)" error={state.fieldErrors?.paidAmount}>
+            <input
+              name="paidAmount"
+              type="number"
+              min="0"
+              step="1"
+              required
+              value={paidAmount}
+              onChange={(event) => setPaidAmount(event.target.value)}
+              className={inputClassName}
+            />
+          </Field>
+
+          <Field label="Paid on" error={state.fieldErrors?.paidOn}>
+            <DateField
+              name="paidOn"
+              required
+              ariaLabel="Paid on"
+              value={paidOn}
+              onChange={setPaidOn}
+            />
+          </Field>
+
+          <Field label="Method" error={state.fieldErrors?.paidMethod}>
+            <Select
+              name="paidMethod"
+              ariaLabel="Method"
+              value={paidMethod}
+              onChange={setPaidMethod}
+              options={METHOD_OPTIONS}
+            />
+          </Field>
+
+          <Field label="Reference (optional)">
+            <input
+              name="paidReference"
+              value={paidReference}
+              onChange={(event) => setPaidReference(event.target.value)}
+              className={inputClassName}
+            />
+          </Field>
+        </>
+      ) : null}
 
       <FormError error={state.error} />
 

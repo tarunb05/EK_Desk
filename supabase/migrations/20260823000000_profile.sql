@@ -17,8 +17,18 @@ begin
     create table auth.users (
       id uuid primary key default gen_random_uuid(),
       email text,
+      -- Read by verify_current_password (20260920000000).
+      encrypted_password text,
       raw_user_meta_data jsonb not null default '{}'::jsonb
     );
+  end if;
+
+  -- Supabase installs extensions into an `extensions` schema, and later
+  -- migrations call extensions.crypt() by that name; a bare Postgres put
+  -- pgcrypto in public (20260821000001), so move it to match.
+  if not exists (select from pg_namespace where nspname = 'extensions') then
+    create schema extensions;
+    alter extension pgcrypto set schema extensions;
   end if;
 
   if not exists (

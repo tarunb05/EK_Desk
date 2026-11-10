@@ -1270,6 +1270,10 @@ export type Database = {
           guardian_name: string
           id: string
           notes: string | null
+          paid_amount_paise: number | null
+          paid_method: string | null
+          paid_on: string | null
+          paid_reference: string | null
           phone: string
           pickup_point: string | null
           review_note: string | null
@@ -1299,6 +1303,10 @@ export type Database = {
           guardian_name: string
           id?: string
           notes?: string | null
+          paid_amount_paise?: number | null
+          paid_method?: string | null
+          paid_on?: string | null
+          paid_reference?: string | null
           phone: string
           pickup_point?: string | null
           review_note?: string | null
@@ -1328,6 +1336,10 @@ export type Database = {
           guardian_name?: string
           id?: string
           notes?: string | null
+          paid_amount_paise?: number | null
+          paid_method?: string | null
+          paid_on?: string | null
+          paid_reference?: string | null
           phone?: string
           pickup_point?: string | null
           review_note?: string | null
