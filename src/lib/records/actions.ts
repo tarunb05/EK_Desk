@@ -197,10 +197,18 @@ export async function createStudentWithFeeAccount(
     // Pickup point error entirely, showing only one of the two problems.
     // Re-checked here directly against the raw field, independent of
     // whatever else on the form is or isn't valid.
-    if (raw.serviceType === "transport" && !fieldErrors.pickupPoint && !raw.pickupPoint?.trim()) {
+    if (
+      raw.serviceType === "transport" &&
+      !fieldErrors.pickupPoint &&
+      !raw.pickupPoint?.trim()
+    ) {
       fieldErrors.pickupPoint = "Enter a pickup point.";
     }
-    if (raw.serviceType === "daycare" && !fieldErrors.slot && !raw.slot?.trim()) {
+    if (
+      raw.serviceType === "daycare" &&
+      !fieldErrors.slot &&
+      !raw.slot?.trim()
+    ) {
       fieldErrors.slot = "Choose a slot.";
     }
     return { error: null, fieldErrors };
@@ -647,8 +655,7 @@ export async function requestStudentDelete(
 
   if (error) {
     return {
-      error:
-        "Could not submit this delete request — it may already be queued.",
+      error: "Could not submit this delete request — it may already be queued.",
     };
   }
 
