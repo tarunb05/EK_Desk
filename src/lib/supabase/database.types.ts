@@ -285,6 +285,107 @@ export type Database = {
           },
         ]
       }
+      enrollment_delete_submission: {
+        Row: {
+          branch_id: string
+          created_at: string
+          enrollment_label: string
+          fee_account_id: string | null
+          id: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          student_admission_no: string
+          student_full_name: string
+          submitted_at: string
+          submitted_by: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          enrollment_label: string
+          fee_account_id?: string | null
+          id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_admission_no: string
+          student_full_name: string
+          submitted_at?: string
+          submitted_by: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          enrollment_label?: string
+          fee_account_id?: string | null
+          id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_admission_no?: string
+          student_full_name?: string
+          submitted_at?: string
+          submitted_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollment_delete_submission_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollment_delete_submission_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["branch_id"]
+          },
+          {
+            foreignKeyName: "enrollment_delete_submission_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollment_delete_submission_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_balance"
+            referencedColumns: ["fee_account_id"]
+          },
+          {
+            foreignKeyName: "enrollment_delete_submission_fee_account_id_fkey"
+            columns: ["fee_account_id"]
+            isOneToOne: false
+            referencedRelation: "fee_account_record"
+            referencedColumns: ["fee_account_id"]
+          },
+          {
+            foreignKeyName: "enrollment_delete_submission_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollment_delete_submission_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense: {
         Row: {
           academic_year_id: string
@@ -1675,6 +1776,7 @@ export type Database = {
       }
     }
     Functions: {
+      approve_enrollment_delete: { Args: { p_id: string }; Returns: undefined }
       approve_payment_submission: { Args: { p_id: string }; Returns: string }
       approve_student_delete: { Args: { p_id: string }; Returns: undefined }
       approve_student_edit: { Args: { p_id: string }; Returns: undefined }
@@ -1784,12 +1886,23 @@ export type Database = {
         Returns: Json
       }
       expense_category_breakdown: {
-        Args: { p_academic_year_id: string; p_branch_code?: string }
+        Args: {
+          p_branch_code?: string
+          p_category_id?: string
+          p_from?: string
+          p_method?: string
+          p_q?: string
+          p_to?: string
+        }
         Returns: {
           amount_paise: number
           category_id: string
           category_name: string
         }[]
+      }
+      hard_delete_fee_account: {
+        Args: { p_fee_account_id: string }
+        Returns: undefined
       }
       hard_delete_student: {
         Args: { p_student_id: string }
@@ -1828,6 +1941,7 @@ export type Database = {
         Args: { p_id: string; p_token_hash: string }
         Returns: undefined
       }
+      roll_academic_year: { Args: { p_today?: string }; Returns: undefined }
       save_collection_account: {
         Args: {
           p_account_holder?: string

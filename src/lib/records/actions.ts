@@ -8,9 +8,14 @@ import type { Role } from "@/lib/auth/routes";
 import { setToastNotice } from "@/lib/shell/toast-cookie";
 import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
 import { EXPENSE_SANITY_CEILING_PAISE } from "@/lib/domain/money";
-import { isWithinAcademicYear } from "@/lib/domain/academic-year";
+import {
+  academicYearContaining,
+  isWithinAcademicYear,
+} from "@/lib/domain/academic-year";
+import { getAcademicYears } from "@/lib/supabase/queries";
 import { formatLogDate } from "@/lib/domain/datetime";
 import { enrollmentsOverlap } from "@/lib/domain/enrollment-period";
+import { enrollmentLabel } from "@/lib/domain/enrollment-label";
 import {
   canTransitionStudentStatus,
   type StudentStatus,
@@ -19,11 +24,15 @@ import {
   approveSubmissionSchema,
   archiveStudentSchema,
   createStudentWithFeeAccountSchema,
+  deleteEnrollmentSchema,
+  requestEnrollmentDeleteSchema,
   initialPaymentSchema,
+  type InitialPayment,
   deleteExpenseSchema,
   permanentlyDeleteStudentSchema,
   recordExpenseSchema,
   recordPaymentSchema,
+  reEnrollStudentSchema,
   rejectSubmissionSchema,
   requestStudentDeleteSchema,
   updateExpenseSchema,
@@ -172,18 +181,71 @@ function duplicateServiceError(
   };
 }
 
+// Reads the optional "Paid" section of an enrollment form: not ticked is no
+// payment and no errors; ticked but incomplete is field errors to show.
+function parseInitialPayment(raw: Record<string, string>): {
+  payment: InitialPayment | null;
+  errors: Record<string, string>;
+} {
+  if (raw.paid !== "on") return { payment: null, errors: {} };
+  const parsed = initialPaymentSchema.safeParse(raw);
+  return parsed.success
+    ? { payment: parsed.data, errors: {} }
+    : { payment: null, errors: fieldErrorsFromZod(parsed.error) };
+}
+
+function paymentTooLargeError(
+  payment: InitialPayment | null,
+  totalReceivable: bigint,
+): ActionState | null {
+  if (!payment || payment.paidAmount <= totalReceivable) return null;
+  return {
+    error: null,
+    fieldErrors: {
+      paidAmount: "The amount paid can't be more than Total receivable.",
+    },
+  };
+}
+
+// Records the "Paid" part of an enrollment form against the enrollment just
+// saved, under the signed-in person's name. On failure `reason` is a phrase
+// to splice into the message (empty when the cause isn't one we can name).
+async function recordInitialPayment(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  feeAccountId: string,
+  payment: InitialPayment,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const { data: profile } = await supabase
+    .from("profile")
+    .select("full_name")
+    .eq("id", userId)
+    .maybeSingle();
+  const { error } = await supabase.from("payment").insert({
+    fee_account_id: feeAccountId,
+    amount_paise: Number(payment.paidAmount),
+    paid_on: payment.paidOn,
+    method: payment.paidMethod,
+    // `|| null`, not `??` -- see recordPayment.
+    reference: payment.paidReference || null,
+    recorded_by: profile?.full_name ?? "Admin",
+  });
+  if (!error) return { ok: true };
+  return {
+    ok: false,
+    reason: isDuplicateUpiReference(error)
+      ? " — that UPI reference is already on another payment"
+      : "",
+  };
+}
+
 export async function createStudentWithFeeAccount(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   const raw = formEntries(formData);
   const parsed = createStudentWithFeeAccountSchema.safeParse(raw);
-  const paymentParsed =
-    raw.paid === "on" ? initialPaymentSchema.safeParse(raw) : null;
-  const paymentErrors =
-    paymentParsed && !paymentParsed.success
-      ? fieldErrorsFromZod(paymentParsed.error)
-      : {};
+  const { payment, errors: paymentErrors } = parseInitialPayment(raw);
   if (!parsed.success) {
     const fieldErrors = {
       ...paymentErrors,
@@ -197,27 +259,28 @@ export async function createStudentWithFeeAccount(
     // Pickup point error entirely, showing only one of the two problems.
     // Re-checked here directly against the raw field, independent of
     // whatever else on the form is or isn't valid.
-    if (raw.serviceType === "transport" && !fieldErrors.pickupPoint && !raw.pickupPoint?.trim()) {
+    if (
+      raw.serviceType === "transport" &&
+      !fieldErrors.pickupPoint &&
+      !raw.pickupPoint?.trim()
+    ) {
       fieldErrors.pickupPoint = "Enter a pickup point.";
     }
-    if (raw.serviceType === "daycare" && !fieldErrors.slot && !raw.slot?.trim()) {
+    if (
+      raw.serviceType === "daycare" &&
+      !fieldErrors.slot &&
+      !raw.slot?.trim()
+    ) {
       fieldErrors.slot = "Choose a slot.";
     }
     return { error: null, fieldErrors };
   }
-  if (paymentParsed && !paymentParsed.success) {
+  if (Object.keys(paymentErrors).length > 0) {
     return { error: null, fieldErrors: paymentErrors };
   }
   const value = parsed.data;
-  const payment = paymentParsed?.data ?? null;
-  if (payment && payment.paidAmount > value.totalReceivable) {
-    return {
-      error: null,
-      fieldErrors: {
-        paidAmount: "The amount paid can't be more than Total receivable.",
-      },
-    };
-  }
+  const tooMuch = paymentTooLargeError(payment, value.totalReceivable);
+  if (tooMuch) return tooMuch;
   const authed = await requireAuth();
   const supabase = await createClient();
 
@@ -308,30 +371,19 @@ export async function createStudentWithFeeAccount(
   }
 
   if (payment) {
-    const { data: profile } = await supabase
-      .from("profile")
-      .select("full_name")
-      .eq("id", authed.userId)
-      .maybeSingle();
-    const { error: paymentError } = await supabase.from("payment").insert({
-      fee_account_id: feeAccount.id,
-      amount_paise: Number(payment.paidAmount),
-      paid_on: payment.paidOn,
-      method: payment.paidMethod,
-      // `|| null`, not `??` -- see recordPayment.
-      reference: payment.paidReference || null,
-      recorded_by: profile?.full_name ?? "Admin",
-    });
+    const recorded = await recordInitialPayment(
+      supabase,
+      authed.userId,
+      feeAccount.id,
+      payment,
+    );
     // The student and enrollment are already saved at this point, so say
     // exactly that rather than a failure that invites adding them twice.
-    if (paymentError) {
+    if (!recorded.ok) {
       revalidatePath(`/${value.serviceType}`);
       revalidatePath("/students");
-      const reason = isDuplicateUpiReference(paymentError)
-        ? " — that UPI reference is already on another payment"
-        : "";
       return {
-        error: `${value.fullName} was added, but the payment couldn't be recorded${reason}. Record it from their student page instead of adding them again.`,
+        error: `${value.fullName} was added, but the payment couldn't be recorded${recorded.reason}. Record it from their student page instead of adding them again.`,
       };
     }
   }
@@ -340,6 +392,144 @@ export async function createStudentWithFeeAccount(
   revalidatePath("/students");
   await setToastNotice(`${value.fullName} added.`);
   redirect(afterSaveRoute(authed.role, value.serviceType));
+}
+
+// A returning daycare student books another stint: a new fee_account on the
+// same student row, so nothing about them is re-entered and every earlier
+// enrollment and payment stays exactly as it was. The same overlap rule as
+// adding applies (no two active daycare stints may share a day).
+export async function reEnrollStudent(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const raw = formEntries(formData);
+  const parsed = reEnrollStudentSchema.safeParse(raw);
+  const { payment, errors: paymentErrors } = parseInitialPayment(raw);
+  if (!parsed.success) {
+    return {
+      error: null,
+      fieldErrors: { ...paymentErrors, ...fieldErrorsFromZod(parsed.error) },
+    };
+  }
+  if (Object.keys(paymentErrors).length > 0) {
+    return { error: null, fieldErrors: paymentErrors };
+  }
+  const value = parsed.data;
+  const tooMuch = paymentTooLargeError(payment, value.totalReceivable);
+  if (tooMuch) return tooMuch;
+
+  const authed = await requireAuth();
+  const supabase = await createClient();
+
+  // RLS already limits a teacher to their own branch's students.
+  const { data: student } = await supabase
+    .from("student")
+    .select(
+      "id, full_name, admission_no, status, guardian_name, phone, whatsapp_phone, class_section, notes",
+    )
+    .eq("id", value.studentId)
+    .maybeSingle();
+  if (!student) return { error: "Could not find that student." };
+  if (student.status !== "active") {
+    return {
+      error: `${student.full_name} isn't an active student (${student.status}), so they can't be re-enrolled.`,
+    };
+  }
+
+  const { data: activeAccounts, error: lookupError } = await supabase
+    .from("fee_account")
+    .select("service_type, starts_on, ends_on")
+    .eq("student_id", student.id)
+    .eq("status", "active");
+  if (lookupError) {
+    return { error: "Could not check this student's current enrollments." };
+  }
+  const overlap = duplicateEnrollmentError(activeAccounts, {
+    admissionNo: student.admission_no,
+    serviceType: "daycare",
+    startsOn: value.startsOn,
+    endsOn: value.endsOn,
+  });
+  if (overlap) return overlap;
+
+  // The form is pre-filled from the student's record, so anything changed on
+  // the way through is a correction to it -- saved here like the edit form
+  // does, but only when something actually differs, so a re-enrollment with
+  // no corrections doesn't add a no-op student update to the activity log.
+  const details = {
+    full_name: value.fullName,
+    guardian_name: value.guardianName,
+    phone: value.phone,
+    whatsapp_phone: value.whatsappPhone || null,
+    class_section: value.classSection,
+    notes: value.notes || null,
+  };
+  const detailsChanged =
+    details.full_name !== student.full_name ||
+    details.guardian_name !== student.guardian_name ||
+    details.phone !== student.phone ||
+    details.whatsapp_phone !== (student.whatsapp_phone || null) ||
+    details.class_section !== student.class_section ||
+    details.notes !== (student.notes || null);
+  if (detailsChanged) {
+    const { error: studentError } = await supabase
+      .from("student")
+      .update(details)
+      .eq("id", student.id);
+    if (studentError) {
+      return { error: "Could not update the student's details." };
+    }
+  }
+
+  // The stint belongs to the academic year it starts in; the year the form
+  // came from is only the fallback for a start date in a gap between years.
+  const years = await getAcademicYears(supabase);
+  const year = academicYearContaining(value.startsOn, years);
+
+  const { data: feeAccount, error: feeAccountError } = await supabase
+    .from("fee_account")
+    .insert({
+      student_id: student.id,
+      academic_year_id: year?.id ?? value.academicYearId,
+      service_type: "daycare",
+      total_receivable_paise: Number(value.totalReceivable),
+      due_date: value.dueDate,
+      starts_on: value.startsOn,
+      ends_on: value.endsOn,
+      slot: value.slot,
+    })
+    .select("id")
+    .single();
+  if (feeAccountError || !feeAccount) {
+    // Only reachable if another stint was saved between the check above and
+    // this insert.
+    if (feeAccountError?.code === EXCLUSION_VIOLATION) {
+      return { error: null, fieldErrors: { startsOn: DAYCARE_OVERLAP_ERROR } };
+    }
+    return { error: "Could not save the re-enrollment." };
+  }
+
+  if (payment) {
+    const recorded = await recordInitialPayment(
+      supabase,
+      authed.userId,
+      feeAccount.id,
+      payment,
+    );
+    if (!recorded.ok) {
+      revalidatePath("/students");
+      revalidatePath(`/students/student/${student.id}`);
+      return {
+        error: `${value.fullName} was re-enrolled, but the payment couldn't be recorded${recorded.reason}. Record it from the Actions menu instead of re-enrolling again.`,
+      };
+    }
+  }
+
+  revalidatePath("/students");
+  revalidatePath("/daycare");
+  revalidatePath(`/students/student/${student.id}`);
+  await setToastNotice(`${value.fullName} re-enrolled.`);
+  redirect(`/students/student/${student.id}`);
 }
 
 export async function updateFeeAccount(
@@ -600,6 +790,44 @@ export async function permanentlyDeleteStudent(
   return { error: null };
 }
 
+// Removes ONE enrollment -- its payments and payment requests go with it --
+// and leaves the student and their other enrollments alone. Admin only, and
+// refused for an enrollment with a confirmed payment claim, exactly like
+// deleting the whole student (hard_delete_fee_account in the database). A
+// teacher gets no version of this: to retire an enrollment without losing
+// its history they can set it to Discontinued from Edit.
+export async function deleteEnrollment(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("admin");
+
+  const parsed = deleteEnrollmentSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("hard_delete_fee_account", {
+    p_fee_account_id: parsed.data.feeAccountId,
+  });
+
+  if (error) {
+    return {
+      error: error.message.includes("confirmed payment")
+        ? "This enrollment has a confirmed payment on record and can't be deleted."
+        : error.message.includes("no longer exists")
+          ? "This enrollment no longer exists."
+          : "Could not delete this enrollment.",
+    };
+  }
+
+  revalidatePath("/students", "page");
+  revalidatePath("/transport", "page");
+  revalidatePath("/daycare", "page");
+  return { error: null };
+}
+
 // A teacher's version of permanentlyDeleteStudent -- same underlying
 // action, but a teacher can never do it directly (there's no grant path
 // for that, and there shouldn't be for something this irreversible).
@@ -647,8 +875,68 @@ export async function requestStudentDelete(
 
   if (error) {
     return {
-      error:
-        "Could not submit this delete request — it may already be queued.",
+      error: "Could not submit this delete request — it may already be queued.",
+    };
+  }
+
+  revalidatePath("/students", "page");
+  revalidatePath("/approvals");
+  return { error: null, submitted: true };
+}
+
+// A teacher's version of deleteEnrollment: queues a request for an admin to
+// approve (approve_enrollment_delete does the actual delete). The enrollment
+// is re-read server-side so the names and label stored with the request come
+// from the database, not the client, and so a teacher can only ask about an
+// enrollment in their own branch.
+export async function requestEnrollmentDelete(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = requestEnrollmentDeleteSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const authed = await requireAuth();
+  const supabase = await createClient();
+
+  const { data: account, error: readError } = await supabase
+    .from("fee_account")
+    .select(
+      "id, service_type, starts_on, ends_on, status, academic_year(label), student(full_name, admission_no, branch_id)",
+    )
+    .eq("id", parsed.data.feeAccountId)
+    .single();
+
+  if (readError || !account || !account.student) {
+    return { error: "Could not find this enrollment." };
+  }
+
+  if (
+    authed.role === "teacher" &&
+    account.student.branch_id !== authed.branchId
+  ) {
+    return { error: "You can only request deletion for your own branch." };
+  }
+
+  const { error } = await supabase.from("enrollment_delete_submission").insert({
+    fee_account_id: account.id,
+    branch_id: account.student.branch_id,
+    submitted_by: authed.userId,
+    student_full_name: account.student.full_name,
+    student_admission_no: account.student.admission_no,
+    enrollment_label: enrollmentLabel({
+      serviceType: account.service_type,
+      academicYearLabel: account.academic_year?.label ?? "",
+      startsOn: account.starts_on,
+      endsOn: account.ends_on,
+      status: account.status,
+    }),
+  });
+
+  if (error) {
+    return {
+      error: "Could not submit this delete request — it may already be queued.",
     };
   }
 
@@ -662,6 +950,7 @@ const APPROVE_RPC = {
   student_edit_submission: "approve_student_edit",
   payment_submission: "approve_payment_submission",
   student_delete_submission: "approve_student_delete",
+  enrollment_delete_submission: "approve_enrollment_delete",
 } as const;
 
 export async function approveSubmission(
@@ -684,6 +973,12 @@ export async function approveSubmission(
     if (error.code === EXCLUSION_VIOLATION) {
       return {
         error: `Could not approve this — ${DAYCARE_OVERLAP_ERROR.toLowerCase()} Reject it or change the other enrollment first.`,
+      };
+    }
+    if (error.message.includes("confirmed payment")) {
+      return {
+        error:
+          "Could not approve this — the enrollment has a confirmed payment on record and can't be deleted. Reject the request instead.",
       };
     }
     if (isDuplicateUpiReference(error)) {

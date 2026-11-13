@@ -6,7 +6,8 @@ export type SubmissionActionType =
   | "Student added"
   | "Student edited"
   | "Payment recorded"
-  | "Deletion requested";
+  | "Deletion requested"
+  | "Enrollment deletion requested";
 
 export interface FieldChange {
   label: string;
@@ -59,11 +60,22 @@ export interface PendingStudentDeleteSubmission {
   detail: { label: string; value: string }[];
 }
 
+export interface PendingEnrollmentDeleteSubmission {
+  table: "enrollment_delete_submission";
+  actionType: "Enrollment deletion requested";
+  id: string;
+  submittedAt: string;
+  branchId: string;
+  summary: string;
+  detail: { label: string; value: string }[];
+}
+
 export type PendingSubmission =
   | PendingStudentSubmission
   | PendingStudentEditSubmission
   | PendingPaymentSubmission
-  | PendingStudentDeleteSubmission;
+  | PendingStudentDeleteSubmission
+  | PendingEnrollmentDeleteSubmission;
 
 // null and "" both mean "nothing there" for these fields -- treating them as
 // equal avoids flagging a no-op change (e.g. notes staying unset) as if the
@@ -82,37 +94,44 @@ function diffField(
 export async function getPendingSubmissionCount(
   supabase: SupabaseClient<Database>,
 ): Promise<number> {
-  const [students, edits, payments, deletes] = await Promise.all([
-    supabase
-      .from("student_submission")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
-    supabase
-      .from("student_edit_submission")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
-    supabase
-      .from("payment_submission")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
-    supabase
-      .from("student_delete_submission")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
-  ]);
+  const [students, edits, payments, deletes, enrollmentDeletes] =
+    await Promise.all([
+      supabase
+        .from("student_submission")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      supabase
+        .from("student_edit_submission")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      supabase
+        .from("payment_submission")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      supabase
+        .from("student_delete_submission")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      supabase
+        .from("enrollment_delete_submission")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+    ]);
 
   return (
     (students.count ?? 0) +
     (edits.count ?? 0) +
     (payments.count ?? 0) +
-    (deletes.count ?? 0)
+    (deletes.count ?? 0) +
+    (enrollmentDeletes.count ?? 0)
   );
 }
 
 export async function getPendingSubmissions(
   supabase: SupabaseClient<Database>,
 ): Promise<PendingSubmission[]> {
-  const [students, edits, payments, deletes] = await Promise.all([
+  const [students, edits, payments, deletes, enrollmentDeletes] =
+    await Promise.all([
     supabase
       .from("student_submission")
       .select("*")
@@ -130,6 +149,11 @@ export async function getPendingSubmissions(
       .order("submitted_at", { ascending: true }),
     supabase
       .from("student_delete_submission")
+      .select("*")
+      .eq("status", "pending")
+      .order("submitted_at", { ascending: true }),
+    supabase
+      .from("enrollment_delete_submission")
       .select("*")
       .eq("status", "pending")
       .order("submitted_at", { ascending: true }),
@@ -140,6 +164,8 @@ export async function getPendingSubmissions(
   for (const row of edits.data ?? []) submittedByIds.add(row.submitted_by);
   for (const row of payments.data ?? []) submittedByIds.add(row.submitted_by);
   for (const row of deletes.data ?? []) submittedByIds.add(row.submitted_by);
+  for (const row of enrollmentDeletes.data ?? [])
+    submittedByIds.add(row.submitted_by);
 
   const { data: profiles } = await supabase
     .from("profile")
@@ -333,7 +359,31 @@ export async function getPendingSubmissions(
     ],
   }));
 
-  return [...studentRows, ...editRows, ...paymentRows, ...deleteRows].sort(
-    (a, b) => a.submittedAt.localeCompare(b.submittedAt),
-  );
+  const enrollmentDeleteRows: PendingEnrollmentDeleteSubmission[] = (
+    enrollmentDeletes.data ?? []
+  ).map((row) => ({
+    table: "enrollment_delete_submission",
+    actionType: "Enrollment deletion requested",
+    id: row.id,
+    submittedAt: row.submitted_at,
+    branchId: row.branch_id,
+    summary: `Delete enrollment — ${row.student_full_name} (${row.enrollment_label})`,
+    detail: [
+      {
+        label: "Submitted by",
+        value: submittedByName.get(row.submitted_by) ?? "",
+      },
+      { label: "Student", value: row.student_full_name },
+      { label: "Admission no.", value: row.student_admission_no },
+      { label: "Enrollment", value: row.enrollment_label },
+    ],
+  }));
+
+  return [
+    ...studentRows,
+    ...editRows,
+    ...paymentRows,
+    ...deleteRows,
+    ...enrollmentDeleteRows,
+  ].sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
 }

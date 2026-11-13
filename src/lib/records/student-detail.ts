@@ -72,6 +72,10 @@ export interface StudentFeeAccountDetail {
   collectedPaise: bigint;
   pendingPaise: bigint;
   dueDate: string;
+  startsOn: string;
+  endsOn: string;
+  // Daycare only; null for transport.
+  slot: string | null;
   status: string;
   payments: PaymentHistoryEntry[];
   // Every payment_request ever created against this account, newest
@@ -245,6 +249,9 @@ export async function getStudentDetail(
       collectedPaise: BigInt(fa.collected_paise ?? 0),
       pendingPaise: BigInt(fa.pending_paise ?? 0),
       dueDate: fa.due_date ?? "",
+      startsOn: fa.starts_on ?? "",
+      endsOn: fa.ends_on ?? "",
+      slot: fa.slot,
       status: fa.status ?? "active",
       payments: history,
       paymentRequests: requestsByAccount.get(fa.fee_account_id ?? "") ?? [],

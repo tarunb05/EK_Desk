@@ -1,6 +1,10 @@
 "use client";
 
-import { dangerButtonClassName, primaryButtonClassName } from "@/components/forms/field";
+import { useId } from "react";
+import {
+  dangerButtonClassName,
+  primaryButtonClassName,
+} from "@/components/forms/field";
 import { AlertIcon } from "@/components/shell/nav-icons";
 
 // A real in-page dialog, not window.confirm() -- native confirm()/alert()
@@ -29,11 +33,15 @@ export function DeleteConfirmDialog({
   onConfirm: () => void;
   onClose?: () => void;
 }) {
+  // Unique per dialog: every student row (and now each enrollment delete)
+  // renders one of these, so a fixed id would repeat all over the page.
+  const titleId = useId();
+
   return (
     <dialog
       ref={dialogRef}
       onClose={onClose}
-      aria-labelledby="delete-confirm-title"
+      aria-labelledby={titleId}
       className="w-full max-w-sm rounded-md border border-border bg-surface p-0 text-ink shadow-[0_1px_2px_rgba(0,0,0,.05)] backdrop:bg-ink/30"
     >
       <div className="flex gap-3 p-5">
@@ -48,7 +56,7 @@ export function DeleteConfirmDialog({
           <AlertIcon size={18} />
         </span>
         <div className="min-w-0 flex-1 pt-1">
-          <h2 id="delete-confirm-title" className="mb-1 text-base font-medium text-ink">
+          <h2 id={titleId} className="mb-1 text-base font-medium text-ink">
             {title}
           </h2>
           <p className="mb-4 text-sm text-ink-secondary">{message}</p>

@@ -76,10 +76,10 @@ describe("expense_category_breakdown (phase 10.4)", () => {
       const result = await client.query<{
         category_name: string;
         amount_paise: string;
-      }>("select category_name, amount_paise from expense_category_breakdown($1, $2)", [
-        academicYearId,
-        "BR-A",
-      ]);
+      }>(
+        "select category_name, amount_paise from expense_category_breakdown(p_branch_code => $1)",
+        ["BR-A"],
+      );
 
       const byName = new Map(
         result.rows.map((r) => [r.category_name, Number(r.amount_paise)]),
@@ -103,8 +103,8 @@ describe("expense_category_breakdown (phase 10.4)", () => {
       );
 
       const result = await client.query<{ category_name: string }>(
-        "select category_name from expense_category_breakdown($1, $2)",
-        [academicYearId, "BR-A"],
+        "select category_name from expense_category_breakdown(p_branch_code => $1)",
+        ["BR-A"],
       );
       expect(result.rows.map((r) => r.category_name)).toEqual(["Grocery"]);
     });
@@ -128,11 +128,143 @@ describe("expense_category_breakdown (phase 10.4)", () => {
       // Deliberately pass no branch filter (null) -- RLS, not the
       // parameter, must be what keeps this scoped to the teacher's branch.
       const result = await client.query<{ amount_paise: string }>(
-        "select amount_paise from expense_category_breakdown($1, null)",
-        [academicYearId],
+        "select amount_paise from expense_category_breakdown()",
       );
       expect(result.rowCount).toBe(1);
       expect(Number(result.rows[0]!.amount_paise)).toBe(10000);
+    });
+  });
+
+  // One fixture for the filter tests: both ends of November, the day either
+  // side of it, two categories, two methods, and text to search.
+  async function seedFilterFixture(client: Client) {
+    await seedFixtures(client);
+    await impersonateAdmin(client);
+    await client.query(
+      `insert into expense
+         (branch_id, academic_year_id, category_id, amount_paise, spent_on, method, reference, note, created_by)
+       values
+         ($1, $2, $3, 1000, '2026-10-31', 'cash',  null,    'last day of October', $5),
+         ($1, $2, $3, 2000, '2026-11-01', 'cash',  null,    'first of November',   $5),
+         ($1, $2, $4, 4000, '2026-11-15', 'upi',   'UTR-77', 'DIESEL top-up',       $5),
+         ($1, $2, $3, 8000, '2026-11-30', 'upi',   null,    null,                  $5),
+         ($1, $2, $4, 16000, '2026-12-01', 'cash', null,    'first of December',   $5)`,
+      [branchAId, academicYearId, groceryId, fuelId, ADMIN_ID],
+    );
+  }
+
+  async function breakdown(
+    client: Client,
+    args: {
+      category?: string;
+      method?: string;
+      from?: string;
+      to?: string;
+      q?: string;
+    },
+  ) {
+    const result = await client.query<{
+      category_name: string;
+      amount_paise: string;
+    }>(
+      `select category_name, amount_paise from expense_category_breakdown(
+         p_branch_code => 'BR-A',
+         p_category_id => $1, p_method => $2, p_from => $3, p_to => $4, p_q => $5)`,
+      [
+        args.category ?? null,
+        args.method ?? null,
+        args.from ?? null,
+        args.to ?? null,
+        args.q ?? null,
+      ],
+    );
+    return {
+      rows: result.rows,
+      total: result.rows.reduce((sum, r) => sum + Number(r.amount_paise), 0),
+    };
+  }
+
+  it("a month's date range includes its first and last day and nothing either side", async () => {
+    await withRollback(client, async () => {
+      await seedFilterFixture(client);
+      const november = await breakdown(client, {
+        from: "2026-11-01",
+        to: "2026-11-30",
+      });
+      // 2000 + 4000 + 8000; the 31 Oct and 1 Dec rows are outside.
+      expect(november.total).toBe(14000);
+    });
+  });
+
+  it("narrows by category, by method, and by both together", async () => {
+    await withRollback(client, async () => {
+      await seedFilterFixture(client);
+      expect((await breakdown(client, { category: fuelId })).total).toBe(20000);
+      expect((await breakdown(client, { method: "upi" })).total).toBe(12000);
+      expect(
+        (
+          await breakdown(client, {
+            category: groceryId,
+            method: "upi",
+            from: "2026-11-01",
+            to: "2026-11-30",
+          })
+        ).total,
+      ).toBe(8000);
+    });
+  });
+
+  it("searches category name, reference and note without regard to case", async () => {
+    await withRollback(client, async () => {
+      await seedFilterFixture(client);
+      expect((await breakdown(client, { q: "diesel" })).total).toBe(4000);
+      expect((await breakdown(client, { q: "utr-77" })).total).toBe(4000);
+      expect((await breakdown(client, { q: "first of" })).total).toBe(18000);
+      // Matches the category name, so every Fuel row.
+      expect((await breakdown(client, { q: "fuel" })).total).toBe(20000);
+    });
+  });
+
+  it("gives the same total as the list's own query over the same filters", async () => {
+    await withRollback(client, async () => {
+      await seedFilterFixture(client);
+
+      // The list reads expense_record with these predicates (see
+      // expense-directory.ts's applyFilters); the card must agree with it.
+      const cases = [
+        {},
+        { from: "2026-11-01", to: "2026-11-30" },
+        { method: "upi" },
+        { category: fuelId, from: "2026-11-01" },
+        { q: "first" },
+        { q: "DIESEL", method: "upi", to: "2026-11-30" },
+      ];
+
+      for (const filters of cases) {
+        const fromList = await client.query<{ total: string | null }>(
+          `select sum(amount_paise) as total from expense_record
+           where branch_code = 'BR-A'
+             and ($1::uuid is null or category_id = $1)
+             and ($2::text is null or method = $2)
+             and ($3::date is null or spent_on >= $3)
+             and ($4::date is null or spent_on <= $4)
+             and ($5::text is null
+                  or category_name ilike '%' || $5 || '%'
+                  or reference ilike '%' || $5 || '%'
+                  or note ilike '%' || $5 || '%')`,
+          [
+            filters.category ?? null,
+            filters.method ?? null,
+            filters.from ?? null,
+            filters.to ?? null,
+            filters.q ?? null,
+          ],
+        );
+        const card = await breakdown(client, filters);
+        expect(card.total, JSON.stringify(filters)).toBe(
+          Number(fromList.rows[0]!.total ?? 0),
+        );
+      }
     });
   });
 });

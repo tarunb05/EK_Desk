@@ -8,7 +8,11 @@ import { PaginationControls } from "@/components/records/pagination-controls";
 import { TableTransitionProvider } from "@/components/records/table-transition";
 import { PendingTbody } from "@/components/records/pending-tbody";
 import { AlertIcon, ClockIcon, StatusIcon } from "@/components/shell/nav-icons";
-import { RowActionMenu } from "@/components/students/row-action-menu";
+import {
+  RowActionMenu,
+  type EnrollmentOption,
+} from "@/components/students/row-action-menu";
+import { enrollmentLabel } from "@/lib/domain/enrollment-label";
 
 interface StudentDirectoryTableProps {
   rows: StudentDirectoryRow[];
@@ -49,71 +53,55 @@ function PaymentStatus({ row }: { row: StudentDirectoryRow }) {
   );
 }
 
-const SERVICE_LABEL: Record<string, string> = {
-  transport: "Transport",
-  daycare: "Daycare",
-};
-
+// One Actions menu per student. The student's enrollments go inside it,
+// each labelled (daycare by its dates, transport by year) so several can be
+// told apart. Admin and teacher see the same menu -- a teacher's edit and
+// payment pages just live under /students, since /transport and /daycare
+// are admin-only routes.
 function RowActions({ row, role }: { row: StudentDirectoryRow; role: Role }) {
-  if (row.feeAccounts.length === 0) {
-    return (
+  const enrollments: EnrollmentOption[] = row.feeAccounts.map((account) => ({
+    feeAccountId: account.feeAccountId,
+    label: enrollmentLabel(account),
+    serviceType: account.serviceType,
+    active: account.status === "active",
+    editHref:
+      role === "admin"
+        ? `/${account.serviceType}/${account.feeAccountId}/edit`
+        : `/students/fee-account/${account.feeAccountId}/edit`,
+    paymentHref:
+      role === "admin"
+        ? `/${account.serviceType}/${account.feeAccountId}/payment`
+        : `/students/fee-account/${account.feeAccountId}/payment`,
+  }));
+  // Phase 15.5's markers, one line per enrollment that has something open,
+  // named so it's clear which enrollment they mean.
+  const markers = row.feeAccounts.filter(
+    (account) => account.paymentRequestStatus !== "none",
+  );
+
+  return (
+    <div className="flex flex-col items-start gap-1">
       <RowActionMenu
         studentId={row.id}
         studentName={row.fullName}
         role={role}
+        enrollments={enrollments}
       />
-    );
-  }
-  return (
-    <div className="flex flex-col gap-1">
-      {row.feeAccounts.map((account) => {
-        // Admin and teacher see an identical Students page -- a teacher's
-        // edit/payment pages just live under /students, since /transport
-        // and /daycare are admin-only routes.
-        const [editHref, paymentHref] =
-          role === "admin"
-            ? [
-                `/${account.serviceType}/${account.feeAccountId}/edit`,
-                `/${account.serviceType}/${account.feeAccountId}/payment`,
-              ]
-            : [
-                `/students/fee-account/${account.feeAccountId}/edit`,
-                `/students/fee-account/${account.feeAccountId}/payment`,
-              ];
-        return (
-          <div
-            key={account.feeAccountId}
-            className="flex items-center gap-1.5 whitespace-nowrap"
-          >
-            {/* Fixed width, not just gap-1.5 after an inline label -- with
-                a student that has both a Transport and a Daycare account,
-                "Transport" and "Daycare (2026-27)" are different lengths,
-                which pushed each row's own Actions button to a different
-                x position instead of lining up in a column. */}
-            <span className="w-28 shrink-0 truncate text-2xs text-ink-muted">
-              {SERVICE_LABEL[account.serviceType] ?? account.serviceType}
-              {row.feeAccounts.length > 1
-                ? ` (${account.academicYearLabel})`
-                : ""}
-            </span>
-            <RowActionMenu
-              editHref={editHref}
-              paymentHref={paymentHref}
-              studentId={row.id}
-              studentName={row.fullName}
-              role={role}
-              requestPaymentFeeAccountId={
-                account.status === "active" ? account.feeAccountId : undefined
-              }
-            />
-            {account.paymentRequestStatus === "open" ? (
-              <span className="text-2xs text-ink-muted">Request open</span>
-            ) : account.paymentRequestStatus === "reported" ? (
-              <span className="text-2xs text-attention">Payment reported</span>
-            ) : null}
-          </div>
-        );
-      })}
+      {markers.map((account) => (
+        <span
+          key={account.feeAccountId}
+          className={`text-2xs ${
+            account.paymentRequestStatus === "reported"
+              ? "text-attention"
+              : "text-ink-muted"
+          }`}
+        >
+          {account.paymentRequestStatus === "reported"
+            ? "Payment reported"
+            : "Request open"}
+          {row.feeAccounts.length > 1 ? ` · ${enrollmentLabel(account)}` : ""}
+        </span>
+      ))}
     </div>
   );
 }

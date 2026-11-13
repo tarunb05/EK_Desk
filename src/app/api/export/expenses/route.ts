@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth/require-role";
 import { getAllExpenses } from "@/lib/records/expense-directory";
 import { getBranches } from "@/lib/supabase/queries";
+import { expenseTableSearchParamsSchema } from "@/lib/shell/expense-table-params";
 import { paiseToRupees } from "@/lib/domain/money";
 import { sanitizeForSpreadsheet } from "@/lib/records/spreadsheet-sanitizer";
 
@@ -12,7 +13,6 @@ import { sanitizeForSpreadsheet } from "@/lib/records/spreadsheet-sanitizer";
 // comment for why a Content-Disposition download needs one.
 
 const querySchema = z.object({
-  year: z.string().min(1),
   branch: z.string().min(1),
 });
 
@@ -27,7 +27,13 @@ export async function GET(request: NextRequest) {
       status: 400,
     });
   }
-  const { year, branch: requestedBranch } = parsed.data;
+  const { branch: requestedBranch } = parsed.data;
+
+  // The same filters the Expenses page shows (year, month, category, method,
+  // range, search) -- invalid values fall back to "no filter".
+  const table = expenseTableSearchParamsSchema.parse(
+    Object.fromEntries(request.nextUrl.searchParams),
+  );
 
   const supabase = await createClient();
 
@@ -41,7 +47,7 @@ export async function GET(request: NextRequest) {
     branch = branches.find((b) => b.id === authed.branchId)?.code ?? "all";
   }
 
-  const rows = await getAllExpenses(supabase, { branch, academicYearId: year });
+  const rows = await getAllExpenses(supabase, { branch, table });
 
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Expenses");
@@ -75,7 +81,12 @@ export async function GET(request: NextRequest) {
   sheet.getColumn("amount").numFmt = "#,##0.00";
 
   const buffer = await workbook.xlsx.writeBuffer();
-  const filename = `expenses-${year}.xlsx`;
+  // Year and month are digits only (the params schema guarantees it), so
+  // they're safe to put in the header.
+  const period =
+    [table.year, table.month?.padStart(2, "0")].filter(Boolean).join("-") ||
+    "all";
+  const filename = `expenses-${period}.xlsx`;
 
   return new NextResponse(buffer, {
     headers: {

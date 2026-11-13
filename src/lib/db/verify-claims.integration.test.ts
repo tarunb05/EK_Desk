@@ -533,6 +533,117 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
     });
   });
 
+  it("hard_delete_fee_account removes only that enrollment and its payments, leaving the student and their other enrollments", async () => {
+    await withRollback(client, async () => {
+      const fixture = await seedClaim(client, { admissionNo: "VC-ENR-ONE" });
+      const daycare = await client.query<{ id: string }>(
+        `insert into fee_account
+           (student_id, academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, slot)
+         values ($1, $2, 'daycare', 400000, '2026-11-13', '2026-11-13', '2026-11-19', 'Morning')
+         returning id`,
+        [fixture.studentId, academicYearId],
+      );
+      await client.query(
+        `insert into payment (fee_account_id, amount_paise, paid_on, method, recorded_by)
+         values ($1, 100000, current_date, 'cash', 'Admin')`,
+        [daycare.rows[0]!.id],
+      );
+
+      await client.query(`select hard_delete_fee_account($1)`, [
+        daycare.rows[0]!.id,
+      ]);
+
+      const count = async (sql: string, id: string) =>
+        (await client.query(sql, [id])).rowCount;
+      expect(
+        await count("select 1 from fee_account where id = $1", daycare.rows[0]!.id),
+      ).toBe(0);
+      expect(
+        await count(
+          "select 1 from payment where fee_account_id = $1",
+          daycare.rows[0]!.id,
+        ),
+      ).toBe(0);
+      // The student and their other (transport) enrollment are untouched.
+      expect(
+        await count("select 1 from student where id = $1", fixture.studentId),
+      ).toBe(1);
+      expect(
+        await count(
+          "select 1 from fee_account where id = $1",
+          fixture.feeAccountId,
+        ),
+      ).toBe(1);
+    });
+  });
+
+  it("hard_delete_fee_account isn't blocked by a merely-pending claim, and takes the enrollment's payment request with it", async () => {
+    await withRollback(client, async () => {
+      const fixture = await seedClaim(client, { admissionNo: "VC-ENR-PENDING" });
+
+      await client.query(`select hard_delete_fee_account($1)`, [
+        fixture.feeAccountId,
+      ]);
+
+      const request = await client.query(
+        "select 1 from payment_request where id = $1",
+        [fixture.paymentRequestId],
+      );
+      expect(request.rows).toHaveLength(0);
+      const student = await client.query("select 1 from student where id = $1", [
+        fixture.studentId,
+      ]);
+      expect(student.rows).toHaveLength(1);
+    });
+  });
+
+  it("hard_delete_fee_account is blocked once the enrollment has a confirmed payment claim", async () => {
+    await withRollback(client, async () => {
+      const fixture = await seedClaim(client, { admissionNo: "VC-ENR-BLOCKED" });
+      await client.query(
+        `select confirm_payment_claim($1, 400000, current_date, 'upi', true)`,
+        [fixture.claimId],
+      );
+
+      await client.query("savepoint before_blocked_enrollment_delete");
+      await expect(
+        client.query(`select hard_delete_fee_account($1)`, [
+          fixture.feeAccountId,
+        ]),
+      ).rejects.toThrow(/confirmed payment/i);
+      await client.query("rollback to savepoint before_blocked_enrollment_delete");
+
+      const stillThere = await client.query(
+        "select 1 from fee_account where id = $1",
+        [fixture.feeAccountId],
+      );
+      expect(stillThere.rows).toHaveLength(1);
+    });
+  });
+
+  it("hard_delete_fee_account refuses a teacher, and reports an enrollment that no longer exists", async () => {
+    await withRollback(client, async () => {
+      const fixture = await seedClaim(client, { admissionNo: "VC-ENR-TEACHER" });
+
+      await client.query("savepoint before_missing_enrollment");
+      await expect(
+        client.query(`select hard_delete_fee_account($1)`, [
+          "00000000-0000-4000-8000-0000000000ff",
+        ]),
+      ).rejects.toThrow(/no longer exists/i);
+      await client.query("rollback to savepoint before_missing_enrollment");
+
+      await impersonate(client, TEACHER_ID);
+      await client.query("savepoint before_denied_enrollment_delete");
+      await expect(
+        client.query(`select hard_delete_fee_account($1)`, [
+          fixture.feeAccountId,
+        ]),
+      ).rejects.toThrow(/only an admin/i);
+      await client.query("rollback to savepoint before_denied_enrollment_delete");
+    });
+  });
+
   it("a teacher can't call confirm_payment_claim or hard_delete_student", async () => {
     await withRollback(client, async () => {
       const fixture = await seedClaim(client, { admissionNo: "VC-TEACHER" });
