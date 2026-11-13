@@ -31,7 +31,7 @@ export default async function ApprovalsPage() {
       {submissions.length === 0 ? (
         <p className="text-sm text-ink-secondary">
           {role === "admin"
-            ? "Nothing waiting for review — a teacher's request to delete a student will show up here."
+            ? "Nothing waiting for review — a teacher's request to delete a student or one of their enrollments will show up here."
             : "Nothing pending — a delete request you send will show up here until an admin reviews it."}
         </p>
       ) : (
