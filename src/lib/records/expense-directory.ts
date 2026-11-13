@@ -26,11 +26,11 @@ export interface ExpenseCategoryBreakdown {
 }
 
 // The filters the list, the card, the category chart and the Excel export
-// all share. Month and the custom From/To range are folded into one range
-// here, in one place, so none of them can read the URL differently.
+// all share. Year, month and the custom From/To range are folded into one
+// date range here, in one place, so none of them can read the URL differently.
 type ExpenseFilterInput = Pick<
   ExpenseTableSearchParams,
-  "category" | "method" | "month" | "from" | "to" | "q"
+  "category" | "method" | "year" | "month" | "from" | "to" | "q"
 >;
 
 function normalizeFilters(table: ExpenseFilterInput) {
@@ -44,21 +44,19 @@ function normalizeFilters(table: ExpenseFilterInput) {
   };
 }
 
-// Follows the same filters as the list below it -- year, branch, category,
-// method, month / date range and search -- so the card total and the chart
+// Follows the same filters as the list below it -- branch, category, method,
+// year / month / date range and search -- so the card total and the chart
 // always describe the rows in the table. Aggregated in Postgres
 // (expense_category_breakdown), not summed from fetched rows.
 export async function getExpenseCategoryBreakdown(
   supabase: SupabaseClient<Database>,
   params: {
-    academicYearId: string;
     branch: "all" | string;
     table: ExpenseFilterInput;
   },
 ): Promise<ExpenseCategoryBreakdown> {
   const filters = normalizeFilters(params.table);
   const { data, error } = await supabase.rpc("expense_category_breakdown", {
-    p_academic_year_id: params.academicYearId,
     p_branch_code: params.branch === "all" ? undefined : params.branch,
     p_category_id: filters.category,
     p_method: filters.method,
@@ -145,12 +143,44 @@ export interface ExpenseDirectoryRow {
   isEdited: boolean;
 }
 
+// The calendar years the Year filter offers: every year from the earliest to
+// the latest expense in scope (RLS keeps a teacher to their own branch), plus
+// the current year, so there is always something to pick and a year with no
+// expenses yet is still reachable. Oldest first.
+export async function getExpenseYears(
+  supabase: SupabaseClient<Database>,
+  currentYear: number,
+): Promise<number[]> {
+  const [earliest, latest] = await Promise.all([
+    supabase
+      .from("expense")
+      .select("spent_on")
+      .order("spent_on", { ascending: true })
+      .limit(1),
+    supabase
+      .from("expense")
+      .select("spent_on")
+      .order("spent_on", { ascending: false })
+      .limit(1),
+  ]);
+
+  if (earliest.error || latest.error) {
+    throw new Error("Could not load the expense years.");
+  }
+
+  const first = Number(earliest.data[0]?.spent_on.slice(0, 4) ?? currentYear);
+  const last = Number(latest.data[0]?.spent_on.slice(0, 4) ?? currentYear);
+  const low = Math.min(first, currentYear);
+  const high = Math.max(last, currentYear);
+
+  return Array.from({ length: high - low + 1 }, (_, i) => low + i);
+}
+
 export interface ExpenseDirectoryParams {
   // A teacher's own branch, clamped server-side regardless of what's in the
   // URL -- "all" (admin only) or a specific branch code, never trusted from
   // the client for a teacher caller.
   branch: "all" | string;
-  academicYearId: string;
   table: ExpenseTableSearchParams;
 }
 
@@ -167,14 +197,13 @@ const SORT_COLUMN: Record<(typeof EXPENSE_SORT_KEYS)[number], string> = {
 
 function applyFilters(
   supabase: SupabaseClient<Database>,
-  { branch, academicYearId, table }: ExpenseDirectoryParams,
+  { branch, table }: ExpenseDirectoryParams,
   { head }: { head: boolean },
 ) {
   const filters = normalizeFilters(table);
   let query = supabase
     .from("expense_record")
-    .select("*", { count: "exact", head })
-    .eq("academic_year_id", academicYearId);
+    .select("*", { count: "exact", head });
 
   if (branch !== "all") {
     query = query.eq("branch_code", branch);

@@ -7,8 +7,12 @@ describe("summarizeExpenseFilters", () => {
     expect(summarizeExpenseFilters({ method: "all", q: "" })).toEqual([]);
   });
 
-  it("names the month in full", () => {
-    expect(summarizeExpenseFilters({ month: "2026-11" })).toEqual([
+  it("names just the year when no month is chosen", () => {
+    expect(summarizeExpenseFilters({ year: "2026" })).toEqual(["2026"]);
+  });
+
+  it("names the month and year together", () => {
+    expect(summarizeExpenseFilters({ year: "2026", month: "11" })).toEqual([
       "November 2026",
     ]);
   });
@@ -28,7 +32,8 @@ describe("summarizeExpenseFilters", () => {
   it("lists every active filter in a readable order", () => {
     expect(
       summarizeExpenseFilters({
-        month: "2026-11",
+        year: "2026",
+        month: "11",
         categoryName: "Fuel",
         method: "upi",
         q: "diesel",
@@ -36,7 +41,9 @@ describe("summarizeExpenseFilters", () => {
     ).toEqual(["November 2026", "Fuel", "UPI", "matching “diesel”"]);
   });
 
-  it("ignores a malformed month", () => {
-    expect(summarizeExpenseFilters({ month: "soon" })).toEqual([]);
+  it("ignores a malformed year or month", () => {
+    expect(summarizeExpenseFilters({ year: "2026-27", month: "13" })).toEqual(
+      [],
+    );
   });
 });

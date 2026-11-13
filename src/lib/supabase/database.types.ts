@@ -1785,7 +1785,6 @@ export type Database = {
       }
       expense_category_breakdown: {
         Args: {
-          p_academic_year_id: string
           p_branch_code?: string
           p_category_id?: string
           p_from?: string
@@ -1798,6 +1797,10 @@ export type Database = {
           category_id: string
           category_name: string
         }[]
+      }
+      hard_delete_fee_account: {
+        Args: { p_fee_account_id: string }
+        Returns: undefined
       }
       hard_delete_student: {
         Args: { p_student_id: string }

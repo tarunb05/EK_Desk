@@ -36,3 +36,12 @@ export function formatLogDate(iso: string): string {
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return `${get("day")} ${get("month")} ${get("year")}`;
 }
+
+// Today's date as "YYYY-MM-DD" in India, for comparing against the plain
+// calendar dates (enrollment starts/ends) the app stores. Explicit
+// Asia/Kolkata for the same reason as the log formatters above: a server
+// running in UTC would otherwise call a stint "current" or "past" up to
+// 5½ hours early or late. "en-CA" is just the locale that prints ISO order.
+export function todayInIndia(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}

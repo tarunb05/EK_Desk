@@ -1,10 +1,13 @@
 -- The Expenses page's "Total expenses" card and category chart now follow the
--- same filters as the list below them (category, method, date range / month,
--- search), not just year and branch. The breakdown function only took year
--- and branch, so it can't apply the rest; this replaces it with a version
--- that takes them as optional arguments. Aggregation stays in Postgres, and
--- the card total is still the sum of this function's rows (CLAUDE.md rule 11:
--- an expense-only aggregate, never folded into a fee query).
+-- same filters as the list below them (branch, category, method, calendar
+-- year / month / date range, search). The breakdown function only took an
+-- academic year and a branch, so it can't apply the rest; this replaces it
+-- with a version that takes them all as optional arguments. The year and
+-- month filters arrive as one date range (p_from / p_to), so the academic
+-- year argument goes -- an expense is found by the date it was spent.
+-- Aggregation stays in Postgres, and the card total is still the sum of this
+-- function's rows (CLAUDE.md rule 11: an expense-only aggregate, never folded
+-- into a fee query).
 --
 -- No expense rows are read or changed by this migration -- it only swaps one
 -- function. The old (uuid, text) signature is dropped first: leaving it next
@@ -19,7 +22,6 @@
 drop function expense_category_breakdown(uuid, text);
 
 create function expense_category_breakdown(
-  p_academic_year_id uuid,
   p_branch_code text default null,
   p_category_id uuid default null,
   p_method text default null,
@@ -39,8 +41,7 @@ as $$
   from expense e
   join expense_category ec on ec.id = e.category_id
   join branch b on b.id = e.branch_id
-  where e.academic_year_id = p_academic_year_id
-    and (p_branch_code is null or b.code = p_branch_code)
+  where (p_branch_code is null or b.code = p_branch_code)
     and (p_category_id is null or e.category_id = p_category_id)
     and (p_method is null or e.method = p_method)
     and (p_from is null or e.spent_on >= p_from)
@@ -55,5 +56,5 @@ as $$
   order by sum(e.amount_paise) desc;
 $$;
 
-grant execute on function expense_category_breakdown(uuid, text, uuid, text, date, date, text)
+grant execute on function expense_category_breakdown(text, uuid, text, date, date, text)
   to authenticated;

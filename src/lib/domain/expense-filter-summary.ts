@@ -1,11 +1,13 @@
 import { formatLogDate } from "@/lib/domain/datetime";
-import { formatMonthLabel, isMonthKey } from "@/lib/domain/expense-month";
+import { isMonth, isYear, monthName } from "@/lib/domain/expense-month";
 import { formatMethod } from "@/lib/domain/money";
 
 // What the "Total expenses" card is currently adding up, in words, so a
-// filtered figure never reads like the whole year's. Empty when nothing is
-// filtered.
+// filtered figure never reads like the whole year's. The first part is the
+// period ("2026", or "November 2026" once a month is chosen); the rest are
+// whichever other filters are active.
 export function summarizeExpenseFilters(filters: {
+  year?: string;
   month?: string;
   from?: string;
   to?: string;
@@ -15,8 +17,12 @@ export function summarizeExpenseFilters(filters: {
 }): string[] {
   const parts: string[] = [];
 
-  if (isMonthKey(filters.month)) {
-    parts.push(formatMonthLabel(filters.month));
+  if (isYear(filters.year)) {
+    parts.push(
+      isMonth(filters.month)
+        ? `${monthName(filters.month)} ${filters.year}`
+        : filters.year,
+    );
   }
   if (filters.from && filters.to) {
     parts.push(`${formatLogDate(filters.from)} – ${formatLogDate(filters.to)}`);

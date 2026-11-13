@@ -385,17 +385,25 @@ describe("whatsapp payment requests (phase 15.1)", () => {
       // clientA rolled back) or fails with a unique violation (if clientA
       // committed). This is what actually exercises the index under a race,
       // not just "a second insert after the first is visible".
-      const clientBInsert = clientB.query(insertSql, [
-        feeAccount.rows[0]!.id,
-        collectionAccount.rows[0]!.id,
-        "EK-RACEB",
-        Buffer.from("bbbb0002", "hex"),
-        ADMIN_ID,
-      ]);
+      // Outcome captured at issue time, same reason as the collection_account
+      // race test below: a rejection landing before the handler is attached
+      // is an unhandled rejection.
+      const clientBOutcome = clientB
+        .query(insertSql, [
+          feeAccount.rows[0]!.id,
+          collectionAccount.rows[0]!.id,
+          "EK-RACEB",
+          Buffer.from("bbbb0002", "hex"),
+          ADMIN_ID,
+        ])
+        .then(
+          () => null,
+          (error: unknown) => error,
+        );
 
       await clientA.query("commit");
 
-      await expect(clientBInsert).rejects.toThrow(/duplicate key|unique/i);
+      expect(String(await clientBOutcome)).toMatch(/duplicate key|unique/i);
       await clientB.query("rollback");
 
       // set_config's third argument scopes the JWT claim to the transaction
@@ -490,15 +498,19 @@ describe("whatsapp payment requests (phase 15.1)", () => {
       await impersonateAdmin(clientB);
 
       await clientA.query(insertSql, [raceBranchId, "Default A", "defaulta@upi"]);
-      const clientBInsert = clientB.query(insertSql, [
-        raceBranchId,
-        "Default B",
-        "defaultb@upi",
-      ]);
+      // The outcome is captured the moment the query is issued: B's insert
+      // can reject as soon as A commits, before `await expect` below has
+      // attached a handler, and an unhandled rejection fails the whole run.
+      const clientBOutcome = clientB
+        .query(insertSql, [raceBranchId, "Default B", "defaultb@upi"])
+        .then(
+          () => null,
+          (error: unknown) => error,
+        );
 
       await clientA.query("commit");
 
-      await expect(clientBInsert).rejects.toThrow(/duplicate key|unique/i);
+      expect(String(await clientBOutcome)).toMatch(/duplicate key|unique/i);
       await clientB.query("rollback");
 
       await clientA.query("reset role");

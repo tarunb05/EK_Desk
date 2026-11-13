@@ -76,10 +76,10 @@ describe("expense_category_breakdown (phase 10.4)", () => {
       const result = await client.query<{
         category_name: string;
         amount_paise: string;
-      }>("select category_name, amount_paise from expense_category_breakdown($1, $2)", [
-        academicYearId,
-        "BR-A",
-      ]);
+      }>(
+        "select category_name, amount_paise from expense_category_breakdown(p_branch_code => $1)",
+        ["BR-A"],
+      );
 
       const byName = new Map(
         result.rows.map((r) => [r.category_name, Number(r.amount_paise)]),
@@ -103,8 +103,8 @@ describe("expense_category_breakdown (phase 10.4)", () => {
       );
 
       const result = await client.query<{ category_name: string }>(
-        "select category_name from expense_category_breakdown($1, $2)",
-        [academicYearId, "BR-A"],
+        "select category_name from expense_category_breakdown(p_branch_code => $1)",
+        ["BR-A"],
       );
       expect(result.rows.map((r) => r.category_name)).toEqual(["Grocery"]);
     });
@@ -128,8 +128,7 @@ describe("expense_category_breakdown (phase 10.4)", () => {
       // Deliberately pass no branch filter (null) -- RLS, not the
       // parameter, must be what keeps this scoped to the teacher's branch.
       const result = await client.query<{ amount_paise: string }>(
-        "select amount_paise from expense_category_breakdown($1, null)",
-        [academicYearId],
+        "select amount_paise from expense_category_breakdown()",
       );
       expect(result.rowCount).toBe(1);
       expect(Number(result.rows[0]!.amount_paise)).toBe(10000);
@@ -169,10 +168,9 @@ describe("expense_category_breakdown (phase 10.4)", () => {
       amount_paise: string;
     }>(
       `select category_name, amount_paise from expense_category_breakdown(
-         p_academic_year_id => $1, p_branch_code => 'BR-A',
-         p_category_id => $2, p_method => $3, p_from => $4, p_to => $5, p_q => $6)`,
+         p_branch_code => 'BR-A',
+         p_category_id => $1, p_method => $2, p_from => $3, p_to => $4, p_q => $5)`,
       [
-        academicYearId,
         args.category ?? null,
         args.method ?? null,
         args.from ?? null,
@@ -245,17 +243,16 @@ describe("expense_category_breakdown (phase 10.4)", () => {
       for (const filters of cases) {
         const fromList = await client.query<{ total: string | null }>(
           `select sum(amount_paise) as total from expense_record
-           where academic_year_id = $1 and branch_code = 'BR-A'
-             and ($2::uuid is null or category_id = $2)
-             and ($3::text is null or method = $3)
-             and ($4::date is null or spent_on >= $4)
-             and ($5::date is null or spent_on <= $5)
-             and ($6::text is null
-                  or category_name ilike '%' || $6 || '%'
-                  or reference ilike '%' || $6 || '%'
-                  or note ilike '%' || $6 || '%')`,
+           where branch_code = 'BR-A'
+             and ($1::uuid is null or category_id = $1)
+             and ($2::text is null or method = $2)
+             and ($3::date is null or spent_on >= $3)
+             and ($4::date is null or spent_on <= $4)
+             and ($5::text is null
+                  or category_name ilike '%' || $5 || '%'
+                  or reference ilike '%' || $5 || '%'
+                  or note ilike '%' || $5 || '%')`,
           [
-            academicYearId,
             filters.category ?? null,
             filters.method ?? null,
             filters.from ?? null,
