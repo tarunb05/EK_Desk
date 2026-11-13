@@ -1,0 +1,41 @@
+# Keeps the hosted Supabase project from pausing for inactivity. Calls the
+# read-only keepalive() function over the REST API every three days; a paused
+# project would take the whole app down until it was restored by hand.
+#
+# Needs two repository secrets (Settings > Secrets and variables > Actions):
+#   SUPABASE_URL       the project URL, e.g. https://xxxx.supabase.co
+#   SUPABASE_ANON_KEY  the project's publishable (or legacy anon) key, never
+#                      the secret / service-role key. Only the apikey header
+#                      is sent, which works for both key styles.
+name: keepalive
+
+on:
+  schedule:
+    - cron: "0 6 */3 * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call keepalive()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "SUPABASE_URL and SUPABASE_ANON_KEY must be set as repository secrets."
+            exit 1
+          fi
+          # --fail makes a 4xx/5xx (including a paused project) fail the job,
+          # so GitHub's own failed-run email is the alert.
+          result=$(curl --fail --silent --show-error --max-time 30 \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/keepalive" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          echo "keepalive returned: $result"
+          [ "$result" = "1" ]

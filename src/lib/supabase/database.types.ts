@@ -1908,6 +1908,7 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: undefined
       }
+      keepalive: { Args: never; Returns: number }
       lookup_payment_request_by_token_hash: {
         Args: { p_ip_hash: string; p_token_hash: string }
         Returns: {
