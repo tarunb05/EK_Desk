@@ -15,7 +15,10 @@
 -- Safe to run any number of times (the job runs daily, so a missed run heals
 -- itself), and it takes the date as an argument so it can be tested without
 -- waiting for April.
-create extension if not exists pg_cron;
+--
+-- pg_cron is only on Supabase's own Postgres. A plain Postgres (the CI
+-- service container) doesn't have it, so scheduling below is conditional:
+-- the function always exists, the daily job exists wherever pg_cron does.
 
 create function roll_academic_year(
   p_today date default (now() at time zone 'Asia/Kolkata')::date
@@ -73,11 +76,20 @@ revoke all on function roll_academic_year(date) from public, anon, authenticated
 
 -- 18:35 UTC is 00:05 in India, shortly after midnight on the new day.
 -- Scheduling by name replaces the job if this migration is ever re-applied.
-select cron.schedule(
-  'roll-academic-year',
-  '35 18 * * *',
-  $job$select roll_academic_year()$job$
-);
+do $schedule$
+begin
+  if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
+    create extension if not exists pg_cron;
+    perform cron.schedule(
+      'roll-academic-year',
+      '35 18 * * *',
+      'select roll_academic_year()'
+    );
+  else
+    raise notice 'pg_cron is not available; roll_academic_year() is not scheduled';
+  end if;
+end;
+$schedule$;
 
 -- Catch up right away in case the migration lands after a year has begun.
 select roll_academic_year();

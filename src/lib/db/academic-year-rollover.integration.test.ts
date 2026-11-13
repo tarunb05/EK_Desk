@@ -91,7 +91,19 @@ describe("roll_academic_year", () => {
     });
   });
 
-  it("is scheduled to run daily", async () => {
+  it("is scheduled to run daily wherever pg_cron exists", async () => {
+    // Supabase has pg_cron; CI's plain Postgres doesn't, and the migration
+    // then leaves the job out. Either way is asserted, nothing is skipped.
+    const installed = await client.query(
+      "select 1 from pg_extension where extname = 'pg_cron'",
+    );
+    if (installed.rowCount === 0) {
+      const schema = await client.query(
+        "select 1 from information_schema.schemata where schema_name = 'cron'",
+      );
+      expect(schema.rowCount).toBe(0);
+      return;
+    }
     const job = await client.query<{ schedule: string; command: string }>(
       "select schedule, command from cron.job where jobname = 'roll-academic-year'",
     );
