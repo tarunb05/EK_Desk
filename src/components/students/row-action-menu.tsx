@@ -148,8 +148,10 @@ export function RowActionMenu({
       : []),
     // Removes just the chosen enrollment (and its payments), not the
     // student. Admin only; a teacher can set an enrollment to Discontinued
-    // from Edit instead.
-    ...(role === "admin"
+    // from Edit instead. Not offered for a student's only enrollment: that
+    // would leave a student with nothing on file, which is what Delete
+    // permanently is for.
+    ...(role === "admin" && enrollments.length > 1
       ? forEnrollments(
           "Delete enrollment",
           enrollments,
