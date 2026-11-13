@@ -188,6 +188,10 @@ export const deleteEnrollmentSchema = z.object({
   feeAccountId: z.string().uuid(),
 });
 
+export const requestEnrollmentDeleteSchema = z.object({
+  feeAccountId: z.string().uuid(),
+});
+
 export const requestStudentDeleteSchema = z.object({
   studentId: z.string().uuid(),
 });
@@ -197,6 +201,7 @@ export const SUBMISSION_TABLES = [
   "student_edit_submission",
   "payment_submission",
   "student_delete_submission",
+  "enrollment_delete_submission",
 ] as const;
 
 export const approveSubmissionSchema = z.object({

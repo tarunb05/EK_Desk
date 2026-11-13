@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   deleteEnrollment,
   permanentlyDeleteStudent,
+  requestEnrollmentDelete,
   requestStudentDelete,
 } from "@/lib/records/actions";
 import { DeleteConfirmDialog } from "./delete-confirm-dialog";
@@ -67,8 +68,14 @@ export function RowActionMenu({
     startTransition(async () => {
       const formData = new FormData();
       formData.set("feeAccountId", feeAccountId);
-      const result = await deleteEnrollment({ error: null }, formData);
-      if (result.error) setError(result.error);
+      const action =
+        role === "admin" ? deleteEnrollment : requestEnrollmentDelete;
+      const result = await action({ error: null }, formData);
+      if (result.error) {
+        setError(result.error);
+      } else if (result.submitted) {
+        setSubmitted(true);
+      }
     });
   }
 
@@ -147,13 +154,15 @@ export function RowActionMenu({
         ]
       : []),
     // Removes just the chosen enrollment (and its payments), not the
-    // student. Admin only; a teacher can set an enrollment to Discontinued
-    // from Edit instead. Not offered for a student's only enrollment: that
+    // student: an admin deletes it directly, a teacher sends a request for
+    // an admin to approve. Not offered for a student's only enrollment: that
     // would leave a student with nothing on file, which is what Delete
     // permanently is for.
-    ...(role === "admin" && enrollments.length > 1
+    ...(enrollments.length > 1
       ? forEnrollments(
-          "Delete enrollment",
+          role === "admin"
+            ? "Delete enrollment"
+            : "Request enrollment deletion",
           enrollments,
           openDeleteEnrollmentDialog,
         ).map((item) => ({ ...item, destructive: true }))
@@ -176,9 +185,16 @@ export function RowActionMenu({
       ) : null}
       <DeleteConfirmDialog
         dialogRef={enrollmentDialogRef}
-        title={`Delete ${enrollmentToDelete?.label ?? "this enrollment"}?`}
-        message={`This removes this enrollment of ${studentName}, and every payment recorded on it, from the database. ${studentName} and their other enrollments stay. This cannot be undone. To keep the record, set it to Discontinued from Edit instead.`}
-        confirmLabel="Delete enrollment"
+        title={`${role === "admin" ? "Delete" : "Request deletion of"} ${enrollmentToDelete?.label ?? "this enrollment"}?`}
+        message={
+          role === "admin"
+            ? `This removes this enrollment of ${studentName}, and every payment recorded on it, from the database. ${studentName} and their other enrollments stay. This cannot be undone. To keep the record, set it to Discontinued from Edit instead.`
+            : `This sends a request to an admin to delete this enrollment of ${studentName} and every payment recorded on it. Nothing is removed unless and until they approve it. To keep the record, set it to Discontinued from Edit instead.`
+        }
+        confirmLabel={
+          role === "admin" ? "Delete enrollment" : "Request deletion"
+        }
+        destructive={role === "admin"}
         onConfirm={handleDeleteEnrollment}
       />
       <DeleteConfirmDialog

@@ -15,6 +15,7 @@ import {
 import { getAcademicYears } from "@/lib/supabase/queries";
 import { formatLogDate } from "@/lib/domain/datetime";
 import { enrollmentsOverlap } from "@/lib/domain/enrollment-period";
+import { enrollmentLabel } from "@/lib/domain/enrollment-label";
 import {
   canTransitionStudentStatus,
   type StudentStatus,
@@ -24,6 +25,7 @@ import {
   archiveStudentSchema,
   createStudentWithFeeAccountSchema,
   deleteEnrollmentSchema,
+  requestEnrollmentDeleteSchema,
   initialPaymentSchema,
   type InitialPayment,
   deleteExpenseSchema,
@@ -882,11 +884,73 @@ export async function requestStudentDelete(
   return { error: null, submitted: true };
 }
 
+// A teacher's version of deleteEnrollment: queues a request for an admin to
+// approve (approve_enrollment_delete does the actual delete). The enrollment
+// is re-read server-side so the names and label stored with the request come
+// from the database, not the client, and so a teacher can only ask about an
+// enrollment in their own branch.
+export async function requestEnrollmentDelete(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = requestEnrollmentDeleteSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const authed = await requireAuth();
+  const supabase = await createClient();
+
+  const { data: account, error: readError } = await supabase
+    .from("fee_account")
+    .select(
+      "id, service_type, starts_on, ends_on, status, academic_year(label), student(full_name, admission_no, branch_id)",
+    )
+    .eq("id", parsed.data.feeAccountId)
+    .single();
+
+  if (readError || !account || !account.student) {
+    return { error: "Could not find this enrollment." };
+  }
+
+  if (
+    authed.role === "teacher" &&
+    account.student.branch_id !== authed.branchId
+  ) {
+    return { error: "You can only request deletion for your own branch." };
+  }
+
+  const { error } = await supabase.from("enrollment_delete_submission").insert({
+    fee_account_id: account.id,
+    branch_id: account.student.branch_id,
+    submitted_by: authed.userId,
+    student_full_name: account.student.full_name,
+    student_admission_no: account.student.admission_no,
+    enrollment_label: enrollmentLabel({
+      serviceType: account.service_type,
+      academicYearLabel: account.academic_year?.label ?? "",
+      startsOn: account.starts_on,
+      endsOn: account.ends_on,
+      status: account.status,
+    }),
+  });
+
+  if (error) {
+    return {
+      error: "Could not submit this delete request — it may already be queued.",
+    };
+  }
+
+  revalidatePath("/students", "page");
+  revalidatePath("/approvals");
+  return { error: null, submitted: true };
+}
+
 const APPROVE_RPC = {
   student_submission: "approve_student_submission",
   student_edit_submission: "approve_student_edit",
   payment_submission: "approve_payment_submission",
   student_delete_submission: "approve_student_delete",
+  enrollment_delete_submission: "approve_enrollment_delete",
 } as const;
 
 export async function approveSubmission(
@@ -909,6 +973,12 @@ export async function approveSubmission(
     if (error.code === EXCLUSION_VIOLATION) {
       return {
         error: `Could not approve this — ${DAYCARE_OVERLAP_ERROR.toLowerCase()} Reject it or change the other enrollment first.`,
+      };
+    }
+    if (error.message.includes("confirmed payment")) {
+      return {
+        error:
+          "Could not approve this — the enrollment has a confirmed payment on record and can't be deleted. Reject the request instead.",
       };
     }
     if (isDuplicateUpiReference(error)) {
