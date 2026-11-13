@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { generateTwelveMonths, isWithinAcademicYear } from "./academic-year";
+import {
+  academicYearContaining,
+  generateTwelveMonths,
+  isWithinAcademicYear,
+} from "./academic-year";
 import { makeAcademicYear } from "./test-factories";
 
 describe("isWithinAcademicYear", () => {
@@ -72,5 +76,24 @@ describe("generateTwelveMonths", () => {
 
   it("returns an empty array for a malformed date", () => {
     expect(generateTwelveMonths("not-a-date")).toEqual([]);
+  });
+});
+
+describe("academicYearContaining", () => {
+  const years = [
+    { id: "y2627", startsOn: "2026-04-01", endsOn: "2027-03-31" },
+    { id: "y2526", startsOn: "2025-04-01", endsOn: "2026-03-31" },
+  ];
+
+  it("finds the year a date falls in, including both end days", () => {
+    expect(academicYearContaining("2026-11-11", years)?.id).toBe("y2627");
+    expect(academicYearContaining("2026-04-01", years)?.id).toBe("y2627");
+    expect(academicYearContaining("2026-03-31", years)?.id).toBe("y2526");
+    expect(academicYearContaining("2027-03-31", years)?.id).toBe("y2627");
+  });
+
+  it("is null for a date outside every year", () => {
+    expect(academicYearContaining("2027-04-01", years)).toBeNull();
+    expect(academicYearContaining("2025-03-31", years)).toBeNull();
   });
 });

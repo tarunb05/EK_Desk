@@ -102,6 +102,39 @@ export const initialPaymentSchema = z.object({
   paidReference: z.string().trim().optional(),
 });
 
+export type InitialPayment = z.infer<typeof initialPaymentSchema>;
+
+// Re-enrolling a returning daycare student: the form opens like the edit
+// form, pre-filled with the student's details (which can be corrected on the
+// way through), with the money and dates left blank for the new stint.
+// academicYearId is only the fallback for when no academic year contains the
+// start date; the action prefers the year the stint actually starts in.
+export const reEnrollStudentSchema = z
+  .object({
+    studentId: z.string().uuid(),
+    academicYearId: z.string().uuid(),
+    fullName: z.string().trim().min(1, "Enter the student's name."),
+    guardianName: z.string().trim().min(1, "Enter the guardian's name."),
+    phone: z.string().trim().min(1, "Enter a phone number."),
+    whatsappPhone: z.string().trim().optional(),
+    classSection: z.enum(CLASS_SECTIONS, "Choose a grade."),
+    notes: z.string().trim().optional(),
+    slot: z.string().trim().min(1, "Enter a slot."),
+    totalReceivable: rupeesAmount,
+    dueDate: dateField,
+    startsOn: dateField,
+    endsOn: dateField,
+  })
+  .superRefine((value, ctx) => {
+    if (value.endsOn < value.startsOn) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["endsOn"],
+        message: "Ends on can't be before Starts on.",
+      });
+    }
+  });
+
 // Covers both the student's own details and the fee-account terms in one
 // form/schema -- there was no student-detail edit UI at all before this,
 // only fee-account terms; teacher edit-submissions and the admin's direct
@@ -149,6 +182,10 @@ export const archiveStudentSchema = z.object({
 
 export const permanentlyDeleteStudentSchema = z.object({
   studentId: z.string().uuid(),
+});
+
+export const deleteEnrollmentSchema = z.object({
+  feeAccountId: z.string().uuid(),
 });
 
 export const requestStudentDeleteSchema = z.object({

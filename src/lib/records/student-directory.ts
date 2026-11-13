@@ -12,6 +12,8 @@ export interface StudentFeeAccountRef {
   feeAccountId: string;
   serviceType: ServiceType;
   academicYearLabel: string;
+  startsOn: string;
+  endsOn: string;
   status: "active" | "discontinued";
   // Phase 15.5: "none" (no open request), "open" (a request is open, no
   // pending claim yet), or "reported" (a claim is pending review) --
@@ -175,6 +177,8 @@ export async function getStudentDirectory(
               feeAccountId: string | null;
               serviceType: string | null;
               academicYearLabel: string | null;
+              startsOn: string | null;
+              endsOn: string | null;
               status: string | null;
               paymentRequestStatus: string | null;
             }[]
@@ -186,6 +190,8 @@ export async function getStudentDirectory(
                 feeAccountId: string;
                 serviceType: string;
                 academicYearLabel: string;
+                startsOn: string;
+                endsOn: string;
                 status: string;
                 paymentRequestStatus: string | null;
               } => !!fa.feeAccountId && !!fa.serviceType,
@@ -194,6 +200,8 @@ export async function getStudentDirectory(
               feeAccountId: fa.feeAccountId,
               serviceType: fa.serviceType as ServiceType,
               academicYearLabel: fa.academicYearLabel ?? "",
+              startsOn: fa.startsOn ?? "",
+              endsOn: fa.endsOn ?? "",
               status: (fa.status ?? "active") as "active" | "discontinued",
               paymentRequestStatus: (fa.paymentRequestStatus ?? "none") as
                 | "none"

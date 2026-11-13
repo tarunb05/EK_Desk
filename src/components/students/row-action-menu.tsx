@@ -3,44 +3,81 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
+  deleteEnrollment,
   permanentlyDeleteStudent,
   requestStudentDelete,
 } from "@/lib/records/actions";
 import { DeleteConfirmDialog } from "./delete-confirm-dialog";
 import { RequestPaymentDialog } from "./request-payment-dialog";
-import { ActionMenu, type ActionMenuItem } from "@/components/shell/action-menu";
+import {
+  ActionMenu,
+  type ActionMenuItem,
+} from "@/components/shell/action-menu";
 import { FormError } from "@/components/forms/field";
 import type { Role } from "@/lib/auth/routes";
+import type { ServiceType } from "@/lib/records/types";
 
-// A navigation-and-actions menu, not a form control -- Edit/Record payment
-// push to that route; the delete option opens the confirm dialog, then
-// either deletes directly (admin) or queues an approval request (teacher).
-// Admin and teacher get the exact same control; only what happens after
-// confirming differs, matching every other action in this app.
+// One enrollment a student has, already labelled and linked by the server
+// (the links differ by role: /transport and /daycare are admin-only, so a
+// teacher's pages live under /students).
+export interface EnrollmentOption {
+  feeAccountId: string;
+  label: string;
+  serviceType: ServiceType;
+  active: boolean;
+  editHref: string;
+  paymentHref: string;
+}
+
+// The student's single Actions menu. Edit, Record payment and Request
+// payment act on an enrollment, so a student with more than one gets a list
+// of them inside the option to choose from (with one, the option just
+// goes). Re-enroll and Delete are about the student, not an enrollment, so
+// there's nothing to choose: Re-enroll opens the form, and Delete is direct
+// for an admin or a request for an admin to approve from a teacher.
 export function RowActionMenu({
-  editHref,
-  paymentHref,
   studentId,
   studentName,
   role,
-  requestPaymentFeeAccountId,
+  enrollments,
 }: {
-  editHref?: string;
-  paymentHref?: string;
   studentId: string;
   studentName: string;
   role: Role;
-  // Only set for an active fee account an admin may request payment
-  // against -- when present, adds the menu item and this component owns
-  // the dialog's own open state, same as every other row action here.
-  requestPaymentFeeAccountId?: string;
+  enrollments: EnrollmentOption[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const [requestPaymentOpen, setRequestPaymentOpen] = useState(false);
+  // The enrollment a payment request is being made for; the dialog is
+  // mounted only while this is set.
+  const [requestPaymentFor, setRequestPaymentFor] = useState<string | null>(
+    null,
+  );
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // The enrollment chosen for deletion; its own confirmation dialog.
+  const [enrollmentToDelete, setEnrollmentToDelete] =
+    useState<EnrollmentOption | null>(null);
+  const enrollmentDialogRef = useRef<HTMLDialogElement>(null);
+
+  function handleDeleteEnrollment() {
+    if (!enrollmentToDelete) return;
+    const feeAccountId = enrollmentToDelete.feeAccountId;
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.set("feeAccountId", feeAccountId);
+      const result = await deleteEnrollment({ error: null }, formData);
+      if (result.error) setError(result.error);
+    });
+  }
+
+  function openDeleteEnrollmentDialog(enrollment: EnrollmentOption) {
+    setError(null);
+    setEnrollmentToDelete(enrollment);
+    // Same deferral as openDeleteDialog below.
+    setTimeout(() => enrollmentDialogRef.current?.showModal(), 0);
+  }
 
   function handleDelete() {
     startTransition(async () => {
@@ -66,15 +103,58 @@ export function RowActionMenu({
     setTimeout(() => dialogRef.current?.showModal(), 0);
   }
 
+  // One enrollment: the option acts on it directly. Several: the option
+  // lists them. None: the option isn't offered.
+  function forEnrollments(
+    label: string,
+    list: EnrollmentOption[],
+    act: (enrollment: EnrollmentOption) => void,
+  ): ActionMenuItem[] {
+    const [only, ...rest] = list;
+    if (!only) return [];
+    if (rest.length === 0) return [{ label, onSelect: () => act(only) }];
+    return [
+      {
+        label,
+        choices: list.map((enrollment) => ({
+          label: enrollment.label,
+          onSelect: () => act(enrollment),
+        })),
+      },
+    ];
+  }
+
   const items: ActionMenuItem[] = [
-    ...(editHref
-      ? [{ label: "Edit", onSelect: () => router.push(editHref) }]
+    ...forEnrollments("Edit", enrollments, (e) => router.push(e.editHref)),
+    ...forEnrollments("Record payment", enrollments, (e) =>
+      router.push(e.paymentHref),
+    ),
+    // Only an active enrollment can have a payment requested against it.
+    ...forEnrollments(
+      "Request payment",
+      enrollments.filter((e) => e.active),
+      (e) => setRequestPaymentFor(e.feeAccountId),
+    ),
+    // Re-enrolling is for a returning daycare student. It's about the
+    // student, not one of their stints, so it goes straight to the form
+    // (pre-filled from what's on file) with nothing to choose first.
+    ...(enrollments.some((e) => e.serviceType === "daycare")
+      ? [
+          {
+            label: "Re-enroll",
+            onSelect: () => router.push(`/students/re-enroll/${studentId}`),
+          },
+        ]
       : []),
-    ...(paymentHref
-      ? [{ label: "Record payment", onSelect: () => router.push(paymentHref) }]
-      : []),
-    ...(requestPaymentFeeAccountId
-      ? [{ label: "Request payment", onSelect: () => setRequestPaymentOpen(true) }]
+    // Removes just the chosen enrollment (and its payments), not the
+    // student. Admin only; a teacher can set an enrollment to Discontinued
+    // from Edit instead.
+    ...(role === "admin"
+      ? forEnrollments(
+          "Delete enrollment",
+          enrollments,
+          openDeleteEnrollmentDialog,
+        ).map((item) => ({ ...item, destructive: true }))
       : []),
     {
       label: role === "admin" ? "Delete permanently" : "Request deletion",
@@ -92,6 +172,13 @@ export function RowActionMenu({
           Submitted for admin approval.
         </span>
       ) : null}
+      <DeleteConfirmDialog
+        dialogRef={enrollmentDialogRef}
+        title={`Delete ${enrollmentToDelete?.label ?? "this enrollment"}?`}
+        message={`This removes this enrollment of ${studentName}, and every payment recorded on it, from the database. ${studentName} and their other enrollments stay. This cannot be undone. To keep the record, set it to Discontinued from Edit instead.`}
+        confirmLabel="Delete enrollment"
+        onConfirm={handleDeleteEnrollment}
+      />
       <DeleteConfirmDialog
         dialogRef={dialogRef}
         title={
@@ -114,11 +201,11 @@ export function RowActionMenu({
           second open starts clean instead of replaying the previous
           submission's state, same reasoning as every other Phase 15
           dialog. */}
-      {requestPaymentOpen && requestPaymentFeeAccountId ? (
+      {requestPaymentFor ? (
         <RequestPaymentDialog
-          feeAccountId={requestPaymentFeeAccountId}
+          feeAccountId={requestPaymentFor}
           studentId={studentId}
-          onClose={() => setRequestPaymentOpen(false)}
+          onClose={() => setRequestPaymentFor(null)}
         />
       ) : null}
     </div>

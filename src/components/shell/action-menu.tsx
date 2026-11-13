@@ -4,9 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDownIcon } from "./nav-icons";
 
-export interface ActionMenuItem {
+export interface ActionMenuChoice {
   label: string;
   onSelect: () => void;
+}
+
+export interface ActionMenuItem {
+  label: string;
+  // Either do something straight away...
+  onSelect?: () => void;
+  // ...or list choices inside the same menu first (e.g. which enrollment
+  // to edit), with a way back. An item with neither does nothing.
+  choices?: ActionMenuChoice[];
   // "Delete"/"Request deletion" reads in --attention, matching every other
   // destructive/warning control in the app (overdue figures, void, etc.).
   destructive?: boolean;
@@ -36,11 +45,19 @@ export function ActionMenu({
   triggerLabel = "Actions",
 }: ActionMenuProps) {
   const [open, setOpen] = useState(false);
-  const [position, setPosition] = useState<{ top: number; right: number } | null>(
-    null,
-  );
+  // The item whose choices are showing, or null for the top-level list.
+  const [choiceItem, setChoiceItem] = useState<ActionMenuItem | null>(null);
+  const [position, setPosition] = useState<{
+    top: number;
+    right: number;
+  } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Every way of closing lands back on the top-level list next time.
+  useEffect(() => {
+    if (!open) setChoiceItem(null);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -48,7 +65,10 @@ export function ActionMenu({
     function place() {
       const rect = buttonRef.current?.getBoundingClientRect();
       if (!rect) return;
-      setPosition({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+      setPosition({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
     }
     place();
 
@@ -110,24 +130,61 @@ export function ActionMenu({
               ref={panelRef}
               role="menu"
               style={{ top: position.top, right: position.right }}
-              className="animate-pop-in fixed z-30 w-40 origin-top-right rounded-md border border-border bg-surface p-1 shadow-[0_1px_2px_rgba(0,0,0,.05)]"
+              className="animate-pop-in fixed z-30 w-max min-w-40 max-w-72 origin-top-right rounded-md border border-border bg-surface p-1 shadow-[0_1px_2px_rgba(0,0,0,.05)]"
             >
-              {items.map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setOpen(false);
-                    item.onSelect();
-                  }}
-                  className={`block w-full rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-surface-accent ${
-                    item.destructive ? "text-attention" : "text-ink"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
+              {choiceItem ? (
+                <>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    aria-label={`Back to actions from ${choiceItem.label}`}
+                    onClick={() => setChoiceItem(null)}
+                    className="block w-full rounded-md px-3 py-1.5 text-left text-sm font-medium text-ink transition-colors hover:bg-surface-accent"
+                  >
+                    ‹ {choiceItem.label}
+                  </button>
+                  <div className="px-3 pb-1 text-2xs uppercase tracking-wide text-ink-muted">
+                    Choose an enrollment
+                  </div>
+                  {(choiceItem.choices ?? []).map((choice) => (
+                    <button
+                      key={choice.label}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setOpen(false);
+                        choice.onSelect();
+                      }}
+                      className="block w-full whitespace-normal rounded-md px-3 py-1.5 text-left text-sm text-ink transition-colors hover:bg-surface-accent"
+                    >
+                      {choice.label}
+                    </button>
+                  ))}
+                </>
+              ) : (
+                items.map((item) => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    role="menuitem"
+                    aria-haspopup={item.choices ? "menu" : undefined}
+                    onClick={() => {
+                      if (item.choices) {
+                        setChoiceItem(item);
+                        return;
+                      }
+                      setOpen(false);
+                      item.onSelect?.();
+                    }}
+                    className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-surface-accent ${
+                      item.destructive ? "text-attention" : "text-ink"
+                    }`}
+                  >
+                    {item.label}
+                    {item.choices ? <span aria-hidden="true">›</span> : null}
+                  </button>
+                ))
+              )}
             </div>,
             document.body,
           )

@@ -1,6 +1,9 @@
 import { formatMethod, formatPaise } from "@/lib/domain/money";
 import type { StudentDetail } from "@/lib/records/student-detail";
 import type { Role } from "@/lib/auth/routes";
+import { todayInIndia } from "@/lib/domain/datetime";
+import { formatDateRange } from "@/lib/domain/enrollment-label";
+import { DaycareHistory } from "./daycare-history";
 import { DeleteStudentButton } from "./delete-student-button";
 import { RequestTimeline } from "./request-timeline";
 
@@ -13,6 +16,10 @@ export function StudentDetailBody({
   redirectTo: "/transport" | "/daycare" | "/students";
   role: Role;
 }) {
+  const daycareAccounts = detail.feeAccounts.filter(
+    (account) => account.serviceType === "daycare",
+  );
+
   return (
     <>
       <dl className="mb-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -52,6 +59,10 @@ export function StudentDetailBody({
         </div>
       ) : null}
 
+      {daycareAccounts.length > 0 ? (
+        <DaycareHistory accounts={daycareAccounts} today={todayInIndia()} />
+      ) : null}
+
       {detail.feeAccounts.length === 0 ? (
         <p className="text-sm text-ink-muted">
           This student has no fee accounts yet.
@@ -60,8 +71,12 @@ export function StudentDetailBody({
         detail.feeAccounts.map((account) => (
           <div key={account.feeAccountId} className="mb-6">
             <h3 className="mb-2 text-2xs font-medium uppercase tracking-wide text-ink-muted">
-              {account.serviceType} — pending{" "}
-              {formatPaise(account.pendingPaise)}
+              {/* A daycare student can have several stints, so name each
+                  by its dates; transport has one per year. */}
+              {account.serviceType === "daycare"
+                ? `daycare · ${formatDateRange(account.startsOn, account.endsOn)}`
+                : account.serviceType}{" "}
+              — pending {formatPaise(account.pendingPaise)}
             </h3>
 
             <RequestTimeline requests={account.paymentRequests} role={role} />
