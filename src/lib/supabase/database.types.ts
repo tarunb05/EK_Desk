@@ -1784,7 +1784,15 @@ export type Database = {
         Returns: Json
       }
       expense_category_breakdown: {
-        Args: { p_academic_year_id: string; p_branch_code?: string }
+        Args: {
+          p_academic_year_id: string
+          p_branch_code?: string
+          p_category_id?: string
+          p_from?: string
+          p_method?: string
+          p_q?: string
+          p_to?: string
+        }
         Returns: {
           amount_paise: number
           category_id: string

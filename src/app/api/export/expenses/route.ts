@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth/require-role";
 import { getAllExpenses } from "@/lib/records/expense-directory";
 import { getBranches } from "@/lib/supabase/queries";
+import { expenseTableSearchParamsSchema } from "@/lib/shell/expense-table-params";
 import { paiseToRupees } from "@/lib/domain/money";
 import { sanitizeForSpreadsheet } from "@/lib/records/spreadsheet-sanitizer";
 
@@ -29,6 +30,12 @@ export async function GET(request: NextRequest) {
   }
   const { year, branch: requestedBranch } = parsed.data;
 
+  // The same filters the Expenses page shows (month, category, method,
+  // range, search) -- invalid values fall back to "no filter".
+  const table = expenseTableSearchParamsSchema.parse(
+    Object.fromEntries(request.nextUrl.searchParams),
+  );
+
   const supabase = await createClient();
 
   // A teacher's export is clamped to their own branch regardless of what
@@ -41,7 +48,11 @@ export async function GET(request: NextRequest) {
     branch = branches.find((b) => b.id === authed.branchId)?.code ?? "all";
   }
 
-  const rows = await getAllExpenses(supabase, { branch, academicYearId: year });
+  const rows = await getAllExpenses(supabase, {
+    branch,
+    academicYearId: year,
+    table,
+  });
 
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Expenses");

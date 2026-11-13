@@ -7,6 +7,7 @@ import type {
 } from "@/lib/shell/expense-table-params";
 import { resolvePagination, type Pagination } from "@/lib/shell/pagination";
 import { escapePostgrestFilterValue } from "@/lib/records/student-directory";
+import { resolveExpenseDateRange } from "@/lib/domain/expense-month";
 
 export interface ExpenseCategoryOption {
   id: string;
@@ -24,17 +25,46 @@ export interface ExpenseCategoryBreakdown {
   totalPaise: bigint;
 }
 
-// Scoped by year + branch only -- the same two params ScopeSelectors
-// already control -- not by the list table's own category/method/date-
-// range/search filters. Matches how the fee dashboards' stat cards are
-// scoped by year/branch/month, never by a second table's filters.
+// The filters the list, the card, the category chart and the Excel export
+// all share. Month and the custom From/To range are folded into one range
+// here, in one place, so none of them can read the URL differently.
+type ExpenseFilterInput = Pick<
+  ExpenseTableSearchParams,
+  "category" | "method" | "month" | "from" | "to" | "q"
+>;
+
+function normalizeFilters(table: ExpenseFilterInput) {
+  const { from, to } = resolveExpenseDateRange(table);
+  return {
+    category: table.category || undefined,
+    method: table.method === "all" ? undefined : table.method,
+    from,
+    to,
+    q: table.q || undefined,
+  };
+}
+
+// Follows the same filters as the list below it -- year, branch, category,
+// method, month / date range and search -- so the card total and the chart
+// always describe the rows in the table. Aggregated in Postgres
+// (expense_category_breakdown), not summed from fetched rows.
 export async function getExpenseCategoryBreakdown(
   supabase: SupabaseClient<Database>,
-  params: { academicYearId: string; branch: "all" | string },
+  params: {
+    academicYearId: string;
+    branch: "all" | string;
+    table: ExpenseFilterInput;
+  },
 ): Promise<ExpenseCategoryBreakdown> {
+  const filters = normalizeFilters(params.table);
   const { data, error } = await supabase.rpc("expense_category_breakdown", {
     p_academic_year_id: params.academicYearId,
     p_branch_code: params.branch === "all" ? undefined : params.branch,
+    p_category_id: filters.category,
+    p_method: filters.method,
+    p_from: filters.from,
+    p_to: filters.to,
+    p_q: filters.q,
   });
 
   if (error) {
@@ -140,6 +170,7 @@ function applyFilters(
   { branch, academicYearId, table }: ExpenseDirectoryParams,
   { head }: { head: boolean },
 ) {
+  const filters = normalizeFilters(table);
   let query = supabase
     .from("expense_record")
     .select("*", { count: "exact", head })
@@ -148,20 +179,20 @@ function applyFilters(
   if (branch !== "all") {
     query = query.eq("branch_code", branch);
   }
-  if (table.category) {
-    query = query.eq("category_id", table.category);
+  if (filters.category) {
+    query = query.eq("category_id", filters.category);
   }
-  if (table.method !== "all") {
-    query = query.eq("method", table.method);
+  if (filters.method) {
+    query = query.eq("method", filters.method);
   }
-  if (table.from) {
-    query = query.gte("spent_on", table.from);
+  if (filters.from) {
+    query = query.gte("spent_on", filters.from);
   }
-  if (table.to) {
-    query = query.lte("spent_on", table.to);
+  if (filters.to) {
+    query = query.lte("spent_on", filters.to);
   }
-  if (table.q) {
-    const q = escapePostgrestFilterValue(table.q);
+  if (filters.q) {
+    const q = escapePostgrestFilterValue(filters.q);
     query = query.or(
       `category_name.ilike."%${q}%",reference.ilike."%${q}%",note.ilike."%${q}%"`,
     );
@@ -170,23 +201,16 @@ function applyFilters(
   return query;
 }
 
-// Every expense in scope, unpaginated -- backs the "Total expenses" card's
-// Excel export. Scoped by year + branch only, same as
-// getExpenseCategoryBreakdown, not by the list table's own filters.
+// Every expense matching the current filters, unpaginated -- backs the
+// "Total expenses" card's Excel export, so the file holds exactly the rows
+// the card adds up.
 export async function getAllExpenses(
   supabase: SupabaseClient<Database>,
-  params: { branch: "all" | string; academicYearId: string },
+  params: ExpenseDirectoryParams,
 ): Promise<ExpenseDirectoryRow[]> {
-  let query = supabase
-    .from("expense_record")
-    .select("*")
-    .eq("academic_year_id", params.academicYearId);
-
-  if (params.branch !== "all") {
-    query = query.eq("branch_code", params.branch);
-  }
-
-  const { data, error } = await query.order("spent_on", { ascending: false });
+  const { data, error } = await applyFilters(supabase, params, {
+    head: false,
+  }).order("spent_on", { ascending: false });
 
   if (error) {
     throw new Error("Could not load expenses for export.");

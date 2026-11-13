@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MONEY_METHODS } from "@/lib/domain/money";
+import { isMonthKey } from "@/lib/domain/expense-month";
 
 export const EXPENSE_SORT_KEYS = [
   "spent_on",
@@ -20,6 +21,8 @@ export const expenseTableSearchParamsSchema = z.object({
   page: pageParam,
   category: z.string().optional(),
   method: z.enum([...MONEY_METHODS, "all"]).catch("all"),
+  // "YYYY-MM"; anything else is treated as no month filter.
+  month: z.string().refine(isMonthKey).optional().catch(undefined),
   from: z.string().optional(),
   to: z.string().optional(),
   q: z.string().optional(),

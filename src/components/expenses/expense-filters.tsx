@@ -28,6 +28,8 @@ export function ExpenseFilters({
     const params = new URLSearchParams(searchParams.toString());
     if (value) {
       params.set(key, value);
+      // A custom range replaces the Month filter (see ExpenseMonthFilter).
+      if (key === "from" || key === "to") params.delete("month");
     } else {
       params.delete(key);
     }
