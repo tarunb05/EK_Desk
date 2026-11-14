@@ -7,7 +7,7 @@ import { RecordPaymentForm } from "@/components/records/record-payment-form";
 import { BackLink } from "@/components/shell/back-link";
 
 export const metadata: Metadata = {
-  title: "Record Payment",
+  title: "Record daycare payment",
 };
 
 export default async function RecordPaymentPage({
@@ -26,9 +26,9 @@ export default async function RecordPaymentPage({
   return (
     <div className="max-w-xl">
       <BackLink href="/students" label="Return to student page" />
-      <h1 className="mb-1 text-xl font-medium text-ink">Record payment</h1>
+      <h1 className="mb-1 text-2xl font-semibold text-ink">Record payment</h1>
       <p className="mb-4 text-sm text-ink-secondary">
-        {record.studentFullName} — pending {formatPaise(record.pendingPaise)}
+        {record.studentFullName} · pending {formatPaise(record.pendingPaise)}
       </p>
       <RecordPaymentForm feeAccountId={record.feeAccountId} />
     </div>

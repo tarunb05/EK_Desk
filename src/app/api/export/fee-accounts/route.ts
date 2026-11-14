@@ -40,9 +40,12 @@ export async function GET(request: NextRequest) {
     Object.fromEntries(request.nextUrl.searchParams),
   );
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid export parameters." }, {
-      status: 400,
-    });
+    return NextResponse.json(
+      { error: "Invalid export parameters." },
+      {
+        status: 400,
+      },
+    );
   }
   const { service, metric, year, branch } = parsed.data;
 

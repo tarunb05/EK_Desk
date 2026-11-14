@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Hanken_Grotesk } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const hanken = Hanken_Grotesk({
+  variable: "--font-hanken",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
   // Every page's own `metadata.title` fills in "%s" here — a page that sets
   // none (or doesn't set metadata at all) falls back to `default`. See
-  // CLAUDE.md's Design system section for the one-font (Inter) rule this
+  // CLAUDE.md's Design system section for the one-font (Hanken Grotesk) rule this
   // pairs with.
   title: {
     default: "EK Desk",
-    template: "%s — EK Desk",
+    template: "%s · EK Desk",
   },
   description: "Internal fee management for EuroKids transport and daycare.",
 };
@@ -34,7 +34,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${inter.variable} antialiased`}>{children}</body>
+      <body className={`${hanken.variable} antialiased`}>{children}</body>
     </html>
   );
 }

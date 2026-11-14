@@ -414,10 +414,13 @@ export function CoverflowCarousel({
                 aria-roledescription="slide"
                 aria-label={`${index + 1} of ${count}`}
                 className={cn(
-                  "absolute left-1/2 top-0 overflow-hidden rounded-md border border-hairline bg-surface-accent shadow-xs will-change-transform",
+                  "absolute left-1/2 top-0 overflow-hidden rounded-lg border border-hairline bg-surface-accent shadow-xs will-change-transform",
                   cardClassName,
                 )}
-                style={{ width: "var(--cf-card)", aspectRatio: cardAspectRatio }}
+                style={{
+                  width: "var(--cf-card)",
+                  aspectRatio: cardAspectRatio,
+                }}
               >
                 <Image
                   src={slide.src}
@@ -463,9 +466,7 @@ export function CoverflowCarousel({
             {active.title}
           </p>
           {active.subtitle && (
-            <p className="mt-1 text-sm text-ink-secondary">
-              {active.subtitle}
-            </p>
+            <p className="mt-1 text-sm text-ink-secondary">{active.subtitle}</p>
           )}
           {active.meta && active.meta.length > 0 && (
             <dl className="mt-10 w-full max-w-[230px] text-xs">

@@ -1,36 +1,53 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Wordmark } from "@/components/shell/brand";
+import { Mosaic } from "@/components/ui/mosaic";
 import { LoginForm } from "./login-form";
-import { WavesBackground } from "./waves-background";
 
 export const metadata: Metadata = {
-  title: "Sign in",
+  title: "Log in",
 };
 
+// Two panels: the form on the canvas, and beside it one large slate block
+// carrying the headline and the same tile mosaic the landing page runs
+// under its hero -- so signing in feels like the next screen of the same
+// site, not a different product. The block is decoration plus one line of
+// copy; on phones it drops away entirely and the form is the whole page.
 export default function LoginPage() {
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-canvas px-4">
-      <WavesBackground />
-      {/* Phase 14: login-glass-card supplies the light-frosted fill + blur
-          (see globals.css) -- everything else about this card, including
-          border-border and shadow-xs, is untouched from before this phase.
-          At the fill's measured contrast, --ink (the wordmark below),
-          --ink-secondary and --border all already clear their required
-          ratios against the wave background's real extremes at their
-          existing values -- no on-glass color variants needed for any of
-          them. */}
-      <div className="login-glass-card relative z-10 w-full max-w-md rounded-md border border-border p-8 shadow-xs">
-        {/* Scoped CLAUDE.md exception: the login page is the one screen with
-            no data on it, so its wordmark can carry the brand at a size the
-            dashboards can't afford — still Inter (the app's one typeface),
-            just bold, matching the "Sign In" header treatment from the
-            pasted card reference. Nowhere else in the app sets an h1 to
-            bold; every other page title keeps its own (lighter) weight.
-            Color stays --ink, unchanged by Phase 14 -- see the glass card
-            comment above. */}
-        <h1 className="text-login-wordmark font-bold mb-6 tracking-[-0.02em] text-ink">
-          EK Desk
-        </h1>
-        <LoginForm />
+    <main className="grid min-h-dvh bg-canvas p-3 md:grid-cols-2 md:p-4">
+      <div className="flex flex-col px-4 py-6 md:px-10 md:py-8">
+        <Link
+          href="/"
+          aria-label="EK Desk home"
+          className="self-start rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+        >
+          <Wordmark size="lg" />
+        </Link>
+
+        <div className="flex flex-1 items-center">
+          <div className="mx-auto w-full max-w-sm">
+            <h1 className="text-4xl font-semibold leading-none tracking-[-0.03em] text-ink">
+              Log in
+            </h1>
+            <p className="mb-8 mt-3 text-base text-ink-secondary">
+              Use the username the office gave you.
+            </p>
+            <LoginForm />
+          </div>
+        </div>
+
+        <p className="text-xs text-ink-muted">For preschool staff use only.</p>
+      </div>
+
+      <div
+        aria-hidden="true"
+        className="hidden flex-col justify-between overflow-hidden rounded-xl bg-accent md:flex"
+      >
+        <p className="max-w-md p-10 text-4xl font-semibold leading-[1.02] tracking-[-0.03em] text-canvas lg:p-12 lg:text-5xl">
+          Who&apos;s paid, who&apos;s pending, who&apos;s overdue.
+        </p>
+        <Mosaic rows={2} />
       </div>
     </main>
   );

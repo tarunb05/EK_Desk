@@ -99,7 +99,7 @@ export function ExpenseForm({
       action={formAction}
       onSubmit={handleSubmit}
       noValidate
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-4 rounded-lg border border-hairline bg-surface p-4 md:p-6"
     >
       {expenseId ? (
         <input type="hidden" name="expenseId" value={expenseId} />
@@ -191,13 +191,13 @@ export function ExpenseForm({
 
       {showConfirm ? (
         <p className="text-sm text-ink">
-          That&apos;s {formatPaise(parseRupeesToPaise(amount) ?? 0n)} — an
+          That&apos;s {formatPaise(parseRupeesToPaise(amount) ?? 0n)}, an
           unusually large expense. Select the button again to confirm.
         </p>
       ) : null}
       {confirmAmountPaise ? (
         <p className="text-sm text-ink">
-          That&apos;s {formatPaise(confirmAmountPaise)} — an unusually large
+          That&apos;s {formatPaise(confirmAmountPaise)}, an unusually large
           expense. Select the button again to confirm.
         </p>
       ) : null}

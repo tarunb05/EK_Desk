@@ -38,7 +38,7 @@ export function DeleteStudentButton({
         type="button"
         onClick={() => dialogRef.current?.showModal()}
         disabled={isPending}
-        className="h-8 rounded-md border border-border px-3 text-xs text-attention transition-colors duration-150 hover:bg-surface-accent disabled:opacity-60"
+        className="h-8 rounded-full border border-border px-3 text-xs text-attention transition-colors duration-150 hover:bg-surface-accent disabled:opacity-60"
       >
         {isPending ? "Deleting…" : "Delete student"}
       </button>

@@ -36,8 +36,12 @@ export default async function PayPage({
         <p className="text-xs uppercase tracking-wide text-ink-muted">
           {data.branchName} · {data.serviceLabel} fee
         </p>
-        <p className="mt-1 text-sm text-ink-secondary">For: {data.childFirstName}</p>
-        <p className="mt-3 text-2xl font-medium text-ink">{data.amountDisplay}</p>
+        <p className="mt-1 text-sm text-ink-secondary">
+          For: {data.childFirstName}
+        </p>
+        <p className="mt-3 text-2xl font-medium text-ink">
+          {data.amountDisplay}
+        </p>
         <p className="mt-1 text-xs text-ink-muted">
           Pay by {data.expiresAtDisplay} · Reference {data.referenceCode}
         </p>
@@ -48,10 +52,12 @@ export default async function PayPage({
           <p className="text-sm text-ink-secondary">
             Pay by UPI: <span className="text-ink">{data.upiId}</span>
           </p>
-          <p className="text-xs text-ink-muted">Payee name shown: {data.payeeName}</p>
+          <p className="text-xs text-ink-muted">
+            Payee name shown: {data.payeeName}
+          </p>
           <a
             href={data.upiUri ?? undefined}
-            className="inline-flex h-10 w-full items-center justify-center rounded-md bg-accent text-sm font-medium text-surface"
+            className="inline-flex h-10 w-full items-center justify-center rounded-full bg-accent text-sm font-medium text-surface"
           >
             Pay with UPI app
           </a>
@@ -76,9 +82,9 @@ export default async function PayPage({
       <ClaimForm token={token} />
 
       <p className="text-2xs text-ink-muted">
-        After paying, tap &quot;I&apos;ve paid&quot; above, or reply on
-        WhatsApp with the UTR number. The school will never ask for your UPI
-        PIN, OTP, or card details.
+        After paying, tap &quot;I&apos;ve paid&quot; above, or reply on WhatsApp
+        with the UTR number. The school will never ask for your UPI PIN, OTP, or
+        card details.
       </p>
     </main>
   );

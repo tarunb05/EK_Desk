@@ -47,7 +47,7 @@ export function ApprovalRow({
             size={14}
             className={`text-ink-muted transition-transform ${expanded ? "rotate-180" : ""}`}
           />
-          <span className="rounded-md bg-surface-accent px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-secondary">
+          <span className="rounded-full bg-surface-accent px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-secondary">
             {submission.actionType}
           </span>
           {submission.summary}
@@ -63,7 +63,7 @@ export function ApprovalRow({
             {submission.detail.map((item) => (
               <div key={item.label} className="contents">
                 <dt className="text-ink-muted">{item.label}</dt>
-                <dd className="text-ink">{item.value || "—"}</dd>
+                <dd className="text-ink">{item.value || "-"}</dd>
               </div>
             ))}
           </dl>
@@ -159,7 +159,7 @@ export function ApprovalRow({
               <button
                 type="button"
                 onClick={() => setRejecting(true)}
-                className="h-8 rounded-md border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+                className="h-8 rounded-full border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
               >
                 Reject
               </button>

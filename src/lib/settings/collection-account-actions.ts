@@ -49,9 +49,7 @@ export async function createCollectionAccount(
   formData: FormData,
 ): Promise<CollectionAccountActionState> {
   await requireRole("admin");
-  const parsed = createCollectionAccountSchema.safeParse(
-    formEntries(formData),
-  );
+  const parsed = createCollectionAccountSchema.safeParse(formEntries(formData));
   if (!parsed.success) {
     return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
   }
@@ -83,8 +81,7 @@ export async function createCollectionAccount(
   // A brand-new account never has open requests against it yet, but the
   // function's shape is shared with the update path -- read affected the
   // same way for both rather than special-casing create.
-  const affected = (data as { affected?: AffectedPaymentRequest[] })
-    ?.affected;
+  const affected = (data as { affected?: AffectedPaymentRequest[] })?.affected;
   return { error: null, affected: affected?.length ? affected : undefined };
 }
 
@@ -93,9 +90,7 @@ export async function updateCollectionAccount(
   formData: FormData,
 ): Promise<CollectionAccountActionState> {
   await requireRole("admin");
-  const parsed = updateCollectionAccountSchema.safeParse(
-    formEntries(formData),
-  );
+  const parsed = updateCollectionAccountSchema.safeParse(formEntries(formData));
   if (!parsed.success) {
     return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
   }
@@ -121,8 +116,7 @@ export async function updateCollectionAccount(
   }
 
   revalidatePath("/settings");
-  const affected = (data as { affected?: AffectedPaymentRequest[] })
-    ?.affected;
+  const affected = (data as { affected?: AffectedPaymentRequest[] })?.affected;
   return { error: null, affected: affected?.length ? affected : undefined };
 }
 

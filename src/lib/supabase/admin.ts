@@ -12,7 +12,7 @@ export function createAdminClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) {
     throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY is not set — required to create a teacher login.",
+      "SUPABASE_SERVICE_ROLE_KEY is not set. Required to create a teacher login.",
     );
   }
   return createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, serviceRoleKey);

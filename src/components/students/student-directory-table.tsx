@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatPaise } from "@/lib/domain/money";
+import { formatDisplayDate } from "@/lib/domain/datetime";
 import type { StudentDirectoryRow } from "@/lib/records/student-directory";
 import type { StudentSortKey } from "@/lib/shell/student-table-params";
 import type { Role } from "@/lib/auth/routes";
@@ -13,6 +14,7 @@ import {
   type EnrollmentOption,
 } from "@/components/students/row-action-menu";
 import { enrollmentLabel } from "@/lib/domain/enrollment-label";
+import { EmptyNote } from "@/components/shell/empty-note";
 
 interface StudentDirectoryTableProps {
   rows: StudentDirectoryRow[];
@@ -25,13 +27,15 @@ interface StudentDirectoryTableProps {
   role: Role;
 }
 
+// Each state is a differently built chip (filled, outlined, tinted) with its
+// own icon and word, so the three read apart without relying on colour.
 function PaymentStatus({ row }: { row: StudentDirectoryRow }) {
   if (row.feeAccountCount === 0) {
-    return <span className="text-2xs text-ink-muted">—</span>;
+    return <span className="text-2xs text-ink-muted">-</span>;
   }
   if (row.hasOverdue) {
     return (
-      <span className="flex items-center gap-1 text-2xs text-attention">
+      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-2xs bg-attention-fill font-medium text-attention">
         <AlertIcon size={13} />
         Overdue · {formatPaise(row.totalPendingPaise)}
       </span>
@@ -39,14 +43,14 @@ function PaymentStatus({ row }: { row: StudentDirectoryRow }) {
   }
   if (row.totalPendingPaise > 0n) {
     return (
-      <span className="flex items-center gap-1 text-2xs text-attention">
+      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-2xs border border-attention/40 text-attention">
         <ClockIcon size={13} />
         Pending · {formatPaise(row.totalPendingPaise)}
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-1 text-2xs text-positive">
+    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-2xs bg-surface-accent text-positive">
       <StatusIcon size={13} />
       Paid
     </span>
@@ -118,10 +122,10 @@ export function StudentDirectoryTable({
 }: StudentDirectoryTableProps) {
   if (rows.length === 0) {
     return (
-      <p className="py-8 text-sm text-ink-muted">
-        No students match these filters — adjust the filters above, or add a
+      <EmptyNote>
+        No students match these filters. Adjust the filters above, or add a
         student from the Transport or Daycare screen.
-      </p>
+      </EmptyNote>
     );
   }
 
@@ -133,10 +137,10 @@ export function StudentDirectoryTable({
             ten-column table is 945px wide, which hid Payment and Actions
             off-screen on a phone. Same rows and menus either way, just
             restyled, so nothing renders twice. */}
-        <div className="overflow-x-auto rounded-md border border-hairline">
+        <div className="scroll-reveal overflow-x-auto rounded-lg border border-hairline bg-surface">
           <table className="w-full border-collapse text-sm max-md:block max-md:[&>tbody]:block">
             <thead className="max-md:hidden">
-              <tr className="h-9 border-b border-hairline bg-canvas">
+              <tr className="h-9 border-b border-hairline bg-sand/50">
                 <th className="px-3 text-left text-2xs font-medium uppercase tracking-wide text-ink-muted">
                   S.No.
                 </th>
@@ -201,7 +205,7 @@ export function StudentDirectoryTable({
                   className={`animate-row-in h-10 border-b border-hairline transition-colors last:border-0 max-md:grid max-md:h-auto max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-1 max-md:py-2.5 ${
                     row.hasOverdue
                       ? "border-l-2 border-l-attention bg-attention-fill/20"
-                      : "border-l-2 border-l-transparent even:bg-hairline/40 hover:border-l-accent hover:bg-surface-accent"
+                      : "border-l-2 border-l-transparent even:bg-canvas/50 hover:border-l-accent hover:bg-surface-accent"
                   }`}
                 >
                   <td className="px-3 text-ink-secondary tabular-nums max-md:hidden">
@@ -234,7 +238,7 @@ export function StudentDirectoryTable({
                     {row.phone}
                   </td>
                   <td className="px-3 text-ink-secondary tabular-nums max-md:hidden">
-                    {row.createdAt.slice(0, 10)}
+                    {formatDisplayDate(row.createdAt.slice(0, 10))}
                   </td>
                   <td className="px-3 tabular-nums max-md:order-2 max-md:justify-self-end">
                     <PaymentStatus row={row} />

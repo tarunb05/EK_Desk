@@ -17,11 +17,9 @@ export const confirmClaimSchema = z.object({
   amount: rupeesAmount,
   paidOn: dateField,
   method: z.enum(["upi", "bank_transfer"]),
-  checkedBank: z
-    .string()
-    .refine((value) => value === "on", {
-      message: "Confirm you've checked this in the bank account.",
-    }),
+  checkedBank: z.string().refine((value) => value === "on", {
+    message: "Confirm you've checked this in the bank account.",
+  }),
   closeRequest: z
     .string()
     .optional()
@@ -41,11 +39,9 @@ export const enterAndConfirmClaimSchema = z.object({
   amount: rupeesAmount,
   paidOn: dateField,
   method: z.enum(["upi", "bank_transfer"]),
-  checkedBank: z
-    .string()
-    .refine((value) => value === "on", {
-      message: "Confirm you've checked this in the bank account.",
-    }),
+  checkedBank: z.string().refine((value) => value === "on", {
+    message: "Confirm you've checked this in the bank account.",
+  }),
   closeRequest: z
     .string()
     .optional()

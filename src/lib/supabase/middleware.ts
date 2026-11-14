@@ -66,8 +66,7 @@ export async function updateSession(request: NextRequest) {
           // A session-only sign-in (login/actions.ts) leaves this marker so
           // a token refresh here doesn't silently restore @supabase/ssr's
           // own 400-day default persistence on the cookies it rewrites.
-          const remembered =
-            request.cookies.get("remember_me")?.value !== "0";
+          const remembered = request.cookies.get("remember_me")?.value !== "0";
           for (const { name, value, options } of cookiesToSet) {
             supabaseResponse.cookies.set(
               name,

@@ -1,5 +1,13 @@
 import type { Client } from "pg";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import { connect, impersonate, withRollback } from "./test-helpers";
 
 const ADMIN_ID = "00000000-0000-4000-8000-000000000010";
@@ -158,7 +166,12 @@ describe("submission and approval flow", () => {
          values ($1, $2, $3, $4, 'Student A Updated', 'Guardian A', '9000000004', 'Nursery-A',
                  1200000, '2026-06-01', '2026-04-01', '2027-03-31', 'active', 'Route 1', 'Gate')
          returning id`,
-        [studentA.rows[0]!.id, feeAccountA.rows[0]!.id, branchAId, TEACHER_A_ID],
+        [
+          studentA.rows[0]!.id,
+          feeAccountA.rows[0]!.id,
+          branchAId,
+          TEACHER_A_ID,
+        ],
       );
       expect(allowed.rows).toHaveLength(1);
 
@@ -169,7 +182,12 @@ describe("submission and approval flow", () => {
               total_receivable_paise, due_date, starts_on, ends_on, fee_account_status, route_name, pickup_point)
            values ($1, $2, $3, $4, 'Student B Updated', 'Guardian B', '9000000005', 'Nursery-A',
                    1200000, '2026-06-01', '2026-04-01', '2027-03-31', 'active', 'Route 1', 'Gate')`,
-          [studentB.rows[0]!.id, feeAccountB.rows[0]!.id, branchAId, TEACHER_A_ID],
+          [
+            studentB.rows[0]!.id,
+            feeAccountB.rows[0]!.id,
+            branchAId,
+            TEACHER_A_ID,
+          ],
         ),
       ).rejects.toThrow();
     });
@@ -571,9 +589,7 @@ describe("submission and approval flow", () => {
         "select total_receivable_paise, pickup_point from fee_account where id = $1",
         [feeAccount.rows[0]!.id],
       );
-      expect(updatedFeeAccount.rows[0]!.total_receivable_paise).toBe(
-        "1500000",
-      );
+      expect(updatedFeeAccount.rows[0]!.total_receivable_paise).toBe("1500000");
       expect(updatedFeeAccount.rows[0]!.pickup_point).toBe("New Gate");
     });
   });

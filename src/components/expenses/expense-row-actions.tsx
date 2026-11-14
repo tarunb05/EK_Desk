@@ -4,7 +4,10 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deleteExpense } from "@/lib/records/actions";
 import { DeleteConfirmDialog } from "@/components/students/delete-confirm-dialog";
-import { ActionMenu, type ActionMenuItem } from "@/components/shell/action-menu";
+import {
+  ActionMenu,
+  type ActionMenuItem,
+} from "@/components/shell/action-menu";
 import { FormError } from "@/components/forms/field";
 
 // Same Actions-menu pattern as the student directory's RowActionMenu, for
@@ -40,7 +43,10 @@ export function ExpenseRowActions({ expenseId }: { expenseId: string }) {
   }
 
   const items: ActionMenuItem[] = [
-    { label: "Edit", onSelect: () => router.push(`/expenses/${expenseId}/edit`) },
+    {
+      label: "Edit",
+      onSelect: () => router.push(`/expenses/${expenseId}/edit`),
+    },
     { label: "Delete", onSelect: openDeleteDialog, destructive: true },
   ];
 

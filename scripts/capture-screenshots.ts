@@ -18,10 +18,7 @@
 // students end to end, and CLAUDE.md's PII rule means real student data
 // must never end up in a checked-in screenshot.
 import { chromium } from "@playwright/test";
-import {
-  TEST_ADMIN_USERNAME,
-  TEST_ADMIN_PASSWORD,
-} from "./test-credentials";
+import { TEST_ADMIN_USERNAME, TEST_ADMIN_PASSWORD } from "./test-credentials";
 
 const BASE_URL = process.env.SCREENSHOT_BASE_URL ?? "http://localhost:3000";
 
@@ -35,8 +32,19 @@ interface Shot {
 
 const SHOTS: Shot[] = [
   { name: "transport", path: "/transport", waitForText: "By branch" },
-  { name: "students", path: "/students", waitForText: "Date added" },
-  { name: "expenses", path: "/expenses", waitForText: "By category" },
+  // Sorted by name so the first page is seeded students, not whatever a
+  // test run or a manual try-out added most recently.
+  {
+    name: "students",
+    path: "/students?sort=full_name&dir=asc",
+    waitForText: "Date added",
+  },
+  // One real branch, so rows from a leftover test branch stay out of frame.
+  {
+    name: "expenses",
+    path: "/expenses?branch=BR-A",
+    waitForText: "By category",
+  },
   { name: "logs", path: "/logs", waitForText: "Activity log" },
 ];
 
@@ -57,11 +65,17 @@ async function main() {
   await page.goto(`${BASE_URL}/login`);
   await page.getByLabel("Username").fill(TEST_ADMIN_USERNAME);
   await page.getByLabel("Password").fill(TEST_ADMIN_PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Log in" }).click();
   await page.waitForURL(/\/transport$/);
 
   for (const shot of SHOTS) {
     await page.goto(`${BASE_URL}${shot.path}`);
+    // Hides Next.js's floating dev-mode badge, so a capture against
+    // `npm run dev` is as clean as one against a production build. A
+    // no-op on a production server, where the badge does not exist.
+    await page.addStyleTag({
+      content: "nextjs-portal { display: none !important; }",
+    });
     await page.getByText(shot.waitForText).first().waitFor();
     // Let any entrance/reveal animation settle so the capture isn't
     // mid-fade.

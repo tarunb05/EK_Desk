@@ -1,6 +1,19 @@
 import type { Client } from "pg";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { connect, impersonate, impersonateAdmin, withRollback } from "./test-helpers";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
+import {
+  connect,
+  impersonate,
+  impersonateAdmin,
+  withRollback,
+} from "./test-helpers";
 
 const ADMIN_ID = "00000000-0000-4000-8000-000000000021";
 const TEACHER_A_ID = "00000000-0000-4000-8000-000000000022";
@@ -68,7 +81,10 @@ describe("hard delete a student (phase 9)", () => {
        values ($1, 50000, '2026-06-01', 'cash', 'admin')`,
       [feeAccount.rows[0]!.id],
     );
-    return { studentId: student.rows[0]!.id, feeAccountId: feeAccount.rows[0]!.id };
+    return {
+      studentId: student.rows[0]!.id,
+      feeAccountId: feeAccount.rows[0]!.id,
+    };
   }
 
   it("a teacher's delete matches zero rows -- no grant, not just a false RLS policy", async () => {

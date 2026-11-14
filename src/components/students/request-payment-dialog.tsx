@@ -1,6 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import {
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import {
   Field,
   FormError,
@@ -39,15 +45,18 @@ function PhonePicker({
   value: PhoneField;
   onChange: (value: PhoneField) => void;
 }) {
-  const allOptions: { field: PhoneField; number: string | null; flagged: boolean }[] =
-    [
-      {
-        field: "whatsappPhone",
-        number: data.whatsappPhone,
-        flagged: data.whatsappPhoneNotOnWhatsapp,
-      },
-      { field: "phone", number: data.phone, flagged: data.phoneNotOnWhatsapp },
-    ];
+  const allOptions: {
+    field: PhoneField;
+    number: string | null;
+    flagged: boolean;
+  }[] = [
+    {
+      field: "whatsappPhone",
+      number: data.whatsappPhone,
+      flagged: data.whatsappPhoneNotOnWhatsapp,
+    },
+    { field: "phone", number: data.phone, flagged: data.phoneNotOnWhatsapp },
+  ];
   const options = allOptions.filter((o) => o.number);
 
   if (options.length === 0) {
@@ -79,7 +88,7 @@ function PhonePicker({
           {option.field === "whatsappPhone" ? " (WhatsApp number)" : ""}
           {option.flagged ? (
             <span className="text-2xs text-ink-muted">
-              — flagged as not on WhatsApp
+              (flagged as not on WhatsApp
             </span>
           ) : null}
         </label>
@@ -125,7 +134,7 @@ function CancelRequestButton({
         <button
           type="button"
           onClick={() => setConfirming(false)}
-          className="h-8 rounded-md border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+          className="h-8 rounded-full border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
         >
           Keep it
         </button>
@@ -209,7 +218,7 @@ function ShareLinksView({
 
       {!share.numberUsable ? (
         <p className="text-sm text-attention">
-          This number doesn&apos;t look like a valid Indian mobile — WhatsApp
+          This number doesn&apos;t look like a valid Indian mobile, so WhatsApp
           and SMS links aren&apos;t available. Copy the message instead.
         </p>
       ) : (
@@ -225,7 +234,7 @@ function ShareLinksView({
           </a>
           <a
             href={share.smsUrl ?? undefined}
-            className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+            className="inline-flex h-9 items-center rounded-full border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
           >
             Send as SMS
           </a>
@@ -247,7 +256,7 @@ function ShareLinksView({
             <button
               type="button"
               onClick={() => setAskedIfOpened(false)}
-              className="h-8 rounded-md border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+              className="h-8 rounded-full border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
             >
               Yes
             </button>
@@ -260,7 +269,7 @@ function ShareLinksView({
                   setAskedIfOpened(false);
                   onSwitchNumber();
                 }}
-                className="h-8 rounded-md border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+                className="h-8 rounded-full border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
               >
                 Not on WhatsApp
               </button>
@@ -306,7 +315,13 @@ export function RequestPaymentDialog({
         const preferWhatsapp =
           result.whatsappPhone && !result.whatsappPhoneNotOnWhatsapp;
         const preferPhone = result.phone && !result.phoneNotOnWhatsapp;
-        setPhoneField(preferWhatsapp ? "whatsappPhone" : preferPhone ? "phone" : "whatsappPhone");
+        setPhoneField(
+          preferWhatsapp
+            ? "whatsappPhone"
+            : preferPhone
+              ? "phone"
+              : "whatsappPhone",
+        );
         setCollectionAccountId(
           result.collectionAccounts.find((a) => a.isDefault)?.id ??
             result.collectionAccounts[0]?.id ??
@@ -346,11 +361,14 @@ export function RequestPaymentDialog({
       ref={dialogRef}
       onClose={onClose}
       aria-labelledby="request-payment-title"
-      className="w-full max-w-md rounded-md border border-border bg-surface p-0 text-ink shadow-[0_1px_2px_rgba(0,0,0,.05)] backdrop:bg-ink/30"
+      className="w-full max-w-md rounded-lg border border-border bg-surface p-0 text-ink shadow-[0_1px_2px_rgba(0,0,0,.05)] backdrop:bg-ink/30"
     >
       <div className="flex flex-col gap-3 p-5">
         <div className="flex items-center justify-between">
-          <h2 id="request-payment-title" className="text-base font-medium text-ink">
+          <h2
+            id="request-payment-title"
+            className="text-base font-medium text-ink"
+          >
             Request payment
           </h2>
           <button
@@ -382,11 +400,15 @@ export function RequestPaymentDialog({
         ) : data.existingRequest ? (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-ink-secondary">
-              Already open: {data.existingRequest.amountDisplay} · valid
-              until {data.existingRequest.expiresAtDisplay} · ref{" "}
+              Already open: {data.existingRequest.amountDisplay} · valid until{" "}
+              {data.existingRequest.expiresAtDisplay} · ref{" "}
               {data.existingRequest.referenceCode}
             </p>
-            <PhonePicker data={data} value={phoneField} onChange={setPhoneField} />
+            <PhonePicker
+              data={data}
+              value={phoneField}
+              onChange={setPhoneField}
+            />
             <FormError error={shareError} />
             <div className="flex items-center gap-3">
               <button
@@ -398,9 +420,7 @@ export function RequestPaymentDialog({
               </button>
               <CancelRequestButton
                 paymentRequestId={data.existingRequest.id}
-                onCancelled={() =>
-                  setData({ ...data, existingRequest: null })
-                }
+                onCancelled={() => setData({ ...data, existingRequest: null })}
               />
             </div>
             <p className="text-2xs text-ink-muted">
@@ -414,7 +434,11 @@ export function RequestPaymentDialog({
         ) : null}
 
         {data && data !== "loading" && !share && data.hasPending ? (
-          <form action={createAction} noValidate className="flex flex-col gap-3">
+          <form
+            action={createAction}
+            noValidate
+            className="flex flex-col gap-3"
+          >
             <input type="hidden" name="feeAccountId" value={feeAccountId} />
             <input type="hidden" name="phoneField" value={phoneField} />
             <p className="text-sm text-ink-secondary">
@@ -474,7 +498,11 @@ export function RequestPaymentDialog({
               />
             </Field>
 
-            <PhonePicker data={data} value={phoneField} onChange={setPhoneField} />
+            <PhonePicker
+              data={data}
+              value={phoneField}
+              onChange={setPhoneField}
+            />
 
             <FormError error={createState.error} />
 
@@ -482,7 +510,7 @@ export function RequestPaymentDialog({
               <button
                 type="button"
                 onClick={closeDialog}
-                className="h-9 rounded-md border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+                className="h-9 rounded-full border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
               >
                 Cancel
               </button>

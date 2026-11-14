@@ -13,12 +13,12 @@ export default function NotFound() {
         <p className="text-5xl font-semibold text-accent">404</p>
         <h1 className="mt-3 text-lg font-medium text-ink">Page not found</h1>
         <p className="mt-2 text-sm text-ink-secondary">
-          That page doesn&apos;t exist — check the link, or head back to the
+          That page doesn&apos;t exist. Check the link, or head back to the
           dashboard.
         </p>
         <Link
           href="/transport"
-          className="mt-6 inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-accent px-4 text-sm font-medium text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
+          className="mt-6 inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-accent px-4 text-sm font-medium text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
         >
           <ArrowLeftIcon size={16} />
           Back to dashboard

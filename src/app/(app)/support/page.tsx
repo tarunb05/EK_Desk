@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth/require-role";
 import { getSupportRequests } from "@/lib/support/queries";
 import { SupportRequestRow } from "@/components/support/support-request-row";
+import { EmptyNote } from "@/components/shell/empty-note";
 
 // Static rather than branched on role, same call this page's sibling
 // (/approvals) makes -- not worth a second requireAuth() round trip just
@@ -25,7 +26,7 @@ export default async function SupportPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-medium text-ink">
+        <h1 className="text-2xl font-semibold text-ink">
           {role === "admin" ? "Support requests" : "Support"}
         </h1>
         <p className="mt-1 text-sm text-ink-secondary">
@@ -36,13 +37,13 @@ export default async function SupportPage() {
       </div>
 
       {requests.length === 0 ? (
-        <p className="text-sm text-ink-secondary">
+        <EmptyNote>
           {role === "admin"
-            ? "Nothing here — a teacher's support requests will show up here."
+            ? "Nothing here. A teacher's support requests will show up here."
             : "Nothing sent yet."}
-        </p>
+        </EmptyNote>
       ) : (
-        <div className="flex flex-col divide-y divide-hairline rounded-md border border-hairline bg-surface">
+        <div className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline bg-surface">
           {requests.map((request) => (
             <SupportRequestRow
               key={request.id}

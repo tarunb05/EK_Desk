@@ -204,9 +204,7 @@ export async function getStudentDirectory(
               endsOn: fa.endsOn ?? "",
               status: (fa.status ?? "active") as "active" | "discontinued",
               paymentRequestStatus: (fa.paymentRequestStatus ?? "none") as
-                | "none"
-                | "open"
-                | "reported",
+                "none" | "open" | "reported",
             }))
         : [];
 

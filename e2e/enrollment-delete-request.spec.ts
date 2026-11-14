@@ -14,7 +14,7 @@ async function signIn(page: Page, username: string, password: string) {
   await page.goto("/login");
   await page.getByLabel("Username").fill(username);
   await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Log in" }).click();
   // Without this, a following goto() can cancel the sign-in mid-flight.
   await expect(page).not.toHaveURL(/\/login/);
 }
@@ -29,7 +29,8 @@ test.describe("deleting one enrollment", () => {
       teacher.username,
       process.env.TEST_TEACHER_A_PASSWORD ?? "narahari",
     );
-    await expect(page).toHaveURL(/\/students/);
+    // A teacher lands on the Expenses dashboard after logging in.
+    await expect(page).toHaveURL(/\/expenses/);
 
     await page.goto(
       `/students?q=${TWO_ENROLLMENT_ADMISSION_NO}&academicYear=all`,

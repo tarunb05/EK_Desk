@@ -43,7 +43,7 @@ export function PaymentNowFields({
           onChange={handlePaidChange}
         />
         <label htmlFor={checkboxId} className="text-sm text-ink-secondary">
-          Paid — record a payment now
+          Paid: record a payment now
         </label>
       </div>
 

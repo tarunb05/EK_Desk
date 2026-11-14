@@ -79,7 +79,7 @@ export function AddStudentForm({
       ref={formRef}
       action={formAction}
       noValidate
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-4 rounded-lg border border-hairline bg-surface p-4 md:p-6"
     >
       <input type="hidden" name="serviceType" value={serviceType} />
       <input type="hidden" name="academicYearId" value={academicYearId} />

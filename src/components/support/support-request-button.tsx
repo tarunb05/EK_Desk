@@ -27,7 +27,7 @@ export function SupportRequestButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink max-sm:h-10 max-sm:w-10 max-sm:justify-center max-sm:px-0"
+        className="flex h-8 items-center gap-1.5 rounded-full border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink max-sm:h-10 max-sm:w-10 max-sm:justify-center max-sm:px-0"
       >
         <SupportIcon size={14} />
         {/* Icon-only on phones to fit the top bar; the label stays for
@@ -79,10 +79,13 @@ function SupportRequestDialog({ onClose }: { onClose: () => void }) {
       ref={dialogRef}
       onClose={onClose}
       aria-labelledby="support-request-title"
-      className="w-full max-w-sm rounded-md border border-border bg-surface p-0 text-ink shadow-[0_1px_2px_rgba(0,0,0,.05)] backdrop:bg-ink/30"
+      className="w-full max-w-sm rounded-lg border border-border bg-surface p-0 text-ink shadow-[0_1px_2px_rgba(0,0,0,.05)] backdrop:bg-ink/30"
     >
       <form action={formAction} noValidate className="flex flex-col gap-3 p-5">
-        <h2 id="support-request-title" className="text-base font-medium text-ink">
+        <h2
+          id="support-request-title"
+          className="text-base font-medium text-ink"
+        >
           Reach out to an admin
         </h2>
         <p className="text-sm text-ink-secondary">
@@ -104,7 +107,7 @@ function SupportRequestDialog({ onClose }: { onClose: () => void }) {
               dialogRef.current?.close();
               onClose();
             }}
-            className="h-9 rounded-md border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+            className="h-9 rounded-full border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
           >
             Cancel
           </button>

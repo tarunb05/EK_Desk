@@ -8,7 +8,7 @@ import { AddStudentForm } from "@/components/records/add-student-form";
 import { BackLink } from "@/components/shell/back-link";
 
 export const metadata: Metadata = {
-  title: "Add Daycare Student",
+  title: "Add daycare student",
 };
 
 export default async function NewDaycareStudentFromStudentsPage({
@@ -32,7 +32,7 @@ export default async function NewDaycareStudentFromStudentsPage({
   return (
     <div className="max-w-xl">
       <BackLink href="/students" />
-      <h1 className="mb-4 text-xl font-medium text-ink">
+      <h1 className="mb-4 text-2xl font-semibold text-ink">
         Add daycare student
       </h1>
       <AddStudentForm

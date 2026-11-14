@@ -28,7 +28,7 @@ test.describe("daycare spine", () => {
     await page.goto("/login");
     await page.getByLabel("Username").fill(TEST_ADMIN_USERNAME);
     await page.getByLabel("Password").fill(TEST_ADMIN_PASSWORD);
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Log in" }).click();
     await expect(page).toHaveURL(/\/transport$/);
 
     await page.goto("/daycare?branch=BR-B");

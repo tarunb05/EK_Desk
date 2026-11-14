@@ -33,3 +33,24 @@ export function generateTwelveMonths(startsOn: string): string[] {
     return `${year}-${String(month).padStart(2, "0")}`;
   });
 }
+
+// The academic year a screen opens on when the URL names none: the one that
+// contains today, and only if there is no such row, the one flagged current.
+//
+// The flag alone is not enough. It is moved by a nightly database job
+// (roll_academic_year), so between midnight on 1 April and that job's next
+// run -- or for as long as the job hasn't run at all, e.g. a hosted
+// database that was paused over the new year -- the flag still points at
+// the year that has just ended. Reading the dates means the new year is
+// the default from the first request on 1 April wherever its row exists,
+// and a year flagged current by hand in Settings still wins whenever today
+// falls outside every year on file.
+export function defaultAcademicYear<
+  T extends { startsOn: string; endsOn: string; isCurrent: boolean },
+>(years: T[], today: string): T | undefined {
+  return (
+    academicYearContaining(today, years) ??
+    years.find((year) => year.isCurrent) ??
+    years[0]
+  );
+}

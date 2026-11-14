@@ -48,36 +48,41 @@ Every filter and sort lives in the query string: `?year=2026-27&branch=all&servi
 
 ## Design system
 
-This is a back-office tool for a real business. It must look like a working instrument — dense, quiet, information-first, closer to a bank statement than a SaaS landing page. Light theme only. **Except the public landing page at `/`** (Phase 12) — the one screen reachable by someone who has never seen the tool and isn't logged in yet, so it's allowed to look and read like an actual landing page (a hero section, real product screenshots) instead of a data screen. Still the same color tokens below, still no gradients/purple/glassmorphism/emoji, still light theme — the exception is for layout and tone, not the palette.
+Redesigned 2026-11-14 around one palette ([colorhunt 555879 / 98A1BC / DED3C4 / F4EBD3](https://colorhunt.co/palette/55587998a1bcded3c4f4ebd3)) and one visual reference (loopsii.com): flat colour blocks, pill controls, soft large radii, tight display type, hairline rules with square end-markers. It is still a back-office tool for a real business — the reference sets the *surface* (shape, colour, type), not the density. Record tables stay dense and information-first; the two screens with no data on them (the landing page `/` and `/login`) are where the reference is followed most literally. Light theme only.
 
-Tokens (all text colours contrast-checked against white at 4.5:1 or better):
+Tokens (contrast measured, not assumed — every text/fill pairing listed is 4.5:1 or better):
 
 ```
---ink:              #1C1B19   /* primary text          17.2:1 */
---ink-secondary:    #57544E   /* secondary text         7.5:1 */
---ink-muted:        #6B675F   /* labels, captions       5.6:1 */
---canvas:           #F3EEE3   /* app background — beige */
---surface:          #FFFFFF   /* cards, table body */
---surface-accent:   #E8EEF7   /* selected/hovered row, callout */
---hairline:         #E3E2E1   /* table rules, dividers */
---border:           #C1C0C2   /* input borders, card edges */
---accent:           #2A3A5C   /* links, active tab, primary button 11.3:1 — dull dark navy */
---accent-fill:      #5B729A   /* chart series, non-text fills */
---positive:         #57523F   /* "collected" figures                7.8:1 */
+--ink:              #1F2030   /* primary text          15.8:1 on surface, 13.5:1 on canvas */
+--ink-secondary:    #4A4C63   /* secondary text         8.3:1 on surface,  7.1:1 on canvas */
+--ink-muted:        #65677D   /* labels, captions       5.5:1 on surface,  4.7:1 on canvas */
+--canvas:           #F4EBD3   /* app background, sidebar, top bar — palette cream */
+--surface:          #FFFDF8   /* inputs, menus, dialogs, table body, plain tiles */
+--surface-accent:   #E8EAF2   /* hovered row, callout */
+--sand:             #DED3C4   /* colour block, nav hover, chips — palette sand */
+--hairline:         #DED3C4   /* table rules, dividers */
+--border:           #C3B6A2   /* input and outlined-button borders */
+--accent:           #555879   /* links, active nav, primary button, dark block — palette slate; 6.8:1 on surface */
+--accent-fill:      #98A1BC   /* colour block, chart series — palette periwinkle; takes --ink (6.2:1), never --positive */
+--positive:         #57523F   /* "collected" figures on surface/canvas   7.7:1 */
 --positive-fill:    #837D68   /* chart series */
---attention:        #8C3F42   /* overdue figures, errors            7.2:1 */
---attention-fill:   #ECC5C6   /* overdue row tint, chart series */
+--attention:        #8C3F42   /* overdue figures, errors                 7.1:1 */
+--attention-fill:   #ECC5C6   /* overdue row tint, overdue block (takes --attention, 4.6:1) */
 ```
 
-Chart series order: `--accent-fill` → `--positive-fill` → `--attention-fill` → `--border`. Never encode meaning by colour alone; overdue rows also get a left rule and a text label.
+Text on a colour block: `--ink` on sand and periwinkle, `--canvas` on slate, `--attention` on attention-fill. Never `--ink-muted` on a block other than surface/canvas. Charts live in `components/charts` and always sit in a `ChartCard`. Fee colours are fixed by meaning, never by position: collected = `--accent`, pending (not yet due) = `--accent-fill`, overdue = `--attention` (ageing steps it 45% → 70% → 100% with age). A single-series chart (monthly columns, category bars) is `--accent` throughout, with filtered-out months in `--sand`. Thin marks (bars 10px, columns ≤24px with a 4px rounded top), hairline gridlines, compact rupee ticks (`formatPaiseCompact`), a legend for two or more series, one direct label on the peak rather than a number on every mark, and a visually-hidden table or `aria-label` carrying every value. The palette is muted by choice, so adjacent series are separated by lightness and a 2px gap, and every mark has its name and figure beside it. Never encode meaning by colour alone; overdue rows also get a left rule and a text label, and every stat tile carries its label and its own icon.
 
-Typography: Inter via `next/font` for everything — body text, labels, every numeral (tabular-nums support, legible at small sizes), and every page title (`<h1>`). One typeface app-wide, including the "EK Desk" wordmark in the sidebar/top bar (13px, `font-medium`) — there's no second typeface layered on for titles. Each `<h1>` keeps its own (usually `font-medium`) weight, **except the login page's own `<h1>` wordmark**, a scoped Phase 11 exception: bold weight at `--text-login-wordmark` (36px, `tracking-[-0.02em]`), still `--ink` — the login page has no data on it and can carry the brand at a size and weight the dashboards can't afford. Scale 11/12/13/14/16/20/28px, same exception as above for the login wordmark's 36px. Body 13–14px, not 16px. `font-variant-numeric: tabular-nums` on every element containing a number. Section labels 11px uppercase with `letter-spacing: 0.06em` in `--ink-muted`.
+Typography: Hanken Grotesk via `next/font` for everything — body, labels, numerals, titles, the wordmark. One typeface app-wide. Scale 11/12/13/14/16/20/28px inside the app, plus 36/48/64/88px display sizes used only by the landing page, the login page and (28px) stat-tile figures. Body 13–14px, not 16px. Page titles (`<h1>`) are 28px `font-semibold`; `h1`/`h2` get `letter-spacing: -0.02em` globally. `font-variant-numeric: tabular-nums` on every element containing a number. Section labels 11px uppercase with `letter-spacing: 0.06em`. The "EK Desk" wordmark and its mark come from `components/shell/brand.tsx` — never hand-set it.
 
-**Banned:** gradients, `backdrop-filter`/glassmorphism — **except the login page's sign-in card (Phase 14), the one screen with no numbers on it: a blurred surface behind a figure is a legibility cost with no upside everywhere else, but this card has no figure to obscure, sits over the login page's own wave background rather than a photo, and every color it uses (fill, border, on-glass text) is `color-mix()` built from existing tokens — `--ink`, `--surface` — not a new hue; `prefers-reduced-transparency` and `prefers-contrast: more` both fall back to the same opaque card every other screen already uses, same discipline as `prefers-reduced-motion` elsewhere in this file; nowhere else** —, purple or indigo, emoji, shadows larger than `0 1px 2px rgba(0,0,0,.05)`, border-radius above 6px — **except `--radius-field` (10px), used only by the login page's inputs and its submit button, matched to each other so neither reads as unfinished against the other; nowhere else** —, hero sections — **except the landing page (`/`), the one screen with no data on it and a real job to explain the product before someone signs in; nowhere else** —, decorative illustrations (the landing page's screenshots are real product UI, not illustration, so they don't count against this) — **except the login page's animated wave background, the one ambient decorative element anywhere in the app; it renders in the existing `--accent` token rather than a new color, sits behind the sign-in card only, and respects `prefers-reduced-motion` (a single static frame, no animation) same as every other motion in the app; nowhere else** —, animated counters, a second accent colour, centre-aligned body text, icon-only buttons without a label or `aria-label`.
+Shape: radius scale `sm` 6px (chips, badges) / `md` 10px (inputs, menus, table frames) / `lg` 16px (cards, stat tiles) / `xl` 28px (landing and login colour blocks). Every button is a pill (`rounded-full`); the active sidebar link is a slate pill. Depth comes from flat colour blocks and hairlines, not shadows.
 
-**Required:** 8px spacing grid (4px permitted inside dense components), 36–40px table rows, right-aligned tabular numerals for money and counts, hairline rules in preference to card shadows, Indian digit grouping (₹1,24,500), transitions of 120–150ms and only on state change, and empty states written as a full sentence that says what to do next.
+**Copy:** no em dashes anywhere in user-visible text (use two sentences, a comma, a colon or a middle dot); an empty table cell is "-". Buttons say "Log in" / "Log out". Tab titles are sentence case and end " · EK Desk".
 
-Layout: fixed left sidebar (Transport / Daycare / Students / Settings), a top bar holding the academic-year and branch selectors since both apply to every screen, content column capped at 1440px. Keyboard-accessible throughout; visible focus rings; the record table must be usable with the keyboard alone.
+**Banned:** gradients, `backdrop-filter`/glassmorphism, any hue outside the palette family above (no second accent, no purple beyond the palette's own slate), emoji, shadows larger than `0 1px 2px rgba(0,0,0,.05)`, hero sections and decorative shapes anywhere except the landing page and the login panel (the tile mosaic in `components/ui/mosaic.tsx` is the one decorative element, drawn from the tokens), animated counters, centre-aligned body text, icon-only buttons without a label or `aria-label`.
+
+**Required:** 8px spacing grid (4px permitted inside dense components), 36–40px table rows, right-aligned tabular numerals for money and counts, hairline rules in preference to card shadows, Indian digit grouping (₹1,24,500), motion as defined in the Motion block at the end of `globals.css` and nowhere else (a short fade-up when a page mounts, `.scroll-reveal` as a block enters the viewport, a 1 to 2px lift on hover for pills and `.hover-card`s, 120 to 250ms, all of it off under `prefers-reduced-motion`), and empty states written as a full sentence that says what to do next.
+
+Layout: fixed left sidebar on the canvas (collapsible to an icon rail), a slim top bar for the signed-in user and sign-out, each page's own year/branch selectors beside its title, content column capped at 1440px. Keyboard-accessible throughout; visible focus rings; the record table must be usable with the keyboard alone.
 
 ## Project rules
 

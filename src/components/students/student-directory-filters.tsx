@@ -13,7 +13,10 @@ import {
   StatusIcon,
 } from "@/components/shell/nav-icons";
 import { Select } from "@/components/forms/select";
+import { defaultAcademicYear } from "@/lib/domain/academic-year";
+import { todayInIndia } from "@/lib/domain/datetime";
 import { DateField } from "@/components/forms/date-field";
+import { FilterGroup } from "@/components/shell/filter-menu";
 
 interface StudentDirectoryFiltersProps {
   classSections: string[];
@@ -61,83 +64,93 @@ export function StudentDirectoryFilters({
 
   return (
     <>
-      <Select
-        ariaLabel="Filter by status"
-        icon={<StatusIcon size={14} />}
-        value={searchParams.get("status") ?? "active"}
-        onChange={(next) => updateParam("status", next)}
-        options={STUDENT_STATUS_FILTERS.map((status) => ({
-          value: status,
-          label: STATUS_LABELS[status],
-        }))}
-        className="w-full"
-      />
+      <FilterGroup label="Status">
+        <Select
+          ariaLabel="Filter by status"
+          icon={<StatusIcon size={14} />}
+          value={searchParams.get("status") ?? "active"}
+          onChange={(next) => updateParam("status", next)}
+          options={STUDENT_STATUS_FILTERS.map((status) => ({
+            value: status,
+            label: STATUS_LABELS[status],
+          }))}
+          className="w-full"
+        />
+      </FilterGroup>
 
-      <Select
-        ariaLabel="Filter by service"
-        icon={<ServiceIcon size={14} />}
-        value={searchParams.get("service") ?? "all"}
-        onChange={(next) => updateParam("service", next)}
-        options={STUDENT_SERVICE_FILTERS.map((service) => ({
-          value: service,
-          label: SERVICE_LABELS[service],
-        }))}
-        className="w-full"
-      />
+      <FilterGroup label="Service">
+        <Select
+          ariaLabel="Filter by service"
+          icon={<ServiceIcon size={14} />}
+          value={searchParams.get("service") ?? "all"}
+          onChange={(next) => updateParam("service", next)}
+          options={STUDENT_SERVICE_FILTERS.map((service) => ({
+            value: service,
+            label: SERVICE_LABELS[service],
+          }))}
+          className="w-full"
+        />
+      </FilterGroup>
 
-      <Select
-        ariaLabel="Filter by class"
-        icon={<ClassIcon size={14} />}
-        value={searchParams.get("classSection") ?? ""}
-        onChange={(next) => updateParam("classSection", next)}
-        options={[
-          { value: "", label: "All classes" },
-          ...classSections.map((classSection) => ({
-            value: classSection,
-            label: classSection,
-          })),
-        ]}
-        className="w-full"
-      />
+      <FilterGroup label="Class">
+        <Select
+          ariaLabel="Filter by class"
+          icon={<ClassIcon size={14} />}
+          value={searchParams.get("classSection") ?? ""}
+          onChange={(next) => updateParam("classSection", next)}
+          options={[
+            { value: "", label: "All classes" },
+            ...classSections.map((classSection) => ({
+              value: classSection,
+              label: classSection,
+            })),
+          ]}
+          className="w-full"
+        />
+      </FilterGroup>
 
-      <Select
-        ariaLabel="Filter by academic year"
-        icon={<CalendarIcon size={14} />}
-        value={
-          searchParams.get("academicYear") ??
-          academicYears.find((year) => year.isCurrent)?.label ??
-          "all"
-        }
-        onChange={(next) => updateParam("academicYear", next)}
-        options={[
-          { value: "all", label: "All years" },
-          ...academicYears.map((year) => ({
-            value: year.label,
-            label: year.label,
-          })),
-        ]}
-        className="w-full"
-      />
+      <FilterGroup label="Academic year">
+        <Select
+          ariaLabel="Filter by academic year"
+          icon={<CalendarIcon size={14} />}
+          value={
+            searchParams.get("academicYear") ??
+            defaultAcademicYear(academicYears, todayInIndia())?.label ??
+            "all"
+          }
+          onChange={(next) => updateParam("academicYear", next)}
+          options={[
+            { value: "all", label: "All years" },
+            ...academicYears.map((year) => ({
+              value: year.label,
+              label: year.label,
+            })),
+          ]}
+          className="w-full"
+        />
+      </FilterGroup>
 
       {/* Date added (created_at) -- the one date field a student itself
           has; due dates live on the fee account, not the student. Same
           from/to DateField pair as the expenses filter panel. */}
-      <div className="flex gap-2">
-        <DateField
-          ariaLabel="Added from"
-          placeholder="Start date"
-          value={searchParams.get("dateFrom") ?? ""}
-          onChange={(iso) => updateParam("dateFrom", iso)}
-          className="w-full"
-        />
-        <DateField
-          ariaLabel="Added to"
-          placeholder="End date"
-          value={searchParams.get("dateTo") ?? ""}
-          onChange={(iso) => updateParam("dateTo", iso)}
-          className="w-full"
-        />
-      </div>
+      <FilterGroup label="Date added">
+        <div className="flex gap-2">
+          <DateField
+            ariaLabel="Added from"
+            placeholder="Start date"
+            value={searchParams.get("dateFrom") ?? ""}
+            onChange={(iso) => updateParam("dateFrom", iso)}
+            className="w-full"
+          />
+          <DateField
+            ariaLabel="Added to"
+            placeholder="End date"
+            value={searchParams.get("dateTo") ?? ""}
+            onChange={(iso) => updateParam("dateTo", iso)}
+            className="w-full"
+          />
+        </div>
+      </FilterGroup>
     </>
   );
 }

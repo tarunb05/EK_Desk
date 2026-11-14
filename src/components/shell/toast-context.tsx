@@ -71,9 +71,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 layout
                 initial={{ opacity: 0, y: 16, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.15 } }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.96,
+                  transition: { duration: 0.15 },
+                }}
                 transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className="pointer-events-auto flex w-full items-center gap-2 rounded-md border border-hairline bg-surface px-4 py-3 text-sm text-ink shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+                className="pointer-events-auto flex w-full items-center gap-2 rounded-lg border border-hairline bg-surface px-4 py-3 text-sm text-ink shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
               >
                 <StatusIcon size={16} className="shrink-0 text-positive" />
                 <span className="flex-1">{toast.message}</span>

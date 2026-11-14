@@ -32,15 +32,15 @@ function AffectedRequestsNotice({
   return (
     <div className="flex flex-col gap-2 rounded-md border border-attention bg-attention-fill/20 p-3 text-sm">
       <p className="text-ink">
-        This account&apos;s details changed, so the open payment link(s)
-        below no longer match what&apos;s shown on them. They&apos;ve been
-        cancelled automatically — re-send a new one to each student when
-        Phase 15.3 adds that.
+        This account&apos;s details changed, so the open payment link(s) below
+        no longer match what&apos;s shown on them. They&apos;ve been cancelled
+        automatically. Re-send a new one to each student when Phase 15.3 adds
+        that.
       </p>
       <ul className="flex flex-col gap-1 text-2xs text-ink-secondary">
         {affected.map((item) => (
           <li key={`${item.admissionNo}-${item.serviceType}`}>
-            {item.studentName} ({item.admissionNo}) —{" "}
+            {item.studentName} ({item.admissionNo}):{" "}
             {SERVICE_LABEL[item.serviceType] ?? item.serviceType}
           </li>
         ))}
@@ -67,10 +67,7 @@ export function CollectionAccountForm({
   onCancel?: () => void;
 }) {
   const action = account ? updateCollectionAccount : createCollectionAccount;
-  const [state, formAction, isPending] = useActionState(
-    action,
-    initialState,
-  );
+  const [state, formAction, isPending] = useActionState(action, initialState);
   const [branchId, setBranchId] = useState(
     account?.branchId ?? branches[0]?.id ?? "",
   );
@@ -115,7 +112,10 @@ export function CollectionAccountForm({
         />
       </Field>
 
-      <Field label="Payee name (shown to parents)" error={state.fieldErrors?.payeeName}>
+      <Field
+        label="Payee name (shown to parents)"
+        error={state.fieldErrors?.payeeName}
+      >
         <input
           name="payeeName"
           required
@@ -186,7 +186,7 @@ export function CollectionAccountForm({
           defaultChecked={account?.isActive ?? true}
           className="h-4 w-4"
         />
-        Active — offered as a destination for new payment requests
+        Active: offered as a destination for new payment requests
       </label>
 
       <Field
@@ -221,7 +221,7 @@ export function CollectionAccountForm({
           <button
             type="button"
             onClick={onCancel}
-            className="h-10 rounded-md border border-border px-4 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+            className="h-10 rounded-full border border-border px-4 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
           >
             Cancel
           </button>

@@ -5,9 +5,11 @@ import { getAcademicYears } from "@/lib/supabase/queries";
 import { getReEnrollContext } from "@/lib/records/re-enroll";
 import { ReEnrollForm } from "@/components/records/re-enroll-form";
 import { BackLink } from "@/components/shell/back-link";
+import { defaultAcademicYear } from "@/lib/domain/academic-year";
+import { todayInIndia } from "@/lib/domain/datetime";
 
 export const metadata: Metadata = {
-  title: "Re-enroll Student",
+  title: "Re-enroll student",
 };
 
 // Reached from a student's Actions menu on the Students page, by admin and
@@ -30,12 +32,12 @@ export default async function ReEnrollStudentPage({
   }
 
   const { student } = context;
-  const fallbackYear = years.find((year) => year.isCurrent) ?? years[0];
+  const fallbackYear = defaultAcademicYear(years, todayInIndia());
 
   return (
     <div className="max-w-xl">
       <BackLink href="/students" label="Back to students" />
-      <h1 className="mb-1 text-xl font-medium text-ink">
+      <h1 className="mb-1 text-2xl font-semibold text-ink">
         Re-enroll {student.fullName}
       </h1>
       <p className="mb-4 text-sm text-ink-secondary">
@@ -57,7 +59,7 @@ export default async function ReEnrollStudentPage({
         />
       ) : (
         <p className="text-sm text-ink-secondary">
-          There is no academic year set up yet — add one in Settings before
+          There is no academic year set up yet. Add one in Settings before
           re-enrolling a student.
         </p>
       )}

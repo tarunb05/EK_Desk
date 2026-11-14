@@ -5,6 +5,8 @@ import { getAcademicYears, getBranches } from "@/lib/supabase/queries";
 import { getCurrentScope } from "@/lib/shell/get-current-scope";
 import { shellSearchParamsSchema } from "@/lib/shell/search-params";
 import { requireAuth } from "@/lib/auth/require-role";
+import { defaultAcademicYear } from "@/lib/domain/academic-year";
+import { todayInIndia } from "@/lib/domain/datetime";
 import type { StudentSortKey } from "@/lib/shell/student-table-params";
 import { studentDirectorySearchParamsSchema } from "@/lib/shell/student-search-params";
 import {
@@ -48,7 +50,7 @@ export default async function StudentsPage({
   // -- matching the dashboards' own default -- rather than showing every
   // student's every year's account unfiltered. An unmatched/stale label
   // falls back to the current year too, same as a missing one.
-  const currentYear = academicYears.find((year) => year.isCurrent);
+  const currentYear = defaultAcademicYear(academicYears, todayInIndia());
   const matchedYear = academicYears.find(
     (year) => year.label === tableParams.academicYear,
   );
@@ -75,7 +77,7 @@ export default async function StudentsPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-medium text-ink">Students</h1>
+      <h1 className="text-2xl font-semibold text-ink">Students</h1>
 
       <div className="flex items-center justify-end gap-2">
         <SearchField
@@ -91,7 +93,7 @@ export default async function StudentsPage({
         </FilterMenu>
         <Link
           href="/students/new"
-          className="inline-block h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
+          className="inline-block h-9 rounded-full bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
         >
           Add student
         </Link>

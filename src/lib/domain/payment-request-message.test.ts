@@ -69,7 +69,9 @@ describe("buildPaymentRequestMessage", () => {
     expect(message).toContain("Reference: EK-7F3KQ");
     expect(message).toContain("Amount: ₹4,000");
     expect(message).toContain("Pay by: 01 Jun 2026");
-    expect(message).toContain("will never ask for your UPI PIN, OTP or card details");
+    expect(message).toContain(
+      "will never ask for your UPI PIN, OTP or card details",
+    );
   });
 
   it("never contains an emoji or the child's full name", () => {
@@ -78,9 +80,7 @@ describe("buildPaymentRequestMessage", () => {
       upi: { upiId: "school@upi", payeeName: "EuroKids Kothanur" },
       bank: null,
     });
-    expect(message).not.toMatch(
-      /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u,
-    );
+    expect(message).not.toMatch(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
   });
 });
 

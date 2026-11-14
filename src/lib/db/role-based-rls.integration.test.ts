@@ -1,5 +1,13 @@
 import type { Client } from "pg";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import { connect, impersonate, withRollback } from "./test-helpers";
 
 // Fake auth.users/profile rows are created inside withRollback for every
@@ -206,8 +214,12 @@ describe("role-based RLS (phase 8.1)", () => {
          returning id, branch_id`,
         [branchAId, branchBId],
       );
-      const ownStudent = students.rows.find((row) => row.branch_id === branchAId)!;
-      const otherStudent = students.rows.find((row) => row.branch_id === branchBId)!;
+      const ownStudent = students.rows.find(
+        (row) => row.branch_id === branchAId,
+      )!;
+      const otherStudent = students.rows.find(
+        (row) => row.branch_id === branchBId,
+      )!;
       const insertFeeAccount = (studentId: string) =>
         client.query<{ id: string }>(
           `insert into fee_account
@@ -257,8 +269,12 @@ describe("role-based RLS (phase 8.1)", () => {
          returning id, (select s.branch_id from s join fa on fa.student_id = s.id where fa.id = payment.fee_account_id) as branch_id`,
         [branchAId, branchBId],
       );
-      const ownPayment = payments.rows.find((row) => row.branch_id === branchAId)!;
-      const otherPayment = payments.rows.find((row) => row.branch_id === branchBId)!;
+      const ownPayment = payments.rows.find(
+        (row) => row.branch_id === branchAId,
+      )!;
+      const otherPayment = payments.rows.find(
+        (row) => row.branch_id === branchBId,
+      )!;
 
       await impersonate(client, TEACHER_A_ID);
       const voidPayment = (id: string) =>
@@ -280,7 +296,9 @@ describe("role-based RLS (phase 8.1)", () => {
       await impersonate(client, TEACHER_A_ID);
 
       await expect(
-        client.query("insert into branch (code, name) values ('ROLE-X', 'Denied')"),
+        client.query(
+          "insert into branch (code, name) values ('ROLE-X', 'Denied')",
+        ),
       ).rejects.toThrow();
     });
   });

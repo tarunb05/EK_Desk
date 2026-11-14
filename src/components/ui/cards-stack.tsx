@@ -46,7 +46,15 @@ ContainerScroll.displayName = "ContainerScroll";
 
 const CardSticky = React.forwardRef<HTMLDivElement, CardStickyProps>(
   (
-    { index, incrementY = 10, incrementZ = 10, children, className, style, ...props },
+    {
+      index,
+      incrementY = 10,
+      incrementZ = 10,
+      children,
+      className,
+      style,
+      ...props
+    },
     ref,
   ) => {
     const y = index * incrementY;

@@ -30,15 +30,17 @@ export interface PaymentRequestTransition {
   changed: boolean;
 }
 
-const REASON_TO_STATUS: Record<PaymentRequestCloseReason, PaymentRequestStatus> =
-  {
-    paid: "closed",
-    pending_cleared: "closed",
-    expired: "closed",
-    cancelled: "cancelled",
-    account_changed: "cancelled",
-    fee_account_changed: "cancelled",
-  };
+const REASON_TO_STATUS: Record<
+  PaymentRequestCloseReason,
+  PaymentRequestStatus
+> = {
+  paid: "closed",
+  pending_cleared: "closed",
+  expired: "closed",
+  cancelled: "cancelled",
+  account_changed: "cancelled",
+  fee_account_changed: "cancelled",
+};
 
 export function closePaymentRequest(
   current: PaymentRequestStatus,

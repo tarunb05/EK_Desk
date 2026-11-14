@@ -1,6 +1,7 @@
 import type { ActivityLogRow } from "@/lib/records/activity-log";
 import { formatLogDate, formatLogTimestamp } from "@/lib/domain/datetime";
 import { formatPaise } from "@/lib/domain/money";
+import { EmptyNote } from "@/components/shell/empty-note";
 
 const ACTION_LABEL: Record<ActivityLogRow["action"], string> = {
   create: "Created",
@@ -23,7 +24,8 @@ const ENTITY_LABEL: Record<string, string> = {
 // Shared between the header row and every <summary> row so their columns
 // line up -- When / Who / What / Which / Amount, matching "the row" in the
 // phase 12 plan exactly.
-const ROW_GRID = "grid grid-cols-[150px_160px_90px_1fr_110px] items-center gap-4";
+const ROW_GRID =
+  "grid min-w-[700px] grid-cols-[150px_160px_90px_1fr_110px] items-center gap-4";
 
 function EmptyState({
   filtersActive,
@@ -34,20 +36,20 @@ function EmptyState({
 }) {
   if (filtersActive) {
     return (
-      <p className="py-8 text-sm text-ink-muted">
+      <EmptyNote>
         No activity matches these filters.{" "}
         <a href="?" className="text-accent hover:underline">
           Clear them
         </a>
         .
-      </p>
+      </EmptyNote>
     );
   }
   return (
-    <p className="py-8 text-sm text-ink-muted">
+    <EmptyNote>
       No activity recorded yet.
       {seededAt ? ` This log starts from ${formatLogDate(seededAt)}.` : ""}
-    </p>
+    </EmptyNote>
   );
 }
 
@@ -72,25 +74,40 @@ export function ActivityLogTable({
     <div
       role="table"
       aria-label="Activity log"
-      className="overflow-hidden rounded-md border border-hairline"
+      className="overflow-x-auto rounded-lg border border-hairline bg-surface"
     >
       <div
         role="row"
-        className={`${ROW_GRID} h-9 border-b border-hairline bg-canvas px-3`}
+        className={`${ROW_GRID} h-9 border-b border-hairline bg-sand/50 px-3`}
       >
-        <span role="columnheader" className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
+        <span
+          role="columnheader"
+          className="text-2xs font-medium uppercase tracking-wide text-ink-muted"
+        >
           When
         </span>
-        <span role="columnheader" className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
+        <span
+          role="columnheader"
+          className="text-2xs font-medium uppercase tracking-wide text-ink-muted"
+        >
           Who
         </span>
-        <span role="columnheader" className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
+        <span
+          role="columnheader"
+          className="text-2xs font-medium uppercase tracking-wide text-ink-muted"
+        >
           What
         </span>
-        <span role="columnheader" className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
+        <span
+          role="columnheader"
+          className="text-2xs font-medium uppercase tracking-wide text-ink-muted"
+        >
           Which
         </span>
-        <span role="columnheader" className="text-right text-2xs font-medium uppercase tracking-wide text-ink-muted">
+        <span
+          role="columnheader"
+          className="text-right text-2xs font-medium uppercase tracking-wide text-ink-muted"
+        >
           Amount
         </span>
       </div>
@@ -109,26 +126,37 @@ export function ActivityLogTable({
               key={row.id}
               role="row"
               className={`activity-log-row group border-b border-hairline last:border-0 ${
-                isDelete ? "border-l-2 border-l-attention bg-attention-fill/20" : "border-l-2 border-l-transparent even:bg-hairline/40"
+                isDelete
+                  ? "border-l-2 border-l-attention bg-attention-fill/20"
+                  : "border-l-2 border-l-transparent even:bg-canvas/50"
               }`}
             >
               <summary
                 className={`${ROW_GRID} h-10 cursor-pointer list-none px-3 transition-colors duration-150 [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${
-                  isDelete ? "" : "hover:border-l-accent hover:bg-surface-accent"
+                  isDelete
+                    ? ""
+                    : "hover:border-l-accent hover:bg-surface-accent"
                 }`}
               >
-                <span role="cell" className="whitespace-nowrap tabular-nums text-ink-secondary">
+                <span
+                  role="cell"
+                  className="whitespace-nowrap tabular-nums text-ink-secondary"
+                >
                   {formatLogTimestamp(row.occurredAt)}
                 </span>
                 <span role="cell" className="truncate">
                   <span className="text-ink">{row.actorLabel}</span>
                   {row.actorRole ? (
-                    <span className="ml-1.5 text-2xs text-ink-muted">{row.actorRole}</span>
+                    <span className="ml-1.5 text-2xs text-ink-muted">
+                      {row.actorRole}
+                    </span>
                   ) : null}
                 </span>
                 <span
                   role="cell"
-                  className={isDelete ? "font-medium text-attention" : "text-ink"}
+                  className={
+                    isDelete ? "font-medium text-attention" : "text-ink"
+                  }
                 >
                   {ACTION_LABEL[row.action]}
                 </span>
@@ -136,7 +164,7 @@ export function ActivityLogTable({
                   <span className="text-ink-muted">
                     {ENTITY_LABEL[row.entity] ?? row.entity}
                   </span>
-                  {" — "}
+                  {" · "}
                   <span className="text-ink">{row.entityLabel}</span>
                 </span>
                 <span role="cell" className="text-right tabular-nums text-ink">
@@ -149,12 +177,15 @@ export function ActivityLogTable({
                 {row.changedFields && row.changedFields.length > 0 ? (
                   <p>
                     Changed:{" "}
-                    {row.changedFields.map((field) => field.replace(/_/g, " ")).join(", ")}
+                    {row.changedFields
+                      .map((field) => field.replace(/_/g, " "))
+                      .join(", ")}
                   </p>
                 ) : null}
                 {hasBeforeAfter ? (
                   <p className="tabular-nums">
-                    {formatPaise(row.beforeAmountPaise!)} → {formatPaise(row.afterAmountPaise!)}
+                    {formatPaise(row.beforeAmountPaise!)} →{" "}
+                    {formatPaise(row.afterAmountPaise!)}
                   </p>
                 ) : null}
                 {row.branchId && branchNameById[row.branchId] ? (

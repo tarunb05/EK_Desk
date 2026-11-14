@@ -234,7 +234,7 @@ async function recordInitialPayment(
   return {
     ok: false,
     reason: isDuplicateUpiReference(error)
-      ? " — that UPI reference is already on another payment"
+      ? ": that UPI reference is already on another payment"
       : "",
   };
 }
@@ -336,7 +336,7 @@ export async function createStudentWithFeeAccount(
     if (studentError || !student) {
       return {
         error:
-          "Could not save the student — check the admission number isn't already used.",
+          "Could not save the student. Check the admission number isn't already used.",
       };
     }
     studentId = student.id;
@@ -875,7 +875,7 @@ export async function requestStudentDelete(
 
   if (error) {
     return {
-      error: "Could not submit this delete request — it may already be queued.",
+      error: "Could not submit this delete request. It may already be queued.",
     };
   }
 
@@ -936,7 +936,7 @@ export async function requestEnrollmentDelete(
 
   if (error) {
     return {
-      error: "Could not submit this delete request — it may already be queued.",
+      error: "Could not submit this delete request. It may already be queued.",
     };
   }
 
@@ -972,23 +972,23 @@ export async function approveSubmission(
   if (error) {
     if (error.code === EXCLUSION_VIOLATION) {
       return {
-        error: `Could not approve this — ${DAYCARE_OVERLAP_ERROR.toLowerCase()} Reject it or change the other enrollment first.`,
+        error: `Could not approve this: ${DAYCARE_OVERLAP_ERROR.toLowerCase()} Reject it or change the other enrollment first.`,
       };
     }
     if (error.message.includes("confirmed payment")) {
       return {
         error:
-          "Could not approve this — the enrollment has a confirmed payment on record and can't be deleted. Reject the request instead.",
+          "Could not approve this. The enrollment has a confirmed payment on record and can't be deleted. Reject the request instead.",
       };
     }
     if (isDuplicateUpiReference(error)) {
       return {
         error:
-          "Could not approve this — its UPI reference is already on another payment. Reject it and ask for the correct reference.",
+          "Could not approve this. Its UPI reference is already on another payment. Reject it and ask for the correct reference.",
       };
     }
     return {
-      error: "Could not approve this — it may have already been reviewed.",
+      error: "Could not approve this. It may have already been reviewed.",
     };
   }
 
@@ -1042,7 +1042,7 @@ async function resolveExpenseBranchAndYear(
   let branchId: string;
   if (authed.role === "teacher") {
     if (!authed.branchId) {
-      return { error: "Your account has no branch assigned — ask an admin." };
+      return { error: "Your account has no branch assigned. Ask an admin." };
     }
     branchId = authed.branchId;
   } else {

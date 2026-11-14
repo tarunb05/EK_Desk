@@ -41,8 +41,10 @@ export function TeacherRow({
     updateTeacher,
     initialState,
   );
-  const [deactivateState, deactivateAction, deactivatePending] =
-    useActionState(deactivateTeacher, initialState);
+  const [deactivateState, deactivateAction, deactivatePending] = useActionState(
+    deactivateTeacher,
+    initialState,
+  );
   const [reactivateState, reactivateAction, reactivatePending] = useActionState(
     reactivateTeacher,
     initialState,
@@ -146,7 +148,7 @@ export function TeacherRow({
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="h-8 rounded-md border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+              className="h-8 rounded-full border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
             >
               Cancel
             </button>
@@ -166,7 +168,7 @@ export function TeacherRow({
       </div>
       <div className="flex items-center gap-2">
         {teacher.isActive ? null : (
-          <span className="rounded-md bg-surface-accent px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-muted">
+          <span className="rounded-full bg-surface-accent px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-muted">
             Inactive
           </span>
         )}
@@ -175,7 +177,7 @@ export function TeacherRow({
             <form action={reactivateAction} className="flex items-center gap-2">
               <input type="hidden" name="teacherId" value={teacher.id} />
               <span className="max-w-[200px] text-2xs text-ink-secondary">
-                They&apos;ll be able to sign in again.
+                They&apos;ll be able to log in again.
               </span>
               <button
                 type="submit"
@@ -187,7 +189,7 @@ export function TeacherRow({
               <button
                 type="button"
                 onClick={() => setReactivating(false)}
-                className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+                className="h-7 rounded-full border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
               >
                 Cancel
               </button>
@@ -197,8 +199,8 @@ export function TeacherRow({
               <input type="hidden" name="teacherId" value={teacher.id} />
               <span className="max-w-[220px] text-2xs text-ink-secondary">
                 This removes them from this list. Their login stays disabled,
-                and their name keeps showing as &ldquo;Teacher
-                (Deleted)&rdquo; wherever it appears.
+                and their name keeps showing as &ldquo;Teacher (Deleted)&rdquo;
+                wherever it appears.
               </span>
               <button
                 type="submit"
@@ -210,7 +212,7 @@ export function TeacherRow({
               <button
                 type="button"
                 onClick={() => setHiding(false)}
-                className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+                className="h-7 rounded-full border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
               >
                 Cancel
               </button>
@@ -220,14 +222,14 @@ export function TeacherRow({
               <button
                 type="button"
                 onClick={() => setReactivating(true)}
-                className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+                className="h-7 rounded-full border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
               >
                 Activate
               </button>
               <button
                 type="button"
                 onClick={() => setHiding(true)}
-                className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+                className="h-7 rounded-full border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
               >
                 Delete
               </button>
@@ -237,7 +239,7 @@ export function TeacherRow({
           <form action={deactivateAction} className="flex items-center gap-2">
             <input type="hidden" name="teacherId" value={teacher.id} />
             <span className="max-w-[220px] text-2xs text-ink-secondary">
-              They won&apos;t be able to sign in again. Students, expenses, and
+              They won&apos;t be able to log in again. Students, expenses, and
               approvals they&apos;ve added stay on record.
             </span>
             <button
@@ -250,7 +252,7 @@ export function TeacherRow({
             <button
               type="button"
               onClick={() => setDeactivating(false)}
-              className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+              className="h-7 rounded-full border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
             >
               Cancel
             </button>
@@ -260,14 +262,14 @@ export function TeacherRow({
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+              className="h-7 rounded-full border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
             >
               Edit
             </button>
             <button
               type="button"
               onClick={() => setDeactivating(true)}
-              className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+              className="h-7 rounded-full border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
             >
               Deactivate
             </button>

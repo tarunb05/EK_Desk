@@ -1,5 +1,13 @@
 import type { Client } from "pg";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import { connect, impersonate, withRollback } from "./test-helpers";
 
 const ADMIN_ID = "00000000-0000-4000-8000-000000000501";
@@ -74,7 +82,10 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
       `insert into student (branch_id, admission_no, full_name, guardian_name, phone, class_section)
        values ($1, $2, 'Verify Test Child', 'Guardian', '9000000701', 'Nursery-A')
        returning id`,
-      [branchId, overrides.admissionNo ?? `VC-${Math.random().toString(36).slice(2, 8)}`],
+      [
+        branchId,
+        overrides.admissionNo ?? `VC-${Math.random().toString(36).slice(2, 8)}`,
+      ],
     );
     const feeAccount = await c.query<{ id: string }>(
       `insert into fee_account
@@ -327,15 +338,18 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
         await clientA.query("delete from payment where fee_account_id = $1", [
           feeAccountId,
         ]);
-        await clientA.query("delete from payment_request where fee_account_id = $1", [
-          feeAccountId,
-        ]);
+        await clientA.query(
+          "delete from payment_request where fee_account_id = $1",
+          [feeAccountId],
+        );
         if (collectionAccountId) {
           await clientA.query("delete from collection_account where id = $1", [
             collectionAccountId,
           ]);
         }
-        await clientA.query("delete from fee_account where id = $1", [feeAccountId]);
+        await clientA.query("delete from fee_account where id = $1", [
+          feeAccountId,
+        ]);
         if (studentId) {
           await clientA.query("delete from student where id = $1", [studentId]);
         }
@@ -469,7 +483,12 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
             include_upi, include_bank, status, token_hash, expires_at, created_by)
          values ($1, $2, 'EK-ENTER1', 400000, true, false, 'open', $3, now() + interval '7 days', $4)
          returning id`,
-        [feeAccount.rows[0]!.id, collectionAccount.rows[0]!.id, Buffer.from("entertoken"), ADMIN_ID],
+        [
+          feeAccount.rows[0]!.id,
+          collectionAccount.rows[0]!.id,
+          Buffer.from("entertoken"),
+          ADMIN_ID,
+        ],
       );
 
       const result = await client.query<{ requestStatus: string }>(
@@ -510,7 +529,9 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
     });
 
     await withRollback(client, async () => {
-      const fixture = await seedClaim(client, { admissionNo: "VC-DELETE-BLOCKED" });
+      const fixture = await seedClaim(client, {
+        admissionNo: "VC-DELETE-BLOCKED",
+      });
       await client.query(
         `select confirm_payment_claim($1, 400000, current_date, 'upi', true)`,
         [fixture.claimId],
@@ -526,9 +547,10 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
       ).rejects.toThrow(/confirmed payment/i);
       await client.query("rollback to savepoint before_blocked_delete");
 
-      const stillThere = await client.query("select 1 from student where id = $1", [
-        fixture.studentId,
-      ]);
+      const stillThere = await client.query(
+        "select 1 from student where id = $1",
+        [fixture.studentId],
+      );
       expect(stillThere.rows).toHaveLength(1);
     });
   });
@@ -556,7 +578,10 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
       const count = async (sql: string, id: string) =>
         (await client.query(sql, [id])).rowCount;
       expect(
-        await count("select 1 from fee_account where id = $1", daycare.rows[0]!.id),
+        await count(
+          "select 1 from fee_account where id = $1",
+          daycare.rows[0]!.id,
+        ),
       ).toBe(0);
       expect(
         await count(
@@ -579,7 +604,9 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
 
   it("hard_delete_fee_account isn't blocked by a merely-pending claim, and takes the enrollment's payment request with it", async () => {
     await withRollback(client, async () => {
-      const fixture = await seedClaim(client, { admissionNo: "VC-ENR-PENDING" });
+      const fixture = await seedClaim(client, {
+        admissionNo: "VC-ENR-PENDING",
+      });
 
       await client.query(`select hard_delete_fee_account($1)`, [
         fixture.feeAccountId,
@@ -590,16 +617,19 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
         [fixture.paymentRequestId],
       );
       expect(request.rows).toHaveLength(0);
-      const student = await client.query("select 1 from student where id = $1", [
-        fixture.studentId,
-      ]);
+      const student = await client.query(
+        "select 1 from student where id = $1",
+        [fixture.studentId],
+      );
       expect(student.rows).toHaveLength(1);
     });
   });
 
   it("hard_delete_fee_account is blocked once the enrollment has a confirmed payment claim", async () => {
     await withRollback(client, async () => {
-      const fixture = await seedClaim(client, { admissionNo: "VC-ENR-BLOCKED" });
+      const fixture = await seedClaim(client, {
+        admissionNo: "VC-ENR-BLOCKED",
+      });
       await client.query(
         `select confirm_payment_claim($1, 400000, current_date, 'upi', true)`,
         [fixture.claimId],
@@ -611,7 +641,9 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
           fixture.feeAccountId,
         ]),
       ).rejects.toThrow(/confirmed payment/i);
-      await client.query("rollback to savepoint before_blocked_enrollment_delete");
+      await client.query(
+        "rollback to savepoint before_blocked_enrollment_delete",
+      );
 
       const stillThere = await client.query(
         "select 1 from fee_account where id = $1",
@@ -623,7 +655,9 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
 
   it("hard_delete_fee_account refuses a teacher, and reports an enrollment that no longer exists", async () => {
     await withRollback(client, async () => {
-      const fixture = await seedClaim(client, { admissionNo: "VC-ENR-TEACHER" });
+      const fixture = await seedClaim(client, {
+        admissionNo: "VC-ENR-TEACHER",
+      });
 
       await client.query("savepoint before_missing_enrollment");
       await expect(
@@ -640,7 +674,9 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
           fixture.feeAccountId,
         ]),
       ).rejects.toThrow(/only an admin/i);
-      await client.query("rollback to savepoint before_denied_enrollment_delete");
+      await client.query(
+        "rollback to savepoint before_denied_enrollment_delete",
+      );
     });
   });
 
@@ -689,7 +725,9 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
         [ADMIN_ID, openOnly.claimId],
       );
 
-      const reported = await seedClaim(client, { admissionNo: "VC-DIR-REPORTED" });
+      const reported = await seedClaim(client, {
+        admissionNo: "VC-DIR-REPORTED",
+      });
 
       const rows = await client.query<{ fee_accounts: unknown }>(
         `select fee_accounts from student_directory where id in ($1, $2, $3)`,
@@ -698,7 +736,10 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
 
       function statusFor(feeAccountId: string): string {
         for (const row of rows.rows) {
-          const accounts = row.fee_accounts as { feeAccountId: string; paymentRequestStatus: string }[];
+          const accounts = row.fee_accounts as {
+            feeAccountId: string;
+            paymentRequestStatus: string;
+          }[];
           const match = accounts.find((a) => a.feeAccountId === feeAccountId);
           if (match) return match.paymentRequestStatus;
         }
@@ -741,7 +782,9 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
 
   it("a teacher can cancel an open request in their own branch, but not another branch's", async () => {
     await withRollback(client, async () => {
-      const fixture = await seedClaim(client, { admissionNo: "VC-CANCEL-TEACHER" });
+      const fixture = await seedClaim(client, {
+        admissionNo: "VC-CANCEL-TEACHER",
+      });
 
       // A second request in a different branch -- TEACHER_ID (profiled
       // against branchId, 'BR-A') must not be able to touch it.
@@ -787,16 +830,23 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
 
       await client.query("savepoint before_cross_branch_cancel");
       await expect(
-        client.query(`select cancel_payment_request($1)`, [otherRequest.rows[0]!.id]),
+        client.query(`select cancel_payment_request($1)`, [
+          otherRequest.rows[0]!.id,
+        ]),
       ).rejects.toThrow(/not allowed/i);
       await client.query("rollback to savepoint before_cross_branch_cancel");
 
-      await client.query(`select cancel_payment_request($1)`, [fixture.paymentRequestId]);
+      await client.query(`select cancel_payment_request($1)`, [
+        fixture.paymentRequestId,
+      ]);
       const cancelled = await client.query(
         "select status, closed_reason from payment_request where id = $1",
         [fixture.paymentRequestId],
       );
-      expect(cancelled.rows[0]).toEqual({ status: "cancelled", closed_reason: "cancelled" });
+      expect(cancelled.rows[0]).toEqual({
+        status: "cancelled",
+        closed_reason: "cancelled",
+      });
     });
   });
 
@@ -818,7 +868,9 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
       );
       expect(claimCreatedLog.rows).toHaveLength(1);
       expect(claimCreatedLog.rows[0]!.action).toBe("create");
-      expect(claimCreatedLog.rows[0]!.summary).toContain("Reported a payment claim for");
+      expect(claimCreatedLog.rows[0]!.summary).toContain(
+        "Reported a payment claim for",
+      );
 
       await client.query(
         `select confirm_payment_claim($1, 400000, current_date, 'upi', true)`,
@@ -830,31 +882,50 @@ describe("verify claims: confirm/reject, hard-delete guard, directory markers (p
         [created.paymentRequestId],
       );
       expect(closedLog.rows.length).toBeGreaterThanOrEqual(1);
-      expect(closedLog.rows.some((r) => r.summary.includes("Closed the payment request for") && r.summary.includes("(paid)"))).toBe(true);
+      expect(
+        closedLog.rows.some(
+          (r) =>
+            r.summary.includes("Closed the payment request for") &&
+            r.summary.includes("(paid)"),
+        ),
+      ).toBe(true);
 
       const confirmedLog = await client.query(
         "select summary from activity_log where entity = 'payment_claim' and entity_id = $1 and action = 'update'",
         [created.claimId],
       );
       expect(confirmedLog.rows).toHaveLength(1);
-      expect(confirmedLog.rows[0]!.summary).toContain("Confirmed a payment claim for");
+      expect(confirmedLog.rows[0]!.summary).toContain(
+        "Confirmed a payment claim for",
+      );
 
       const cancelled = await seedClaim(client, { admissionNo: "VC-LOG-2" });
-      await client.query("update payment_claim set status = 'rejected', reject_reason = 'test reason', reviewed_by = $1, reviewed_at = now() where id = $2", [ADMIN_ID, cancelled.claimId]);
-      await client.query(`select cancel_payment_request($1)`, [cancelled.paymentRequestId]);
+      await client.query(
+        "update payment_claim set status = 'rejected', reject_reason = 'test reason', reviewed_by = $1, reviewed_at = now() where id = $2",
+        [ADMIN_ID, cancelled.claimId],
+      );
+      await client.query(`select cancel_payment_request($1)`, [
+        cancelled.paymentRequestId,
+      ]);
 
       const rejectedLog = await client.query(
         "select summary from activity_log where entity = 'payment_claim' and entity_id = $1 and action = 'update'",
         [cancelled.claimId],
       );
-      expect(rejectedLog.rows[0]!.summary).toContain("Rejected a payment claim for");
+      expect(rejectedLog.rows[0]!.summary).toContain(
+        "Rejected a payment claim for",
+      );
       expect(rejectedLog.rows[0]!.summary).toContain("test reason");
 
       const cancelledLog = await client.query(
         "select summary from activity_log where entity = 'payment_request' and entity_id = $1 and action = 'update'",
         [cancelled.paymentRequestId],
       );
-      expect(cancelledLog.rows.some((r) => r.summary.includes("Cancelled the payment request for"))).toBe(true);
+      expect(
+        cancelledLog.rows.some((r) =>
+          r.summary.includes("Cancelled the payment request for"),
+        ),
+      ).toBe(true);
     });
   });
 });

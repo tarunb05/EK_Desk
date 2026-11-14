@@ -3,7 +3,7 @@ import Link from "next/link";
 const disabledClassName =
   "rounded-md border border-border px-3 py-1 text-ink-muted opacity-40";
 const enabledClassName =
-  "rounded-md border border-border px-3 py-1 transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent";
+  "rounded-full border border-border px-3 py-1 transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent";
 
 // Keyset pagination only ever moves one direction from a given cursor --
 // there is no "page 3 of 12" to jump around in the way OFFSET's

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ServiceScopeDashboard } from "@/components/dashboard/service-scope-dashboard";
 
 export const metadata: Metadata = {
-  title: "Transport",
+  title: "Transport fees",
 };
 
 export default function TransportPage({

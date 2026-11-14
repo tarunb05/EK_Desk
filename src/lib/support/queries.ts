@@ -24,7 +24,9 @@ export async function getSupportRequests(
 ): Promise<SupportRequestRow[]> {
   const { data: requests, error } = await supabase
     .from("support_request")
-    .select("id, branch_id, submitted_by, message, status, created_at, resolved_at")
+    .select(
+      "id, branch_id, submitted_by, message, status, created_at, resolved_at",
+    )
     .order("status", { ascending: true })
     .order("created_at", { ascending: false });
 

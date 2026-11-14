@@ -1,6 +1,19 @@
 import type { Client } from "pg";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { connect, impersonate, impersonateAdmin, withRollback } from "./test-helpers";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
+import {
+  connect,
+  impersonate,
+  impersonateAdmin,
+  withRollback,
+} from "./test-helpers";
 
 const ADMIN_ID = "00000000-0000-4000-8000-000000000031";
 const TEACHER_A_ID = "00000000-0000-4000-8000-000000000032";
@@ -50,7 +63,10 @@ describe("student delete submission (teacher-requested, admin-approved)", () => 
   }
 
   let admissionCounter = 0;
-  async function insertStudent(client: Client, branchId: string): Promise<string> {
+  async function insertStudent(
+    client: Client,
+    branchId: string,
+  ): Promise<string> {
     admissionCounter += 1;
     const student = await client.query<{ id: string }>(
       `insert into student (branch_id, admission_no, full_name, guardian_name, phone, class_section)
@@ -136,9 +152,10 @@ describe("student delete submission (teacher-requested, admin-approved)", () => 
         submission.rows[0]!.id,
       ]);
 
-      const student = await client.query("select 1 from student where id = $1", [
-        studentId,
-      ]);
+      const student = await client.query(
+        "select 1 from student where id = $1",
+        [studentId],
+      );
       expect(student.rowCount).toBe(0);
 
       const reviewed = await client.query<{
@@ -198,9 +215,10 @@ describe("student delete submission (teacher-requested, admin-approved)", () => 
         [submission.rows[0]!.id, ADMIN_ID],
       );
 
-      const student = await client.query("select 1 from student where id = $1", [
-        studentId,
-      ]);
+      const student = await client.query(
+        "select 1 from student where id = $1",
+        [studentId],
+      );
       expect(student.rowCount).toBe(1);
     });
   });

@@ -10,6 +10,7 @@ import {
 } from "@/components/shell/nav-icons";
 import { Select } from "@/components/forms/select";
 import { DateField } from "@/components/forms/date-field";
+import { FilterGroup } from "@/components/shell/filter-menu";
 import type { ExpenseCategoryOption } from "@/lib/records/expense-directory";
 
 const METHOD_FILTER_LABELS: Record<string, string> = {
@@ -61,73 +62,83 @@ export function ExpenseFilters({
 
   return (
     <>
-      <Select
-        ariaLabel="Filter by year"
-        icon={<CalendarIcon size={14} />}
-        value={year}
-        onChange={(next) => updateParam("year", next)}
-        options={years.map((y) => ({ value: String(y), label: String(y) }))}
-        className="w-full"
-      />
-
-      <Select
-        ariaLabel="Filter by month"
-        icon={<CalendarIcon size={14} />}
-        value={month}
-        onChange={(next) => updateParam("month", next)}
-        options={[
-          { value: "", label: "All months" },
-          ...MONTH_NAMES.map((name, index) => ({
-            value: String(index + 1),
-            label: name,
-          })),
-        ]}
-        className="w-full"
-      />
-
-      <Select
-        ariaLabel="Filter by category"
-        icon={<FilterIcon size={14} />}
-        value={searchParams.get("category") ?? ""}
-        onChange={(next) => updateParam("category", next)}
-        options={[
-          { value: "", label: "All categories" },
-          ...categories.map((category) => ({
-            value: category.id,
-            label: category.name,
-          })),
-        ]}
-        className="w-full"
-      />
-
-      <Select
-        ariaLabel="Filter by method"
-        icon={<WalletIcon size={14} />}
-        value={searchParams.get("method") ?? "all"}
-        onChange={(next) => updateParam("method", next)}
-        options={["all", ...MONEY_METHODS].map((method) => ({
-          value: method,
-          label: METHOD_FILTER_LABELS[method] ?? method,
-        }))}
-        className="w-full"
-      />
-
-      <div className="flex gap-2">
-        <DateField
-          ariaLabel="From date"
-          placeholder="Start date"
-          value={searchParams.get("from") ?? ""}
-          onChange={(iso) => updateParam("from", iso)}
-          className="min-w-0 flex-1"
+      <FilterGroup label="Year">
+        <Select
+          ariaLabel="Filter by year"
+          icon={<CalendarIcon size={14} />}
+          value={year}
+          onChange={(next) => updateParam("year", next)}
+          options={years.map((y) => ({ value: String(y), label: String(y) }))}
+          className="w-full"
         />
-        <DateField
-          ariaLabel="To date"
-          placeholder="End date"
-          value={searchParams.get("to") ?? ""}
-          onChange={(iso) => updateParam("to", iso)}
-          className="min-w-0 flex-1"
+      </FilterGroup>
+
+      <FilterGroup label="Month">
+        <Select
+          ariaLabel="Filter by month"
+          icon={<CalendarIcon size={14} />}
+          value={month}
+          onChange={(next) => updateParam("month", next)}
+          options={[
+            { value: "", label: "All months" },
+            ...MONTH_NAMES.map((name, index) => ({
+              value: String(index + 1),
+              label: name,
+            })),
+          ]}
+          className="w-full"
         />
-      </div>
+      </FilterGroup>
+
+      <FilterGroup label="Category">
+        <Select
+          ariaLabel="Filter by category"
+          icon={<FilterIcon size={14} />}
+          value={searchParams.get("category") ?? ""}
+          onChange={(next) => updateParam("category", next)}
+          options={[
+            { value: "", label: "All categories" },
+            ...categories.map((category) => ({
+              value: category.id,
+              label: category.name,
+            })),
+          ]}
+          className="w-full"
+        />
+      </FilterGroup>
+
+      <FilterGroup label="Paid by">
+        <Select
+          ariaLabel="Filter by method"
+          icon={<WalletIcon size={14} />}
+          value={searchParams.get("method") ?? "all"}
+          onChange={(next) => updateParam("method", next)}
+          options={["all", ...MONEY_METHODS].map((method) => ({
+            value: method,
+            label: METHOD_FILTER_LABELS[method] ?? method,
+          }))}
+          className="w-full"
+        />
+      </FilterGroup>
+
+      <FilterGroup label="Or a custom date range">
+        <div className="flex gap-2">
+          <DateField
+            ariaLabel="From date"
+            placeholder="Start date"
+            value={searchParams.get("from") ?? ""}
+            onChange={(iso) => updateParam("from", iso)}
+            className="min-w-0 flex-1"
+          />
+          <DateField
+            ariaLabel="To date"
+            placeholder="End date"
+            value={searchParams.get("to") ?? ""}
+            onChange={(iso) => updateParam("to", iso)}
+            className="min-w-0 flex-1"
+          />
+        </div>
+      </FilterGroup>
     </>
   );
 }

@@ -64,7 +64,7 @@ export const inputClassName =
 // tactile confirmation that the click registered — not a hover animation,
 // so it only fires on the state change that matters.
 const submitButtonBase =
-  "h-10 rounded-md text-sm font-medium text-surface transition-[background-color,transform] duration-150 active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100";
+  "h-10 rounded-full text-sm font-medium text-surface transition-[background-color,transform] duration-150 active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100";
 
 export const primaryButtonClassName = `${submitButtonBase} bg-accent hover:bg-accent/90`;
 export const dangerButtonClassName = `${submitButtonBase} bg-attention hover:bg-attention/90`;

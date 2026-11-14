@@ -62,7 +62,7 @@ export function DaycareHistory({
         {tiles.map((tile) => (
           <div
             key={tile.label}
-            className="rounded-md border border-hairline bg-surface p-3"
+            className="rounded-lg border border-hairline bg-surface p-3"
           >
             <dt className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
               {tile.label}

@@ -30,7 +30,7 @@ export function ErrorCard({
   return (
     <dialog
       ref={dialogRef}
-      className="w-full max-w-sm rounded-md border border-border bg-surface p-0 text-ink shadow-[0_1px_2px_rgba(0,0,0,.05)] backdrop:bg-ink/30"
+      className="w-full max-w-sm rounded-lg border border-border bg-surface p-0 text-ink shadow-[0_1px_2px_rgba(0,0,0,.05)] backdrop:bg-ink/30"
     >
       <div className="p-8 text-center">
         <span className="inline-flex text-attention">
@@ -58,7 +58,7 @@ export function ErrorCard({
           </button>
           <a
             href={backHref}
-            className="flex h-10 items-center rounded-md border border-border px-4 text-sm text-ink-secondary transition-[background-color,color,transform] duration-150 hover:bg-surface-accent hover:text-ink active:scale-[0.98]"
+            className="flex h-10 items-center rounded-full border border-border px-4 text-sm text-ink-secondary transition-[background-color,color,transform] duration-150 hover:bg-surface-accent hover:text-ink active:scale-[0.98]"
           >
             Back to dashboard
           </a>

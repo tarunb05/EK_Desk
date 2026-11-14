@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { ChevronDownIcon } from "@/components/shell/nav-icons";
+import { CheckIcon, ChevronDownIcon } from "@/components/shell/nav-icons";
+import { usePopoverPlacement } from "./use-popover-placement";
 
 export interface SelectOption {
   value: string;
@@ -47,6 +48,11 @@ export function Select({
   const containerRef = useRef<HTMLDivElement>(null);
   const optionRefs = useRef<(HTMLLIElement | null)[]>([]);
   const listboxId = useId();
+
+  // ~32px a row plus the list's own padding, capped at its max-h-64.
+  const placement = usePopoverPlacement(containerRef, open, {
+    height: Math.min(256, options.length * 32 + 10),
+  });
 
   const selectedIndex = options.findIndex((option) => option.value === value);
   const selectedLabel = options[selectedIndex]?.label ?? "";
@@ -158,7 +164,8 @@ export function Select({
           role="listbox"
           aria-label={ariaLabel}
           tabIndex={-1}
-          className="animate-pop-in absolute left-0 z-20 mt-1 max-h-64 w-full min-w-max overflow-y-auto rounded-md border border-border bg-surface p-1 shadow-[0_1px_2px_rgba(0,0,0,.05)]"
+          style={placement}
+          className="animate-pop-in absolute left-0 z-30 max-h-64 w-full min-w-max overflow-y-auto rounded-md border border-border bg-surface p-1 shadow-[0_1px_2px_rgba(0,0,0,.05)]"
         >
           {options.map((option, index) => (
             <li
@@ -186,13 +193,19 @@ export function Select({
                 event.preventDefault();
                 commit(index);
               }}
-              className={`cursor-pointer whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors ${
+              className={`flex cursor-pointer items-center justify-between gap-3 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm transition-colors ${
                 index === highlighted
                   ? "bg-surface-accent text-ink"
                   : "text-ink"
               } ${option.value === value ? "font-medium" : ""}`}
             >
               {option.label}
+              {/* The same trailing tick the multi-select month list uses,
+                  so every dropdown in the app marks its choice one way. */}
+              <CheckIcon
+                size={14}
+                className={option.value === value ? "text-accent" : "invisible"}
+              />
             </li>
           ))}
         </ul>

@@ -316,3 +316,63 @@ export async function getExpenseDirectory(
     pagination,
   };
 }
+
+export interface ExpenseMonthTotal {
+  // "2026-04"
+  month: string;
+  totalPaise: bigint;
+}
+
+// Spend for each of the twelve months of one calendar year, under the same
+// branch / category / method / search filters as the list -- but not its
+// month or From/To filter, since the point of the chart is to show the
+// chosen month against the other eleven.
+//
+// Twelve calls to the existing expense_category_breakdown function (one per
+// month, in parallel), each summed in Postgres -- chosen over a new
+// expense_by_month SQL function so this needs no migration; if the page
+// ever feels slow, that function is the replacement.
+export async function getExpenseMonthlyTotals(
+  supabase: SupabaseClient<Database>,
+  params: {
+    branch: "all" | string;
+    year: string;
+    table: Pick<ExpenseTableSearchParams, "category" | "method" | "q">;
+  },
+): Promise<ExpenseMonthTotal[]> {
+  const year = Number(params.year);
+  const months = Array.from({ length: 12 }, (_, index) => {
+    const month = String(index + 1).padStart(2, "0");
+    // Day 0 of the following month is the last day of this one.
+    const lastDay = new Date(Date.UTC(year, index + 1, 0)).getUTCDate();
+    return {
+      month: `${year}-${month}`,
+      from: `${year}-${month}-01`,
+      to: `${year}-${month}-${String(lastDay).padStart(2, "0")}`,
+    };
+  });
+
+  return Promise.all(
+    months.map(async ({ month, from, to }) => {
+      const { data, error } = await supabase.rpc("expense_category_breakdown", {
+        p_branch_code: params.branch === "all" ? undefined : params.branch,
+        p_category_id: params.table.category || undefined,
+        p_method:
+          params.table.method === "all" ? undefined : params.table.method,
+        p_from: from,
+        p_to: to,
+        p_q: params.table.q || undefined,
+      });
+      if (error) {
+        throw new Error("Could not load expenses by month.");
+      }
+      return {
+        month,
+        totalPaise: data.reduce(
+          (sum, row) => sum + BigInt(row.amount_paise ?? 0),
+          0n,
+        ),
+      };
+    }),
+  );
+}

@@ -41,10 +41,7 @@ function mapFeeAccountRecordRow(
 }
 
 export type FeeAccountExportMetric =
-  | "receivable"
-  | "collected"
-  | "pending"
-  | "overdue";
+  "receivable" | "collected" | "pending" | "overdue";
 
 export interface FeeAccountExportParams {
   serviceType: ServiceType;

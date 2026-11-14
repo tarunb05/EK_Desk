@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth/require-role";
 import { getPendingSubmissions } from "@/lib/records/approvals";
 import { ApprovalRow } from "@/components/records/approval-row";
+import { EmptyNote } from "@/components/shell/empty-note";
 
 // Static rather than "My requests" for a teacher (which the on-page <h1>
 // does show) -- that distinction isn't worth a second requireAuth() round
@@ -24,18 +25,18 @@ export default async function ApprovalsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-medium text-ink">
+      <h1 className="text-2xl font-semibold text-ink">
         {role === "admin" ? "Approvals" : "My requests"}
       </h1>
 
       {submissions.length === 0 ? (
-        <p className="text-sm text-ink-secondary">
+        <EmptyNote>
           {role === "admin"
-            ? "Nothing waiting for review — a teacher's request to delete a student or one of their enrollments will show up here."
-            : "Nothing pending — a delete request you send will show up here until an admin reviews it."}
-        </p>
+            ? "Nothing waiting for review. A teacher's request to delete a student or one of their enrollments will show up here."
+            : "Nothing pending. A delete request you send will show up here until an admin reviews it."}
+        </EmptyNote>
       ) : (
-        <div className="flex flex-col divide-y divide-hairline rounded-md border border-hairline bg-surface">
+        <div className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline bg-surface">
           {submissions.map((submission) => (
             <ApprovalRow
               key={`${submission.table}-${submission.id}`}

@@ -9,7 +9,7 @@ import { ExpenseForm } from "@/components/expenses/expense-form";
 import { BackLink } from "@/components/shell/back-link";
 
 export const metadata: Metadata = {
-  title: "Edit Expense",
+  title: "Edit expense",
 };
 
 export default async function EditExpensePage({
@@ -66,7 +66,7 @@ export default async function EditExpensePage({
   return (
     <div className="max-w-xl">
       <BackLink href="/expenses" />
-      <h1 className="mb-4 text-xl font-medium text-ink">Edit expense</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-ink">Edit expense</h1>
       <ExpenseForm
         mode="edit"
         expenseId={expense.id}
