@@ -1,4 +1,5 @@
 import { formatMethod, formatPaise } from "@/lib/domain/money";
+import { formatDisplayDate } from "@/lib/domain/datetime";
 import type { ExpenseDirectoryRow } from "@/lib/records/expense-directory";
 import type { ExpenseSortKey } from "@/lib/shell/expense-table-params";
 import type { Role } from "@/lib/auth/routes";
@@ -7,6 +8,7 @@ import { PaginationControls } from "@/components/records/pagination-controls";
 import { TableTransitionProvider } from "@/components/records/table-transition";
 import { PendingTbody } from "@/components/records/pending-tbody";
 import { ExpenseRowActions } from "@/components/expenses/expense-row-actions";
+import { EmptyNote } from "@/components/shell/empty-note";
 
 interface ExpenseTableProps {
   rows: ExpenseDirectoryRow[];
@@ -29,10 +31,10 @@ export function ExpenseTable({
 }: ExpenseTableProps) {
   if (rows.length === 0) {
     return (
-      <p className="py-8 text-sm text-ink-muted">
-        No expenses match these filters — adjust the filters above, or record
-        one from the button above the list.
-      </p>
+      <EmptyNote>
+        No expenses match these filters. Adjust the filters above, or record one
+        from the button above the list.
+      </EmptyNote>
     );
   }
 
@@ -41,10 +43,10 @@ export function ExpenseTable({
   return (
     <TableTransitionProvider>
       <div className="flex flex-col gap-3">
-        <div className="overflow-x-auto rounded-md border border-hairline">
+        <div className="scroll-reveal overflow-x-auto rounded-lg border border-hairline bg-surface">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="h-9 border-b border-hairline bg-canvas">
+              <tr className="h-9 border-b border-hairline bg-sand/50">
                 <th className="px-3 text-left">
                   <SortableHeader
                     label="Date"
@@ -100,10 +102,10 @@ export function ExpenseTable({
                 <tr
                   key={row.id}
                   style={{ animationDelay: `${Math.min(index, 12) * 20}ms` }}
-                  className="animate-row-in h-10 border-b border-hairline border-l-2 border-l-transparent even:bg-hairline/40 transition-colors last:border-0 hover:border-l-accent hover:bg-surface-accent"
+                  className="animate-row-in h-10 border-b border-hairline border-l-2 border-l-transparent even:bg-canvas/50 transition-colors last:border-0 hover:border-l-accent hover:bg-surface-accent"
                 >
                   <td className="px-3 text-ink-secondary tabular-nums">
-                    {row.spentOn}
+                    {formatDisplayDate(row.spentOn)}
                   </td>
                   <td className="px-3 text-ink">{row.categoryName}</td>
                   {role === "admin" ? (
@@ -118,13 +120,13 @@ export function ExpenseTable({
                     {formatMethod(row.method)}
                   </td>
                   <td className="px-3 text-ink-secondary">
-                    {row.reference || "—"}
+                    {row.reference || "-"}
                   </td>
-                  <td className="px-3 text-ink-secondary">{row.note || "—"}</td>
+                  <td className="px-3 text-ink-secondary">{row.note || "-"}</td>
                   <td className="px-3 text-ink-secondary">
                     <span>{row.createdByName}</span>
                     {row.isEdited ? (
-                      <span className="ml-1.5 rounded-md bg-surface-accent px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-muted">
+                      <span className="ml-1.5 rounded-full bg-surface-accent px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-muted">
                         Edited
                         {row.updatedByName ? ` by ${row.updatedByName}` : ""}
                       </span>

@@ -1,6 +1,19 @@
 import type { Client } from "pg";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { connect, impersonate, impersonateAdmin, withRollback } from "./test-helpers";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
+import {
+  connect,
+  impersonate,
+  impersonateAdmin,
+  withRollback,
+} from "./test-helpers";
 
 // Same fake auth.users/profile approach as role-based-rls.integration.test.ts
 // -- CI's `test` job runs against a bare Postgres service container with no
@@ -117,7 +130,9 @@ describe("student status transitions (phase 9.1)", () => {
           "update student set admission_no = 'RENUMBERED' where id = $1",
           [studentId],
         ),
-      ).rejects.toThrow(/may not change a student's branch or admission number/);
+      ).rejects.toThrow(
+        /may not change a student's branch or admission number/,
+      );
       await client.query("rollback to savepoint before_renumber");
     });
   });
@@ -146,7 +161,11 @@ describe("student status transitions (phase 9.1)", () => {
   it("admin can set student.status to any branch, including other columns in the same statement", async () => {
     await withRollback(client, async () => {
       await seedProfiles(client);
-      const studentId = await insertStudent(client, branchBId, "STATUS-ADMIN-1");
+      const studentId = await insertStudent(
+        client,
+        branchBId,
+        "STATUS-ADMIN-1",
+      );
 
       await impersonateAdmin(client);
       const result = await client.query(
@@ -160,7 +179,11 @@ describe("student status transitions (phase 9.1)", () => {
   it("admin can discontinue a fee_account", async () => {
     await withRollback(client, async () => {
       await seedProfiles(client);
-      const studentId = await insertStudent(client, branchAId, "STATUS-ADMIN-2");
+      const studentId = await insertStudent(
+        client,
+        branchAId,
+        "STATUS-ADMIN-2",
+      );
       const feeAccount = await client.query<{ id: string }>(
         `insert into fee_account
            (student_id, academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, route_name, pickup_point)
@@ -197,18 +220,20 @@ describe("student status transitions (phase 9.1)", () => {
         [academicYearId],
       );
 
-      await client.query("update fee_account set status = 'discontinued' where id = $1", [
-        feeAccount.rows[0]!.id,
-      ]);
+      await client.query(
+        "update fee_account set status = 'discontinued' where id = $1",
+        [feeAccount.rows[0]!.id],
+      );
 
       const after = await client.query<{ total_receivable_paise: string }>(
         "select total_receivable_paise from dashboard_summary('transport', $1, 'BR-A')",
         [academicYearId],
       );
 
-      expect(BigInt(before.rows[0]!.total_receivable_paise) - BigInt(after.rows[0]!.total_receivable_paise)).toBe(
-        1000000n,
-      );
+      expect(
+        BigInt(before.rows[0]!.total_receivable_paise) -
+          BigInt(after.rows[0]!.total_receivable_paise),
+      ).toBe(1000000n);
     });
   });
 });

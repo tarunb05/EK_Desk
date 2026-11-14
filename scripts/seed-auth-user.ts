@@ -56,7 +56,11 @@ async function main(supabaseUrl: string, serviceRoleKey: string) {
   const supabase = createClient<Database>(supabaseUrl, serviceRoleKey);
 
   const adminEmail = usernameToInternalEmail(TEST_ADMIN_USERNAME);
-  const adminId = await ensureAuthUser(supabase, adminEmail, TEST_ADMIN_PASSWORD);
+  const adminId = await ensureAuthUser(
+    supabase,
+    adminEmail,
+    TEST_ADMIN_PASSWORD,
+  );
   const { error: adminProfileError } = await supabase.from("profile").upsert({
     id: adminId,
     role: "admin",
@@ -93,9 +97,7 @@ async function main(supabaseUrl: string, serviceRoleKey: string) {
     if (teacherProfileError) {
       throw teacherProfileError;
     }
-    console.log(
-      `Teacher ${teacher.username} (${teacher.branchCode}) ready.`,
-    );
+    console.log(`Teacher ${teacher.username} (${teacher.branchCode}) ready.`);
   }
 }
 

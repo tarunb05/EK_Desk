@@ -4,6 +4,7 @@ import {
   ToolbarSkeleton,
   StatCardsSkeleton,
   TableSkeleton,
+  ChartCardSkeleton,
 } from "./skeleton";
 
 // Transport & Daycare (ServiceScopeDashboard): title, toolbar (no search
@@ -11,9 +12,18 @@ import {
 export function DashboardLoadingSkeleton() {
   return (
     <SkeletonPage>
-      <Skeleton className="h-6 w-28" />
+      <Skeleton className="h-7 w-28" />
       <ToolbarSkeleton />
       <StatCardsSkeleton />
+      <ChartCardSkeleton plot="h-7" />
+      <div className="grid gap-5 lg:grid-cols-3">
+        <ChartCardSkeleton className="lg:col-span-2" />
+        <ChartCardSkeleton />
+      </div>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <ChartCardSkeleton plot="h-32" />
+        <ChartCardSkeleton plot="h-32" />
+      </div>
       <div className="flex flex-col gap-2">
         <Skeleton className="h-2.5 w-20" />
         <TableSkeleton columns={7} rows={2} />
@@ -40,15 +50,17 @@ export function StudentsLoadingSkeleton() {
 export function ExpensesLoadingSkeleton() {
   return (
     <SkeletonPage>
-      <Skeleton className="h-6 w-24" />
+      <Skeleton className="h-7 w-28" />
       <ToolbarSkeleton withSearch />
-      <div className="rounded-md border border-hairline bg-surface p-4">
-        <Skeleton className="h-2.5 w-24" />
-        <Skeleton className="mt-3 h-5 w-28" />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Skeleton className="h-2.5 w-20" />
-        <Skeleton className="h-24 w-full" />
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="flex flex-col gap-5">
+          <div className="flex min-h-28 flex-col justify-between rounded-lg bg-surface p-4">
+            <Skeleton className="h-2.5 w-24" />
+            <Skeleton className="h-7 w-32" />
+          </div>
+          <ChartCardSkeleton />
+        </div>
+        <ChartCardSkeleton plot="h-72" />
       </div>
       <TableSkeleton columns={7} rows={8} />
     </SkeletonPage>
@@ -61,7 +73,7 @@ export function ApprovalsLoadingSkeleton() {
   return (
     <SkeletonPage>
       <Skeleton className="h-6 w-24" />
-      <div className="flex flex-col divide-y divide-hairline rounded-md border border-hairline bg-surface">
+      <div className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline bg-surface">
         {Array.from({ length: 4 }, (_, i) => (
           <div key={i} className="flex items-center justify-between gap-4 p-4">
             <div className="flex flex-col gap-2">

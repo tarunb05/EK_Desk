@@ -1,5 +1,13 @@
 import type { Client } from "pg";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import { connect, impersonateAdmin, withRollback } from "./test-helpers";
 
 describe("request sharing and auto-close (phase 15.3)", () => {
@@ -34,7 +42,10 @@ describe("request sharing and auto-close (phase 15.3)", () => {
   // payment_request, as admin. Shared by most tests below.
   async function seedFixture(
     c: Client,
-    overrides: { totalReceivablePaise?: number; requestAmountPaise?: number } = {},
+    overrides: {
+      totalReceivablePaise?: number;
+      requestAmountPaise?: number;
+    } = {},
   ) {
     await impersonateAdmin(c);
 
@@ -49,7 +60,11 @@ describe("request sharing and auto-close (phase 15.3)", () => {
          (student_id, academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, route_name, pickup_point)
        values ($1, $2, 'transport', $3, '2026-06-01', '2026-04-01', '2027-03-31', 'Route 1', 'Gate')
        returning id`,
-      [student.rows[0]!.id, academicYearId, overrides.totalReceivablePaise ?? 1_000_000],
+      [
+        student.rows[0]!.id,
+        academicYearId,
+        overrides.totalReceivablePaise ?? 1_000_000,
+      ],
     );
     const collectionAccount = await c.query<{ id: string }>(
       `insert into collection_account (branch_id, label, upi_id, payee_name, updated_by)
@@ -83,16 +98,18 @@ describe("request sharing and auto-close (phase 15.3)", () => {
   }
 
   async function requestStatus(c: Client, id: string) {
-    const result = await c.query<{ status: string; closed_reason: string | null }>(
-      "select status, closed_reason from payment_request where id = $1",
-      [id],
-    );
+    const result = await c.query<{
+      status: string;
+      closed_reason: string | null;
+    }>("select status, closed_reason from payment_request where id = $1", [id]);
     return result.rows[0]!;
   }
 
   it("a payment that clears pending closes the open request with pending_cleared", async () => {
     await withRollback(client, async () => {
-      const fixture = await seedFixture(client, { totalReceivablePaise: 1_000_000 });
+      const fixture = await seedFixture(client, {
+        totalReceivablePaise: 1_000_000,
+      });
 
       await client.query(
         `insert into payment (fee_account_id, amount_paise, paid_on, method, recorded_by)
@@ -108,7 +125,9 @@ describe("request sharing and auto-close (phase 15.3)", () => {
 
   it("a payment that doesn't clear pending leaves the request open", async () => {
     await withRollback(client, async () => {
-      const fixture = await seedFixture(client, { totalReceivablePaise: 1_000_000 });
+      const fixture = await seedFixture(client, {
+        totalReceivablePaise: 1_000_000,
+      });
 
       await client.query(
         `insert into payment (fee_account_id, amount_paise, paid_on, method, recorded_by)
@@ -193,7 +212,9 @@ describe("request sharing and auto-close (phase 15.3)", () => {
 
   it("create_payment_request cancels an existing open request before creating the new one", async () => {
     await withRollback(client, async () => {
-      const fixture = await seedFixture(client, { totalReceivablePaise: 1_000_000 });
+      const fixture = await seedFixture(client, {
+        totalReceivablePaise: 1_000_000,
+      });
 
       const result = await client.query<{
         create_payment_request: { id: string; referenceCode: string };
@@ -203,7 +224,11 @@ describe("request sharing and auto-close (phase 15.3)", () => {
            p_amount_paise := 500000, p_include_upi := true, p_include_bank := false,
            p_expiry_days := 7, p_token_hash := $3
          )`,
-        [fixture.feeAccountId, fixture.collectionAccountId, Buffer.from("newtoken1", "utf8")],
+        [
+          fixture.feeAccountId,
+          fixture.collectionAccountId,
+          Buffer.from("newtoken1", "utf8"),
+        ],
       );
       const newId = result.rows[0]!.create_payment_request.id;
       expect(newId).not.toBe(fixture.paymentRequestId);
@@ -248,7 +273,11 @@ describe("request sharing and auto-close (phase 15.3)", () => {
              p_amount_paise := 200000, p_include_upi := true, p_include_bank := false,
              p_expiry_days := 7, p_token_hash := $3
            )`,
-          [feeAccount.rows[0]!.id, collectionAccount.rows[0]!.id, Buffer.from("rejecttoken", "utf8")],
+          [
+            feeAccount.rows[0]!.id,
+            collectionAccount.rows[0]!.id,
+            Buffer.from("rejecttoken", "utf8"),
+          ],
         ),
       ).rejects.toThrow(/invalid amount/i);
     });
@@ -258,7 +287,10 @@ describe("request sharing and auto-close (phase 15.3)", () => {
     await withRollback(client, async () => {
       const fixture = await seedFixture(client);
 
-      const before = await client.query<{ token_hash: string; reference_code: string }>(
+      const before = await client.query<{
+        token_hash: string;
+        reference_code: string;
+      }>(
         "select token_hash, reference_code from payment_request where id = $1",
         [fixture.paymentRequestId],
       );
@@ -268,12 +300,18 @@ describe("request sharing and auto-close (phase 15.3)", () => {
         Buffer.from("reissuedtoken", "utf8"),
       ]);
 
-      const after = await client.query<{ token_hash: string; reference_code: string; status: string }>(
+      const after = await client.query<{
+        token_hash: string;
+        reference_code: string;
+        status: string;
+      }>(
         "select token_hash, reference_code, status from payment_request where id = $1",
         [fixture.paymentRequestId],
       );
       expect(after.rows[0]!.token_hash).not.toBe(before.rows[0]!.token_hash);
-      expect(after.rows[0]!.reference_code).toBe(before.rows[0]!.reference_code);
+      expect(after.rows[0]!.reference_code).toBe(
+        before.rows[0]!.reference_code,
+      );
       expect(after.rows[0]!.status).toBe("open");
     });
   });

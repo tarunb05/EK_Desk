@@ -50,7 +50,10 @@ export default async function ActivityLogPage({
         dateFrom: filterParams.dateFrom,
         dateTo: filterParams.dateTo,
         branchId: selectedBranch?.id,
-        actorId: filterParams.actor && filterParams.actor !== "all" ? filterParams.actor : undefined,
+        actorId:
+          filterParams.actor && filterParams.actor !== "all"
+            ? filterParams.actor
+            : undefined,
         action: filterParams.action === "all" ? undefined : filterParams.action,
         entity: filterParams.entity === "all" ? undefined : filterParams.entity,
         q: filterParams.q,
@@ -62,9 +65,7 @@ export default async function ActivityLogPage({
   const branchNameById = Object.fromEntries(
     branches.map((branch) => [branch.id, branch.name]),
   );
-  const yearLabelById = Object.fromEntries(
-    years.map((y) => [y.id, y.label]),
-  );
+  const yearLabelById = Object.fromEntries(years.map((y) => [y.id, y.label]));
 
   const flatSearchParams = Object.fromEntries(
     Object.entries(rawParams).map(([key, value]) => [
@@ -84,7 +85,7 @@ export default async function ActivityLogPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-medium text-ink">Activity log</h1>
+      <h1 className="text-2xl font-semibold text-ink">Activity log</h1>
 
       <div className="flex items-center justify-end gap-2">
         <SearchField
@@ -93,12 +94,16 @@ export default async function ActivityLogPage({
           paginationParam="cursor"
         />
         <FilterMenu activeCount={activeCount}>
-          <ScopeSelectors years={years} branches={branches} paginationParam="cursor" />
+          <ScopeSelectors
+            years={years}
+            branches={branches}
+            paginationParam="cursor"
+          />
           <ActivityLogFilters actors={actors} />
         </FilterMenu>
         <a
           href={`/api/export/logs?${exportParams.toString()}`}
-          className="flex h-9 items-center gap-1.5 rounded-md bg-accent px-3 text-sm font-medium text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
+          className="flex h-9 items-center gap-1.5 rounded-full bg-accent px-3 text-sm font-medium text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
         >
           Download
         </a>

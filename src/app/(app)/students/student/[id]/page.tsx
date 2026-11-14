@@ -9,7 +9,7 @@ import { requireAuth } from "@/lib/auth/require-role";
 // Static rather than the student's own name -- see the transport variant of
 // this page for why (avoids a second getStudentDetail() call).
 export const metadata: Metadata = {
-  title: "Student",
+  title: "Student record",
 };
 
 // Reachable by both roles -- unlike /transport/student/[id] and
@@ -33,9 +33,9 @@ export default async function StudentDetailPage({
   }
 
   return (
-    <div className="max-w-lg">
+    <div className="max-w-3xl">
       <BackLink href="/students" label="Back to students" />
-      <h1 className="mb-4 text-xl font-medium text-ink">
+      <h1 className="mb-4 text-2xl font-semibold text-ink">
         {detail.student.fullName}
       </h1>
       <StudentDetailBody detail={detail} redirectTo="/students" role={role} />

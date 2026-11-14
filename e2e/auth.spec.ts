@@ -14,7 +14,7 @@ test.describe("auth", () => {
     await page.goto("/login");
     await page.getByLabel("Username").fill(TEST_ADMIN_USERNAME);
     await page.getByLabel("Password").fill("wrong-password");
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Log in" }).click();
 
     await expect(
       page.getByText("Incorrect username or password."),
@@ -26,7 +26,7 @@ test.describe("auth", () => {
     await page.goto("/login");
     await page.getByLabel("Username").fill(TEST_ADMIN_USERNAME);
     await page.getByLabel("Password").fill(TEST_ADMIN_PASSWORD);
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Log in" }).click();
 
     await expect(page).toHaveURL(/\/transport$/);
     await expect(page.getByRole("link", { name: "Transport" })).toBeVisible();
@@ -36,7 +36,7 @@ test.describe("auth", () => {
     // Sign out goes to the landing page, not /login -- but a protected
     // route still redirects an unauthenticated visitor to /login exactly
     // as before; only the explicit sign-out destination changed.
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.getByRole("button", { name: "Log out" }).click();
     await expect(page).toHaveURL(/\/$/);
 
     await page.goto("/transport");

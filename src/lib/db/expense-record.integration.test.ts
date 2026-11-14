@@ -1,6 +1,11 @@
 import type { Client } from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { connect, impersonate, impersonateAdmin, withRollback } from "./test-helpers";
+import {
+  connect,
+  impersonate,
+  impersonateAdmin,
+  withRollback,
+} from "./test-helpers";
 
 const ADMIN_ID = "00000000-0000-4000-8000-000000000051";
 const TEACHER_A_ID = "00000000-0000-4000-8000-000000000052";

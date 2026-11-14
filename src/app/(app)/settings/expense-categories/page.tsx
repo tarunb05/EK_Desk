@@ -7,7 +7,7 @@ import { AddExpenseCategoryForm } from "@/components/settings/add-expense-catego
 import { ExpenseCategoryRow } from "@/components/settings/expense-category-row";
 
 export const metadata: Metadata = {
-  title: "Expense Categories",
+  title: "Expense categories",
 };
 
 export default async function ExpenseCategoriesPage() {
@@ -24,7 +24,7 @@ export default async function ExpenseCategoriesPage() {
         >
           ← Settings
         </Link>
-        <h1 className="text-xl font-medium text-ink">Expense categories</h1>
+        <h1 className="text-2xl font-semibold text-ink">Expense categories</h1>
       </div>
 
       <section className="flex flex-col gap-4 rounded-md border border-border bg-surface p-5">
@@ -41,7 +41,7 @@ export default async function ExpenseCategoriesPage() {
           </ul>
         ) : (
           <p className="text-sm text-ink-secondary">
-            No categories yet — add the first one below.
+            No categories yet. Add the first one below.
           </p>
         )}
 

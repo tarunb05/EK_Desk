@@ -14,7 +14,7 @@ test.describe("role-based routing (phase 8.1)", () => {
     await page.goto("/login");
     await page.getByLabel("Username").fill(TEST_ADMIN_USERNAME);
     await page.getByLabel("Password").fill(TEST_ADMIN_PASSWORD);
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Log in" }).click();
 
     await expect(page).toHaveURL(/\/transport$/);
     await expect(page.getByRole("link", { name: "Transport" })).toBeVisible();
@@ -34,16 +34,15 @@ test.describe("role-based routing (phase 8.1)", () => {
     await page.goto("/login");
     await page.getByLabel("Username").fill(teacherA.username);
     await page.getByLabel("Password").fill(teacherA.password);
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Log in" }).click();
 
-    await expect(page).toHaveURL(/\/students$/);
+    // A teacher lands on the Expenses dashboard after logging in.
+    await expect(page).toHaveURL(/\/expenses$/);
     await expect(page.getByRole("link", { name: "Students" })).toBeVisible();
     await expect(
       page.getByRole("link", { name: "Transport" }),
     ).not.toBeVisible();
-    await expect(
-      page.getByRole("link", { name: "Daycare" }),
-    ).not.toBeVisible();
+    await expect(page.getByRole("link", { name: "Daycare" })).not.toBeVisible();
     await expect(
       page.getByRole("link", { name: "Settings" }),
     ).not.toBeVisible();

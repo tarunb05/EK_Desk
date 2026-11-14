@@ -7,7 +7,7 @@ import { z } from "zod";
 import { env } from "@/lib/env";
 import { sessionOnlyCookieOptions } from "@/lib/supabase/session-only-cookie";
 import { usernameToInternalEmail } from "@/lib/auth/username";
-import { defaultRouteFor, type Role } from "@/lib/auth/routes";
+import { homeRouteFor, type Role } from "@/lib/auth/routes";
 import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
 
 const credentialsSchema = z.object({
@@ -113,5 +113,5 @@ export async function signIn(
   // middleware's own role check on the way there — this has to send each
   // role to a route they can actually reach itself, not rely on middleware
   // to catch a wrong guess afterward.
-  redirect(defaultRouteFor(role as Role));
+  redirect(homeRouteFor(role as Role));
 }

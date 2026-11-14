@@ -52,3 +52,14 @@ export function isRouteAllowed(pathname: string, role: Role): boolean {
 export function defaultRouteFor(role: Role): string {
   return role === "teacher" ? "/students" : "/transport";
 }
+
+// Where a role lands straight after logging in. Separate from
+// defaultRouteFor on purpose: that one answers "where do I send someone who
+// hit a page they may not open" and stays the plain list screen, while this
+// one is the first thing they see each morning. A teacher opens on the
+// Expenses dashboard (their branch's total, the month-by-month chart and
+// the category breakdown) rather than straight into the student table; an
+// admin opens on Transport as before.
+export function homeRouteFor(role: Role): string {
+  return role === "teacher" ? "/expenses" : "/transport";
+}

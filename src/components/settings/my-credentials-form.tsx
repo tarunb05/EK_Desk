@@ -7,10 +7,7 @@ import {
   inputClassName,
   primaryButtonClassName,
 } from "@/components/forms/field";
-import {
-  updateOwnCredentials,
-  type ActionState,
-} from "@/lib/settings/actions";
+import { updateOwnCredentials, type ActionState } from "@/lib/settings/actions";
 
 const initialState: ActionState = { error: null };
 

@@ -85,10 +85,11 @@ function diffField(
   before: string | number | bigint | null | undefined,
   after: string | number | bigint | null | undefined,
 ): FieldChange | null {
-  const beforeStr = before === null || before === undefined ? "" : String(before);
+  const beforeStr =
+    before === null || before === undefined ? "" : String(before);
   const afterStr = after === null || after === undefined ? "" : String(after);
   if (beforeStr === afterStr) return null;
-  return { label, before: beforeStr || "—", after: afterStr || "—" };
+  return { label, before: beforeStr || "-", after: afterStr || "-" };
 }
 
 export async function getPendingSubmissionCount(
@@ -132,32 +133,32 @@ export async function getPendingSubmissions(
 ): Promise<PendingSubmission[]> {
   const [students, edits, payments, deletes, enrollmentDeletes] =
     await Promise.all([
-    supabase
-      .from("student_submission")
-      .select("*")
-      .eq("status", "pending")
-      .order("submitted_at", { ascending: true }),
-    supabase
-      .from("student_edit_submission")
-      .select("*")
-      .eq("status", "pending")
-      .order("submitted_at", { ascending: true }),
-    supabase
-      .from("payment_submission")
-      .select("*")
-      .eq("status", "pending")
-      .order("submitted_at", { ascending: true }),
-    supabase
-      .from("student_delete_submission")
-      .select("*")
-      .eq("status", "pending")
-      .order("submitted_at", { ascending: true }),
-    supabase
-      .from("enrollment_delete_submission")
-      .select("*")
-      .eq("status", "pending")
-      .order("submitted_at", { ascending: true }),
-  ]);
+      supabase
+        .from("student_submission")
+        .select("*")
+        .eq("status", "pending")
+        .order("submitted_at", { ascending: true }),
+      supabase
+        .from("student_edit_submission")
+        .select("*")
+        .eq("status", "pending")
+        .order("submitted_at", { ascending: true }),
+      supabase
+        .from("payment_submission")
+        .select("*")
+        .eq("status", "pending")
+        .order("submitted_at", { ascending: true }),
+      supabase
+        .from("student_delete_submission")
+        .select("*")
+        .eq("status", "pending")
+        .order("submitted_at", { ascending: true }),
+      supabase
+        .from("enrollment_delete_submission")
+        .select("*")
+        .eq("status", "pending")
+        .order("submitted_at", { ascending: true }),
+    ]);
 
   const submittedByIds = new Set<string>();
   for (const row of students.data ?? []) submittedByIds.add(row.submitted_by);
@@ -211,9 +212,12 @@ export async function getPendingSubmissions(
       id: row.id,
       submittedAt: row.submitted_at,
       branchId: row.branch_id,
-      summary: `New student — ${row.full_name} (${row.service_type})`,
+      summary: `New student: ${row.full_name} (${row.service_type})`,
       detail: [
-        { label: "Submitted by", value: submittedByName.get(row.submitted_by) ?? "" },
+        {
+          label: "Submitted by",
+          value: submittedByName.get(row.submitted_by) ?? "",
+        },
         { label: "Admission no.", value: row.admission_no },
         { label: "Full name", value: row.full_name },
         { label: "Guardian", value: row.guardian_name },
@@ -270,7 +274,11 @@ export async function getPendingSubmissions(
         diffField("Due date", current?.due_date, row.due_date),
         diffField("Starts on", current?.starts_on, row.starts_on),
         diffField("Ends on", current?.ends_on, row.ends_on),
-        diffField("Fee account status", current?.status, row.fee_account_status),
+        diffField(
+          "Fee account status",
+          current?.status,
+          row.fee_account_status,
+        ),
         diffField("Route name", current?.route_name, row.route_name),
         diffField("Pickup point", current?.pickup_point, row.pickup_point),
         diffField("Slot", current?.slot, row.slot),
@@ -282,7 +290,7 @@ export async function getPendingSubmissions(
         id: row.id,
         submittedAt: row.submitted_at,
         branchId: row.branch_id,
-        summary: `Edit — ${row.full_name}`,
+        summary: `Edit: ${row.full_name}`,
         detail: [
           {
             label: "Submitted by",
@@ -304,8 +312,8 @@ export async function getPendingSubmissions(
         submittedAt: row.submitted_at,
         branchId: row.branch_id,
         summary: feeAccount
-          ? `Payment — ${feeAccount.student_full_name} — ${formatPaise(BigInt(row.amount_paise))} (${formatMethod(row.method)})`
-          : `Payment — ${formatPaise(BigInt(row.amount_paise))} (${formatMethod(row.method)})`,
+          ? `Payment: ${feeAccount.student_full_name}, ${formatPaise(BigInt(row.amount_paise))} (${formatMethod(row.method)})`
+          : `Payment: ${formatPaise(BigInt(row.amount_paise))} (${formatMethod(row.method)})`,
         detail: [
           {
             label: "Submitted by",
@@ -340,24 +348,24 @@ export async function getPendingSubmissions(
     },
   );
 
-  const deleteRows: PendingStudentDeleteSubmission[] = (
-    deletes.data ?? []
-  ).map((row) => ({
-    table: "student_delete_submission",
-    actionType: "Deletion requested",
-    id: row.id,
-    submittedAt: row.submitted_at,
-    branchId: row.branch_id,
-    summary: `Delete — ${row.student_full_name}`,
-    detail: [
-      {
-        label: "Submitted by",
-        value: submittedByName.get(row.submitted_by) ?? "",
-      },
-      { label: "Student", value: row.student_full_name },
-      { label: "Admission no.", value: row.student_admission_no },
-    ],
-  }));
+  const deleteRows: PendingStudentDeleteSubmission[] = (deletes.data ?? []).map(
+    (row) => ({
+      table: "student_delete_submission",
+      actionType: "Deletion requested",
+      id: row.id,
+      submittedAt: row.submitted_at,
+      branchId: row.branch_id,
+      summary: `Delete: ${row.student_full_name}`,
+      detail: [
+        {
+          label: "Submitted by",
+          value: submittedByName.get(row.submitted_by) ?? "",
+        },
+        { label: "Student", value: row.student_full_name },
+        { label: "Admission no.", value: row.student_admission_no },
+      ],
+    }),
+  );
 
   const enrollmentDeleteRows: PendingEnrollmentDeleteSubmission[] = (
     enrollmentDeletes.data ?? []
@@ -367,7 +375,7 @@ export async function getPendingSubmissions(
     id: row.id,
     submittedAt: row.submitted_at,
     branchId: row.branch_id,
-    summary: `Delete enrollment — ${row.student_full_name} (${row.enrollment_label})`,
+    summary: `Delete enrollment: ${row.student_full_name} (${row.enrollment_label})`,
     detail: [
       {
         label: "Submitted by",

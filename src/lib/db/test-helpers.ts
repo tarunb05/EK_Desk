@@ -36,10 +36,9 @@ export async function impersonate(
   userId: string,
 ): Promise<void> {
   await client.query("set role authenticated");
-  await client.query(
-    "select set_config('request.jwt.claim.sub', $1, true)",
-    [userId],
-  );
+  await client.query("select set_config('request.jwt.claim.sub', $1, true)", [
+    userId,
+  ]);
 }
 
 const ADMIN_TEST_ID = "00000000-0000-4000-8000-00000000000a";

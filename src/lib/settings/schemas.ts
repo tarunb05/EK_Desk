@@ -164,23 +164,29 @@ type CollectionAccountFieldsInput = {
   ifsc?: string;
 };
 
-function refineCollectionAccountFields<
-  T extends z.ZodObject<z.ZodRawShape>,
->(schema: T) {
+function refineCollectionAccountFields<T extends z.ZodObject<z.ZodRawShape>>(
+  schema: T,
+) {
   return schema
     .refine(
       (v: CollectionAccountFieldsInput) =>
         Boolean(v.upiId) || Boolean(v.accountNumber),
       { message: "Enter a UPI ID or bank account details.", path: ["upiId"] },
     )
-    .refine((v: CollectionAccountFieldsInput) => !v.upiId || isValidUpiId(v.upiId), {
-      message: "Enter a valid UPI ID.",
-      path: ["upiId"],
-    })
-    .refine((v: CollectionAccountFieldsInput) => !v.ifsc || isValidIfsc(v.ifsc), {
-      message: "Enter a valid IFSC code.",
-      path: ["ifsc"],
-    })
+    .refine(
+      (v: CollectionAccountFieldsInput) => !v.upiId || isValidUpiId(v.upiId),
+      {
+        message: "Enter a valid UPI ID.",
+        path: ["upiId"],
+      },
+    )
+    .refine(
+      (v: CollectionAccountFieldsInput) => !v.ifsc || isValidIfsc(v.ifsc),
+      {
+        message: "Enter a valid IFSC code.",
+        path: ["ifsc"],
+      },
+    )
     .refine(
       (v: CollectionAccountFieldsInput) =>
         !v.accountNumber || isValidAccountNumber(v.accountNumber),

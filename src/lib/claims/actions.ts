@@ -48,7 +48,9 @@ export async function confirmClaim(
   });
 
   if (error) {
-    return { error: "Could not confirm this claim — it may already be reviewed." };
+    return {
+      error: "Could not confirm this claim. It may already be reviewed.",
+    };
   }
 
   // Ids and amounts only -- no UTR, no student/guardian name, no phone.
@@ -86,7 +88,9 @@ export async function rejectClaim(
     return { error: "Could not reject this claim." };
   }
 
-  console.log(`[claim] rejected by=${authed.userId} claim=${parsed.data.claimId}`);
+  console.log(
+    `[claim] rejected by=${authed.userId} claim=${parsed.data.claimId}`,
+  );
 
   revalidatePath("/verify");
   return { error: null };

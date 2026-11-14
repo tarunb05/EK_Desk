@@ -1,18 +1,20 @@
 "use client";
 
+import { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ActivityLogIcon,
-  ApprovalsIcon,
-  CheckIcon,
-  DaycareIcon,
-  SettingsIcon,
-  StudentsIcon,
-  SupportIcon,
-  TransportIcon,
-  WalletIcon,
-} from "./nav-icons";
+  BadgeCheck,
+  Blocks,
+  Bus,
+  ClipboardCheck,
+  History,
+  LifeBuoy,
+  ReceiptIndianRupee,
+  Settings,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { useSidebarContext } from "./sidebar-context";
 import { ROUTE_ACCESS, type Role } from "@/lib/auth/routes";
 
@@ -20,21 +22,52 @@ import { ROUTE_ACCESS, type Role } from "@/lib/auth/routes";
 // teacher-allowed routes" against ROUTE_ACCESS without rendering the
 // component (this codebase's tests are pure-function based throughout;
 // NavLinks needs a router/context mock to render at all).
-export const NAV_LINKS = [
-  { href: "/transport", label: "Transport", Icon: TransportIcon },
-  { href: "/daycare", label: "Daycare", Icon: DaycareIcon },
-  { href: "/students", label: "Students", Icon: StudentsIcon },
-  { href: "/expenses", label: "Expenses", Icon: WalletIcon },
-  { href: "/approvals", label: "Approvals", Icon: ApprovalsIcon },
+// Sidebar icons come from lucide (already a dependency, via the date
+// picker) rather than the hand-drawn set in nav-icons.tsx: at 18px in a
+// 40px rail the hand-drawn ones were too thin and too alike to tell apart
+// at a glance -- a house for Daycare, a bare tick for Payment verification.
+// Each of these is a distinct silhouette that says what the screen is: a
+// bus, toy blocks, people, a rupee receipt, a checked clipboard, a
+// verified badge, a lifebuoy, a history clock, a cog.
+//
+// `group` splits the list into three runs -- the money screens, the
+// queues waiting on someone, and the admin-only reading/config screens --
+// with a hairline between runs, so nine links read as three short lists.
+export const NAV_LINKS: {
+  href: string;
+  label: string;
+  Icon: LucideIcon;
+  group: "money" | "queues" | "admin";
+}[] = [
+  { href: "/transport", label: "Transport", Icon: Bus, group: "money" },
+  { href: "/daycare", label: "Daycare", Icon: Blocks, group: "money" },
+  { href: "/students", label: "Students", Icon: Users, group: "money" },
+  {
+    href: "/expenses",
+    label: "Expenses",
+    Icon: ReceiptIndianRupee,
+    group: "money",
+  },
+  {
+    href: "/approvals",
+    label: "Approvals",
+    Icon: ClipboardCheck,
+    group: "queues",
+  },
   // Admin-only (see ROUTE_ACCESS) -- a teacher never sees this link, same
   // stricter standard as the payment_request/payment_claim tables it reads.
-  { href: "/verify", label: "Payment verification", Icon: CheckIcon },
-  { href: "/support", label: "Support", Icon: SupportIcon },
+  {
+    href: "/verify",
+    label: "Payment verification",
+    Icon: BadgeCheck,
+    group: "queues",
+  },
+  { href: "/support", label: "Support", Icon: LifeBuoy, group: "queues" },
   // Admin-only (see ROUTE_ACCESS) -- sits right before Settings, after
   // every screen with work to action, since this one has nothing to
   // action, only to read.
-  { href: "/logs", label: "Activity log", Icon: ActivityLogIcon },
-  { href: "/settings", label: "Settings", Icon: SettingsIcon },
+  { href: "/logs", label: "Activity log", Icon: History, group: "admin" },
+  { href: "/settings", label: "Settings", Icon: Settings, group: "admin" },
 ];
 
 // `collapsed` only ever narrows the desktop (md:) rail to icons-only — the
@@ -65,14 +98,13 @@ export function NavLinks({
 
   return (
     <nav className="flex flex-col gap-1">
-      {links.map(({ href, label, Icon }) => {
+      {links.map(({ href, label, Icon, group }, index) => {
+        const startsGroup = index > 0 && links[index - 1]?.group !== group;
         // Same route and nav slot for both roles -- only the wording
         // differs, since a teacher only ever sees their own requests here,
         // never a review queue to act on.
         const displayLabel =
-          href === "/approvals" && role === "teacher"
-            ? "My requests"
-            : label;
+          href === "/approvals" && role === "teacher" ? "My requests" : label;
         const isActive = pathname.startsWith(href);
         const badgeCount =
           href === "/approvals"
@@ -83,38 +115,59 @@ export function NavLinks({
                 ? pendingClaimsCount
                 : 0;
         return (
-          <Link
-            key={href}
-            href={href}
-            aria-label={displayLabel}
-            title={displayLabel}
-            onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-accent ${
-              collapsed ? "md:justify-center" : ""
-            } ${
-              isActive
-                ? "bg-surface-accent text-ink"
-                : "text-ink-secondary hover:bg-surface-accent hover:text-ink"
-            }`}
-          >
-            <Icon />
-            <span
-              className={`overflow-hidden whitespace-nowrap transition-[opacity,max-width] duration-200 ${
-                collapsed ? "md:max-w-0 md:opacity-0" : "md:max-w-[160px] md:opacity-100"
+          <Fragment key={href}>
+            {startsGroup ? (
+              <span
+                aria-hidden="true"
+                className="mx-3 my-2 border-t border-hairline"
+              />
+            ) : null}
+            <Link
+              href={href}
+              aria-label={displayLabel}
+              title={displayLabel}
+              onClick={() => setMobileOpen(false)}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex h-9 items-center gap-2.5 rounded-full px-3 text-sm transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                collapsed
+                  ? "md:mx-auto md:w-9 md:justify-center md:gap-0 md:px-0"
+                  : ""
+              } ${
+                isActive
+                  ? "bg-accent font-medium text-canvas"
+                  : "text-ink-secondary hover:bg-sand hover:text-ink"
               }`}
             >
-              {displayLabel}
-            </span>
-            {badgeCount > 0 ? (
+              <span className="relative flex shrink-0">
+                <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
+                {/* On the collapsed rail the count chip has no room, so a
+                  dot on the icon says "something is waiting here". */}
+                {badgeCount > 0 && collapsed ? (
+                  <span className="absolute -right-1 -top-1 hidden h-2 w-2 rounded-full bg-attention ring-2 ring-canvas md:block" />
+                ) : null}
+              </span>
               <span
-                className={`ml-auto shrink-0 overflow-hidden whitespace-nowrap rounded-md bg-attention px-1.5 py-0.5 text-2xs font-medium text-surface transition-[opacity,max-width] duration-200 ${
-                  collapsed ? "md:max-w-0 md:px-0 md:opacity-0" : "md:max-w-6 md:opacity-100"
+                className={`overflow-hidden whitespace-nowrap transition-[opacity,max-width] duration-200 ${
+                  collapsed
+                    ? "md:max-w-0 md:opacity-0"
+                    : "md:max-w-[160px] md:opacity-100"
                 }`}
               >
-                {badgeCount}
+                {displayLabel}
               </span>
-            ) : null}
-          </Link>
+              {badgeCount > 0 ? (
+                <span
+                  className={`ml-auto shrink-0 overflow-hidden whitespace-nowrap rounded-full bg-attention px-1.5 py-0.5 text-2xs font-medium tabular-nums text-surface transition-[opacity,max-width] duration-200 ${
+                    collapsed
+                      ? "md:max-w-0 md:px-0 md:opacity-0"
+                      : "md:max-w-6 md:opacity-100"
+                  }`}
+                >
+                  {badgeCount}
+                </span>
+              ) : null}
+            </Link>
+          </Fragment>
         );
       })}
     </nav>

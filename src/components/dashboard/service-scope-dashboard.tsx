@@ -5,6 +5,9 @@ import { getCurrentScope } from "@/lib/shell/get-current-scope";
 import { shellSearchParamsSchema } from "@/lib/shell/search-params";
 import { generateTwelveMonths } from "@/lib/domain/academic-year";
 import {
+  getAgeingBuckets,
+  getBreakdownByClass,
+  getBreakdownByGroup,
   getCollectionByMonth,
   getDashboardSummary,
 } from "@/lib/records/dashboard-queries";
@@ -13,7 +16,12 @@ import { StatCards } from "@/components/dashboard/stat-cards";
 import { BranchSplitTable } from "@/components/dashboard/branch-split-table";
 import { MonthFilter } from "@/components/dashboard/month-filter";
 import { ScopeSelectors } from "@/components/shell/scope-selectors";
-import { FilterMenu } from "@/components/shell/filter-menu";
+import { FilterGroup, FilterMenu } from "@/components/shell/filter-menu";
+import { ChartCard } from "@/components/charts/chart-card";
+import { CollectionProgress } from "@/components/charts/collection-progress";
+import { MonthColumns } from "@/components/charts/month-columns";
+import { SplitBars } from "@/components/charts/split-bars";
+import { AgeingBars } from "@/components/charts/ageing-bars";
 
 interface ServiceScopeDashboardProps {
   serviceType: ServiceType;
@@ -42,17 +50,21 @@ export async function ServiceScopeDashboard({
   const supabase = await createClient();
   const { year, branch } = await getCurrentScope(scopeParams);
 
-  const [summary, collectionByMonth, branches, years] = await Promise.all([
-    getDashboardSummary(supabase, {
-      serviceType,
-      academicYearId: year.id,
-      branch,
-    }),
-    getCollectionByMonth(supabase, {
-      serviceType,
-      academicYearId: year.id,
-      branch,
-    }),
+  const scope = { serviceType, academicYearId: year.id, branch };
+  const [
+    summary,
+    collectionByMonth,
+    ageing,
+    byClass,
+    byGroup,
+    branches,
+    years,
+  ] = await Promise.all([
+    getDashboardSummary(supabase, scope),
+    getCollectionByMonth(supabase, scope),
+    getAgeingBuckets(supabase, scope),
+    getBreakdownByClass(supabase, scope),
+    getBreakdownByGroup(supabase, scope),
     getBranches(supabase),
     getAcademicYears(supabase),
   ]);
@@ -111,21 +123,46 @@ export async function ServiceScopeDashboard({
   // with real data, so it can't be the source of the option list itself.
   const allTwelveMonths = generateTwelveMonths(year.startsOn);
 
-  return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-medium text-ink">{title}</h1>
+  // Every month of the year gets a column, including the ones with no
+  // payments -- collectionByMonth omits those, and a chart that skips an
+  // empty month hides exactly the gap the office would want to see.
+  const collectedByMonth = new Map(
+    collectionByMonth.map((row) => [row.month, row.collectedPaise]),
+  );
+  const monthColumns = allTwelveMonths.map((month) => ({
+    month,
+    paise: collectedByMonth.get(month) ?? 0n,
+    dimmed: selectedMonths.length > 0 && !selectedMonths.includes(month),
+  }));
 
-      <div className="flex items-center justify-end gap-2">
-        <FilterMenu>
-          <ScopeSelectors years={years} branches={branches} />
-          <MonthFilter availableMonths={allTwelveMonths} />
-        </FilterMenu>
-        <Link
-          href={`/${serviceType}/new`}
-          className="inline-block h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
-        >
-          Add student
-        </Link>
+  const branchName =
+    branch === "all"
+      ? "All branches"
+      : (branches.find((b) => b.code === branch)?.name ?? branch);
+  const scopeCaption = `${year.label} · ${branchName}`;
+  const groupNoun = serviceType === "transport" ? "route" : "slot";
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-ink">{title}</h1>
+          <p className="mt-1 text-sm text-ink-secondary">{scopeCaption}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <FilterMenu>
+            <ScopeSelectors years={years} branches={branches} />
+            <FilterGroup label="Months collected in">
+              <MonthFilter availableMonths={allTwelveMonths} />
+            </FilterGroup>
+          </FilterMenu>
+          <Link
+            href={`/${serviceType}/new`}
+            className="inline-block h-9 rounded-full bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
+          >
+            Add student
+          </Link>
+        </div>
       </div>
 
       <StatCards
@@ -134,9 +171,58 @@ export async function ServiceScopeDashboard({
         exportScope={{ serviceType, academicYearId: year.id, branch }}
       />
 
+      {/* Whole-year balances on purpose, like the Receivable/Pending/
+          Overdue tiles above: the month filter narrows what was collected
+          *in* a month, which is what the columns below show, not how the
+          receivable for the year splits today. */}
+      <CollectionProgress
+        receivablePaise={summary.totalReceivablePaise}
+        collectedPaise={summary.totalCollectedPaise}
+        pendingPaise={summary.totalPendingPaise}
+        overduePaise={summary.totalOverduePaise}
+        caption="Whole year, as of today"
+      />
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        <ChartCard
+          title="Collected each month"
+          caption={
+            selectedMonths.length > 0
+              ? "Filtered months in slate"
+              : "By the date the payment was made"
+          }
+          className="lg:col-span-2"
+        >
+          <MonthColumns
+            columns={monthColumns}
+            valueLabel="Collected"
+            emptyText="No payments recorded in this year yet. Collections appear here month by month as they are recorded."
+          />
+        </ChartCard>
+
+        <ChartCard title="How old the pending is" caption="By due date">
+          <AgeingBars buckets={ageing} />
+        </ChartCard>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <ChartCard title="By class" caption="Share of fees collected">
+          <SplitBars
+            rows={byClass}
+            emptyText="No students are enrolled in this scope yet. Classes appear here once they are."
+          />
+        </ChartCard>
+        <ChartCard title={`By ${groupNoun}`} caption="Share of fees collected">
+          <SplitBars
+            rows={byGroup}
+            emptyText={`No students are enrolled in this scope yet. Each ${groupNoun} appears here once they are.`}
+          />
+        </ChartCard>
+      </div>
+
       {branchSplit ? (
         <div className="flex flex-col gap-2">
-          <h2 className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
+          <h2 className="text-2xs font-medium uppercase tracking-[0.06em] text-ink-muted">
             By branch
           </h2>
           <BranchSplitTable rows={branchSplit} />

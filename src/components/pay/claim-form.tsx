@@ -69,7 +69,9 @@ export function ClaimForm({ token }: { token: string }) {
       </div>
 
       <Field
-        label={method === "upi" ? "UTR (12-digit UPI reference)" : "Bank reference"}
+        label={
+          method === "upi" ? "UTR (12-digit UPI reference)" : "Bank reference"
+        }
         error={state.fieldErrors?.utr}
       >
         <input

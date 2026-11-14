@@ -34,7 +34,9 @@ async function main() {
     );
     const currentYear = years[0];
     if (!currentYear) {
-      throw new Error("No current academic year -- run `npm run db:seed` first.");
+      throw new Error(
+        "No current academic year -- run `npm run db:seed` first.",
+      );
     }
 
     const { rows: categories } = await client.query<{
@@ -98,11 +100,7 @@ async function main() {
           const amountPaise = faker.number.int({ min, max });
           const spentOn = faker.date.between({
             from: monthDate,
-            to: new Date(
-              monthDate.getFullYear(),
-              monthDate.getMonth() + 1,
-              0,
-            ),
+            to: new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0),
           });
           const method = faker.helpers.arrayElement(METHODS);
 
@@ -117,7 +115,9 @@ async function main() {
               amountPaise,
               spentOn.toISOString().slice(0, 10),
               method,
-              method === "cheque" ? `CHQ-${faker.number.int({ min: 1000, max: 9999 })}` : null,
+              method === "cheque"
+                ? `CHQ-${faker.number.int({ min: 1000, max: 9999 })}`
+                : null,
               null,
               admin.id,
             ],

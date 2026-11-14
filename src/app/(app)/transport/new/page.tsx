@@ -7,7 +7,7 @@ import { AddStudentForm } from "@/components/records/add-student-form";
 import { BackLink } from "@/components/shell/back-link";
 
 export const metadata: Metadata = {
-  title: "Add Transport Student",
+  title: "Add transport student",
 };
 
 export default async function NewTransportStudentPage({
@@ -25,7 +25,7 @@ export default async function NewTransportStudentPage({
   return (
     <div className="max-w-xl">
       <BackLink href="/transport" />
-      <h1 className="mb-4 text-xl font-medium text-ink">
+      <h1 className="mb-4 text-2xl font-semibold text-ink">
         Add transport student
       </h1>
       <AddStudentForm

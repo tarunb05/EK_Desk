@@ -33,13 +33,15 @@ export function EditFeeAccountForm({
   const [classSection, setClassSection] = useState(record.classSection);
 
   return (
-    <form ref={formRef} action={formAction} noValidate className="flex flex-col gap-4">
+    <form
+      ref={formRef}
+      action={formAction}
+      noValidate
+      className="flex flex-col gap-4 rounded-lg border border-hairline bg-surface p-4 md:p-6"
+    >
       <input type="hidden" name="feeAccountId" value={record.feeAccountId} />
 
-      <Field
-        label="Student full name"
-        error={state.fieldErrors?.fullName}
-      >
+      <Field label="Student full name" error={state.fieldErrors?.fullName}>
         <input
           name="fullName"
           required
@@ -167,10 +169,7 @@ export function EditFeeAccountForm({
             name="routeName"
             value={record.routeName ?? ""}
           />
-          <Field
-            label="Pickup point"
-            error={state.fieldErrors?.pickupPoint}
-          >
+          <Field label="Pickup point" error={state.fieldErrors?.pickupPoint}>
             <input
               name="pickupPoint"
               required

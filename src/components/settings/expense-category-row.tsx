@@ -21,7 +21,7 @@ import type { ExpenseCategoryWithStats } from "@/lib/settings/queries";
 const initialState: ActionState = { error: null };
 
 const rowButtonClassName =
-  "h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-secondary";
+  "h-7 rounded-full border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-secondary";
 
 export function ExpenseCategoryRow({
   category,
@@ -90,7 +90,7 @@ export function ExpenseCategoryRow({
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="h-8 rounded-md border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+              className="h-8 rounded-full border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
             >
               Cancel
             </button>
@@ -106,7 +106,7 @@ export function ExpenseCategoryRow({
         <div className="flex items-center gap-2">
           <span className="text-ink">{category.name}</span>
           {category.isActive ? null : (
-            <span className="rounded-md bg-surface-accent px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-muted">
+            <span className="rounded-full bg-surface-accent px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-muted">
               Inactive
             </span>
           )}
@@ -115,7 +115,9 @@ export function ExpenseCategoryRow({
         {deleting ? (
           <form action={deleteAction} className="flex items-center gap-2">
             <input type="hidden" name="categoryId" value={category.id} />
-            <span className="text-2xs text-ink-secondary">Delete category?</span>
+            <span className="text-2xs text-ink-secondary">
+              Delete category?
+            </span>
             <button
               type="submit"
               disabled={deletePending}

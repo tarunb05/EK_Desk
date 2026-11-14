@@ -1,16 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #1c1b19;
-  --ink-secondary: #57544e;
-  --ink-muted: #6b675f;
-  --canvas: #f3eee3;
-  --surface: #ffffff;
-  --surface-accent: #e8eef7;
-  --hairline: #e3e2e1;
-  --border: #c1c0c2;
-  --accent: #2a3a5c;
-  --accent-fill: #5b729a;
+  /* Palette: colorhunt 555879 / 98A1BC / DED3C4 / F4EBD3. The four source
+     colours are --accent, --accent-fill, --sand and --canvas verbatim;
+     every other token is a tint or shade pulled from one of those four so
+     nothing on screen sits outside the family. */
+  --ink: #1f2030;
+  --ink-secondary: #4a4c63;
+  --ink-muted: #65677d;
+  --canvas: #f4ebd3;
+  --surface: #fffdf8;
+  --surface-accent: #e8eaf2;
+  --sand: #ded3c4;
+  --hairline: #ded3c4;
+  --border: #c3b6a2;
+  --accent: #555879;
+  --accent-fill: #98a1bc;
   --positive: #57523f;
   --positive-fill: #837d68;
   --attention: #8c3f42;
@@ -21,21 +26,6 @@
      restrained rather than bouncy. Used as the default for every existing
      `transition-*` utility in the app (state-change only, per CLAUDE.md). */
   --ease-flowy: cubic-bezier(0.22, 1, 0.36, 1);
-
-  /* Phase 14, login sign-in card only — see CLAUDE.md's banned-list
-     exception. Built from --surface via color-mix(), not a new hue: a
-     light frosted fill (not a dark tinted one -- tried dark first, it
-     read as heavy/smoked rather than glassy) so the fill itself carries
-     the contrast regardless of what wave-background pixel sits behind
-     it. 75% measured (not assumed) against the wave background's two
-     real extremes -- plain --canvas beige, and a stroked --accent wave
-     line, the lightest and darkest regions that background actually
-     has -- clears 4.5:1 for --ink, --ink-secondary and --attention at
-     their existing, unmodified colors in both cases; only --ink-muted
-     (the field labels' default) falls short against the wave-line
-     extreme, which is why those two labels alone get a scoped bump
-     below rather than a wholesale on-glass palette. */
-  --glass-fill: color-mix(in srgb, var(--surface) 75%, transparent);
 }
 
 /* Opt-in for animating to/from an intrinsic size (block-size: auto), per
@@ -57,6 +47,7 @@
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-surface-accent: var(--surface-accent);
+  --color-sand: var(--sand);
   --color-hairline: var(--hairline);
   --color-border: var(--border);
   --color-accent: var(--accent);
@@ -65,24 +56,7 @@
   --color-positive-fill: var(--positive-fill);
   --color-attention: var(--attention);
   --color-attention-fill: var(--attention-fill);
-  /* Phase 14, login sign-in card only — see the --glass-fill definition
-     above and CLAUDE.md's banned-list exception. Registered here so
-     `bg-glass-fill` exists as a real Tailwind utility rather than an
-     inline arbitrary value. No separate border/text tokens: the card
-     keeps its existing border-border and every text element inside it
-     keeps its existing color -- see login-form.tsx's login-field-label
-     class for the one exception. */
-  --color-glass-fill: var(--glass-fill);
-  /* Tried 20px and 8px first -- both smeared the wave background's 0.5px
-     hairlines into an indistinct flat wash with no visible material
-     behind the fill at all, exactly "glass over a flat surface is grey."
-     3px is the difference between a line surviving as a soft, visibly
-     blurred stroke and vanishing outright; a photo background with real
-     tonal regions (not hairlines) could take a heavier blur than this
-     source material can. */
-  --blur-glass: 3px;
-
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-hanken);
 
   --text-2xs: 11px;
   --text-xs: 12px;
@@ -91,17 +65,20 @@
   --text-lg: 16px;
   --text-xl: 20px;
   --text-2xl: 28px;
-  /* Scoped exception, login page wordmark only — see CLAUDE.md. Every other
-     <h1>/heading in the app stays inside the 28px cap. */
-  --text-login-wordmark: 36px;
+  /* Display sizes -- stat-tile figures stop at 3xl; 4xl and up are for the
+     two screens with no data on them (landing, login). */
+  --text-3xl: 36px;
+  --text-4xl: 48px;
+  --text-5xl: 64px;
+  --text-6xl: 88px;
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  /* Scoped exception, login page inputs + submit button only — see
-     CLAUDE.md. 10px on a 40px-tall control is nowhere near a pill (~20px),
-     and the two controls share this token so neither reads as unfinished
-     against the other. */
-  --radius-field: 10px;
+  /* sm: chips and badges. md: inputs, menus, table frames. lg: cards and
+     stat tiles. xl: the big colour blocks on landing/login. Buttons are
+     pills (rounded-full), not on this scale. */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 28px;
 
   /* Every existing `transition-*` utility (colors, transform, opacity)
      already in use across the app picks up this curve automatically —
@@ -112,79 +89,71 @@
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
-  /* --font-inter directly, not --font-sans -- `@theme inline` (needed since
-     --font-inter is a runtime custom property next/font sets on <body>, not
+  /* --font-hanken directly, not --font-sans -- `@theme inline` (needed since
+     --font-hanken is a runtime custom property next/font sets on <body>, not
      a plain :root value) makes Tailwind bake --font-sans straight into the
      utility classes IT generates (e.g. a used `font-sans` class), but never
      actually registers --font-sans as a real custom property anywhere. A
      hand-written rule that references var(--font-sans) literally, like this
-     one, resolves to nothing -- an invalid var() that was silently falling
-     back to the browser's own default sans stack instead of Inter. */
-  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+     one, resolves to nothing -- an invalid var() that would silently fall
+     back to the browser's own default sans stack. */
+  font-family: var(--font-hanken), Arial, Helvetica, sans-serif;
   font-size: var(--text-sm);
 }
 
-/* Phase 14 -- the login sign-in card's glass treatment. See CLAUDE.md's
-   banned-list exception for why this exists only here.
-
-   Fallback-first: the base .login-glass-card rule below IS the fallback
-   (an opaque --surface card, identical to what shipped before this phase)
-   -- @supports progressively enhances it to the blurred version, rather
-   than the more common pattern of styling the enhanced version first and
-   patching a fallback on top. That ordering means prefers-reduced-
-   transparency/prefers-contrast: more (below) can simply not apply the
-   enhancement, with no separate "undo the glass" rule to keep in sync. */
-.login-glass-card {
-  background-color: var(--surface);
+/* Headings run tight, the way the reference (loopsii.com) sets its display
+   type -- one rule here instead of a tracking class on every <h1>/<h2>. */
+/* In @layer base, not unlayered: an unlayered rule beats every Tailwind
+   utility regardless of specificity, which would silently cancel a
+   tracking-* class set on any individual heading. */
+@layer base {
+  h1,
+  h2 {
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
 }
 
-@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-  @media (prefers-reduced-transparency: no-preference) and (prefers-contrast: no-preference) {
-    .login-glass-card {
-      background-color: var(--glass-fill);
-      -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(1.8);
-      backdrop-filter: blur(var(--blur-glass)) saturate(1.8);
-      /* border-color and every text color inside the card are
-         deliberately untouched here -- at this fill's measured contrast,
-         --border, --ink, --ink-secondary and --attention all already
-         clear their required ratios against both of the wave
-         background's real extremes at their existing, unmodified
-         values. */
-    }
+/* The hairline grid with a square marker at each end, borrowed from the
+   reference's section dividers. Decorative only -- a plain border-top
+   carries the actual separation if the pseudo-elements don't render. */
+.grid-rule {
+  position: relative;
+  border-top: 1px solid var(--hairline);
+}
 
-    /* The one color that doesn't clear unmodified: --ink-muted (the
-       field labels' default) measures 3.56:1 against the wave-line
-       extreme, short of the 4.5:1 small text needs. --ink-secondary
-       already clears (4.77:1) and is the natural next step down from
-       full --ink, so it's what these two labels alone borrow while the
-       glass enhancement is active -- login-form.tsx is the only
-       component with the login-field-label class this targets. */
-    .login-glass-card .login-field-label {
-      color: var(--ink-secondary);
-    }
-  }
+.grid-rule::before,
+.grid-rule::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  width: 5px;
+  height: 5px;
+  background-color: var(--accent);
+}
+
+.grid-rule::before {
+  left: 0;
+}
+
+.grid-rule::after {
+  right: 0;
 }
 
 /* Chrome/Edge/Safari paint autofilled fields with an opaque yellow (light
    theme) or dark (dark theme) fill of their own that neither `background-
    color` nor `!important` can override directly -- only this transition
-   trick can. A long enough transition-delay effectively never completes
-   (the field would need to stay autofilled and untouched for a real
-   human lifetime), which is what makes the fill look like it was never
-   applied instead of flashing yellow before this rule wins. text-fill-
-   color (not `color`, which autofill also ignores) is what actually
-   recolors the autofilled text itself. Every field on this login form
-   sits on the near-opaque input fill already, glass card or fallback
-   alike, so --ink stays correct in both.
-   Scoped to .login-glass-card, not a bare `input` selector -- this phase
-   touches the login page only; the same autofill gap exists on every
-   other form in the app too (nothing here fixed it before this phase
-   either), but fixing it app-wide is a separate change outside this
-   phase's boundary. */
-.login-glass-card input:-webkit-autofill,
-.login-glass-card input:-webkit-autofill:hover,
-.login-glass-card input:-webkit-autofill:focus {
-  transition: background-color 600000s 0s, color 600000s 0s;
+   trick can. A long enough transition-delay effectively never completes,
+   which is what makes the fill look like it was never applied instead of
+   flashing yellow before this rule wins. text-fill-color (not `color`,
+   which autofill also ignores) is what actually recolors the autofilled
+   text itself. App-wide: every input sits on --surface. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  transition:
+    background-color 600000s 0s,
+    color 600000s 0s;
   -webkit-text-fill-color: var(--ink);
 }
 
@@ -269,7 +238,7 @@ dialog[open] {
 }
 
 dialog::backdrop {
-  background-color: rgb(28 27 25 / 0);
+  background-color: rgb(31 32 48 / 0);
   transition:
     display 150ms allow-discrete,
     overlay 150ms allow-discrete,
@@ -277,10 +246,10 @@ dialog::backdrop {
 }
 
 dialog[open]::backdrop {
-  background-color: rgb(28 27 25 / 0.3);
+  background-color: rgb(31 32 48 / 0.3);
 
   @starting-style {
-    background-color: rgb(28 27 25 / 0);
+    background-color: rgb(31 32 48 / 0);
   }
 }
 
@@ -555,5 +524,272 @@ dialog[open]::backdrop {
 @media (prefers-reduced-motion: reduce) {
   .iris-curtain {
     transition: none;
+  }
+}
+
+/* Scrollbars, app-wide: a slim rounded thumb in the palette's own border
+   colour on a transparent track, instead of the operating system's grey
+   bar and arrow buttons (which on Windows read as a foreign object dropped
+   onto the cream page, most visibly under a wide table on a narrow
+   screen). The thumb darkens on hover so it is still easy to grab.
+
+   WebKit/Blink get the ::-webkit-scrollbar rules, which allow the rounded
+   thumb and remove the arrow buttons. Firefox has no equivalent and gets
+   the two standard properties instead. They are kept apart with @supports
+   on purpose: in Chromium, setting the standard properties switches the
+   ::-webkit-scrollbar rules off. */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* The transparent border plus background-clip leaves a 6px thumb floating
+   in a 12px lane -- a comfortable target that still looks slim. */
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-color: var(--border);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent-fill);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--accent);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+}
+
+/* Body copy of the two legal pages (app/legal-page.tsx): paragraph rhythm,
+   bullets, and links, set once here so each page's sections are plain
+   <p>/<ul>/<a> with no class on every element. */
+.legal-prose > * + * {
+  margin-top: 0.75rem;
+}
+
+.legal-prose ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.legal-prose li::marker {
+  color: var(--accent-fill);
+}
+
+.legal-prose strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.legal-prose a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 150ms var(--ease-flowy);
+}
+
+.legal-prose a:hover {
+  text-decoration-color: var(--accent);
+}
+
+/* ---------------------------------------------------------------------
+   Motion, site-wide. Three kinds, all small and all switched off under
+   prefers-reduced-motion at the end of this block:
+
+   1. Arriving: a page fades up as it mounts; a row of tiles arrives one
+      after another.
+   2. Scrolling: anything marked .scroll-reveal fades up as it enters the
+      viewport (rule further up); .scroll-reveal-scale grows in instead.
+   3. Hovering: pill buttons and cards lift a pixel or two; landing tiles
+      lift and tip their icon; mosaic tiles swell their shape.
+
+   Hover uses the individual `translate` / `scale` / `rotate` properties
+   rather than `transform`, so it can never fight the `transform` that the
+   entrance and scroll keyframes animate on the same element.
+   --------------------------------------------------------------------- */
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Applied by app/(app)/template.tsx, which remounts on every navigation,
+   so each signed-in screen arrives the same way. */
+.animate-page-in {
+  animation: page-in 320ms var(--ease-flowy) both;
+}
+
+/* A grid whose children arrive in sequence (the stat tiles). Capped at
+   eight steps so the last child of a long grid is not kept waiting. */
+.stagger-in > * {
+  animation: row-in 360ms var(--ease-flowy) backwards;
+}
+
+.stagger-in > :nth-child(2) {
+  animation-delay: 45ms;
+}
+
+.stagger-in > :nth-child(3) {
+  animation-delay: 90ms;
+}
+
+.stagger-in > :nth-child(4) {
+  animation-delay: 135ms;
+}
+
+.stagger-in > :nth-child(5) {
+  animation-delay: 180ms;
+}
+
+.stagger-in > :nth-child(6) {
+  animation-delay: 225ms;
+}
+
+.stagger-in > :nth-child(7) {
+  animation-delay: 270ms;
+}
+
+.stagger-in > :nth-child(n + 8) {
+  animation-delay: 315ms;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports ((animation-timeline: view()) and (animation-range: entry)) {
+    @keyframes scroll-reveal-scale-in {
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(24px);
+      }
+    }
+
+    .scroll-reveal-scale {
+      animation: scroll-reveal-scale-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
+  }
+}
+
+/* Every pill button and pill link in the app (they are all rounded-full),
+   except the sidebar nav pills, which change fill instead. Unlayered on
+   purpose so it applies without touching sixty class lists; it only sets
+   properties those class lists do not, and extends their transition list
+   rather than replacing the colours in it. */
+:where(button, a).rounded-full:not(nav a) {
+  transition-property:
+    color, background-color, border-color, opacity, translate, scale, transform;
+  transition-duration: 150ms;
+  transition-timing-function: var(--ease-flowy);
+}
+
+@media (hover: hover) {
+  :where(button, a).rounded-full:not(nav a):not(:disabled):hover {
+    translate: 0 -1px;
+  }
+}
+
+:where(button, a).rounded-full:not(nav a):not(:disabled):active {
+  translate: 0 0;
+  scale: 0.97;
+}
+
+/* Sidebar links: the icon grows a touch instead of the whole pill moving. */
+nav a.rounded-full svg {
+  transition: scale 150ms var(--ease-flowy);
+}
+
+@media (hover: hover) {
+  nav a.rounded-full:hover svg {
+    scale: 1.12;
+  }
+}
+
+/* Cards that are not themselves links (chart cards, detail cards, settings
+   panels): a 2px lift and a tinted border say "this is one object". */
+.hover-card {
+  transition:
+    translate 200ms var(--ease-flowy),
+    border-color 200ms var(--ease-flowy);
+}
+
+@media (hover: hover) {
+  .hover-card:hover {
+    translate: 0 -2px;
+    border-color: var(--accent-fill);
+  }
+}
+
+/* Landing page colour blocks: a bigger lift, and the icon at the foot of
+   the tile tips and grows a little. */
+.hover-tile {
+  transition: translate 250ms var(--ease-flowy);
+}
+
+.hover-tile > svg {
+  transition:
+    rotate 250ms var(--ease-flowy),
+    scale 250ms var(--ease-flowy);
+}
+
+@media (hover: hover) {
+  .hover-tile:hover {
+    translate: 0 -4px;
+  }
+
+  .hover-tile:hover > svg {
+    rotate: -8deg;
+    scale: 1.12;
+  }
+}
+
+/* Mosaic: the shape inside a tile swells when the tile is hovered. */
+.mosaic-tile > span {
+  transition: scale 300ms var(--ease-flowy);
+}
+
+@media (hover: hover) {
+  .mosaic-tile:hover > span {
+    scale: 1.14;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in,
+  .stagger-in > * {
+    animation: none;
+  }
+
+  :where(button, a).rounded-full,
+  .hover-card,
+  .hover-tile,
+  .hover-tile > svg,
+  .mosaic-tile > span,
+  nav a.rounded-full svg {
+    transition: none;
+    translate: none !important;
+    scale: none !important;
+    rotate: none !important;
   }
 }

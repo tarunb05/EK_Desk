@@ -7,7 +7,10 @@ import {
   inputClassName,
   primaryButtonClassName,
 } from "@/components/forms/field";
-import { createExpenseCategory, type ActionState } from "@/lib/settings/actions";
+import {
+  createExpenseCategory,
+  type ActionState,
+} from "@/lib/settings/actions";
 
 const initialState: ActionState = { error: null };
 

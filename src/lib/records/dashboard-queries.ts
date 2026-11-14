@@ -66,3 +66,88 @@ export async function getCollectionByMonth(
     collectedPaise: BigInt(row.collected_paise),
   }));
 }
+
+export type AgeingBucketKey = "not_yet_due" | "1-30" | "31-60" | "60+";
+
+export interface AgeingBucket {
+  bucket: AgeingBucketKey;
+  accountCount: number;
+  pendingPaise: bigint;
+}
+
+const AGEING_ORDER: AgeingBucketKey[] = ["not_yet_due", "1-30", "31-60", "60+"];
+
+// Always returns all four buckets in due-date order -- the SQL groups, so a
+// bucket with no accounts is simply absent from its result, and a chart
+// that drops an empty bucket reads as a different chart every time the
+// data changes.
+export async function getAgeingBuckets(
+  supabase: SupabaseClient<Database>,
+  scope: DashboardScope,
+): Promise<AgeingBucket[]> {
+  const { data, error } = await supabase.rpc(
+    "dashboard_ageing_buckets",
+    rpcArgs(scope),
+  );
+  if (error) {
+    throw new Error("Could not load the overdue ageing figures.");
+  }
+  return AGEING_ORDER.map((bucket) => {
+    const row = data.find((r) => r.bucket === bucket);
+    return {
+      bucket,
+      accountCount: Number(row?.account_count ?? 0),
+      pendingPaise: BigInt(row?.pending_paise ?? 0),
+    };
+  });
+}
+
+export interface CollectionBreakdownRow {
+  label: string;
+  studentCount: number;
+  receivablePaise: bigint;
+  collectedPaise: bigint;
+  pendingPaise: bigint;
+}
+
+export async function getBreakdownByClass(
+  supabase: SupabaseClient<Database>,
+  scope: DashboardScope,
+): Promise<CollectionBreakdownRow[]> {
+  const { data, error } = await supabase.rpc(
+    "dashboard_breakdown_by_class",
+    rpcArgs(scope),
+  );
+  if (error) {
+    throw new Error("Could not load the by-class breakdown.");
+  }
+  return data.map((row) => ({
+    label: row.class_section || "Unassigned",
+    studentCount: Number(row.student_count),
+    receivablePaise: BigInt(row.receivable_paise),
+    collectedPaise: BigInt(row.collected_paise),
+    pendingPaise: BigInt(row.pending_paise),
+  }));
+}
+
+// "Group" is the route for transport and the slot for daycare -- one SQL
+// function, since fee_account carries exactly one of the two per row.
+export async function getBreakdownByGroup(
+  supabase: SupabaseClient<Database>,
+  scope: DashboardScope,
+): Promise<CollectionBreakdownRow[]> {
+  const { data, error } = await supabase.rpc(
+    "dashboard_breakdown_by_group",
+    rpcArgs(scope),
+  );
+  if (error) {
+    throw new Error("Could not load the by-route breakdown.");
+  }
+  return data.map((row) => ({
+    label: row.group_label || "Unassigned",
+    studentCount: Number(row.student_count),
+    receivablePaise: BigInt(row.receivable_paise),
+    collectedPaise: BigInt(row.collected_paise),
+    pendingPaise: BigInt(row.pending_paise),
+  }));
+}

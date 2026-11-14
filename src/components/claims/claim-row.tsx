@@ -1,7 +1,11 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { confirmClaim, rejectClaim, type ClaimActionState } from "@/lib/claims/actions";
+import {
+  confirmClaim,
+  rejectClaim,
+  type ClaimActionState,
+} from "@/lib/claims/actions";
 import type { PendingClaim } from "@/lib/claims/queries";
 import { paiseToRupeesInputString } from "@/lib/domain/money";
 import { formatLogTimestamp } from "@/lib/domain/datetime";
@@ -17,7 +21,7 @@ const initialState: ClaimActionState = { error: null };
 
 function Flag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-md bg-surface-accent px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-secondary">
+    <span className="rounded-full bg-surface-accent px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-secondary">
       {children}
     </span>
   );
@@ -53,21 +57,26 @@ export function ClaimRow({ claim }: { claim: PendingClaim }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm text-ink">
-            {claim.studentName} — {claim.branchName} · {claim.serviceLabel}
+            {claim.studentName} · {claim.branchName} · {claim.serviceLabel}
           </p>
           <p className="mt-1 text-xs text-ink-secondary">
             Requested {claim.requestedAmountDisplay} · Claimed{" "}
             {claim.claimedAmountDisplay} on {claim.claimedPaidOn}
           </p>
           <p className="mt-1 text-2xs text-ink-muted">
-            UTR {claim.utr} · {claim.source === "admin_entered" ? "Entered by admin" : "From pay page"} ·{" "}
-            {formatLogTimestamp(claim.createdAt)}
+            UTR {claim.utr} ·{" "}
+            {claim.source === "admin_entered"
+              ? "Entered by admin"
+              : "From pay page"}{" "}
+            · {formatLogTimestamp(claim.createdAt)}
           </p>
         </div>
         <div className="flex flex-wrap justify-end gap-1.5">
           {claim.duplicateUtr ? <Flag>Duplicate UTR</Flag> : null}
           {claim.amountDiffers ? <Flag>Amount differs</Flag> : null}
-          {claim.requestExpiredOrClosed ? <Flag>Request expired or closed</Flag> : null}
+          {claim.requestExpiredOrClosed ? (
+            <Flag>Request expired or closed</Flag>
+          ) : null}
         </div>
       </div>
 
@@ -76,10 +85,13 @@ export function ClaimRow({ claim }: { claim: PendingClaim }) {
           <form
             action={confirmAction}
             noValidate
-            className="flex flex-wrap items-end gap-3 rounded-md border border-hairline bg-canvas p-3"
+            className="flex flex-wrap items-end gap-3 rounded-lg border border-hairline bg-canvas p-3"
           >
             <input type="hidden" name="claimId" value={claim.id} />
-            <Field label="Amount received (₹)" error={confirmState.fieldErrors?.amount}>
+            <Field
+              label="Amount received (₹)"
+              error={confirmState.fieldErrors?.amount}
+            >
               <input
                 name="amount"
                 inputMode="decimal"
@@ -89,7 +101,10 @@ export function ClaimRow({ claim }: { claim: PendingClaim }) {
                 className={`w-28 ${inputClassName}`}
               />
             </Field>
-            <Field label="Date received" error={confirmState.fieldErrors?.paidOn}>
+            <Field
+              label="Date received"
+              error={confirmState.fieldErrors?.paidOn}
+            >
               <input
                 name="paidOn"
                 type="date"
@@ -100,14 +115,23 @@ export function ClaimRow({ claim }: { claim: PendingClaim }) {
               />
             </Field>
             <Field label="Method" error={confirmState.fieldErrors?.method}>
-              <select name="method" defaultValue="upi" className={inputClassName}>
+              <select
+                name="method"
+                defaultValue="upi"
+                className={inputClassName}
+              >
                 <option value="upi">UPI</option>
                 <option value="bank_transfer">Bank transfer</option>
               </select>
             </Field>
             <div className="flex flex-col gap-1.5 text-sm text-ink-secondary">
               <label className="flex items-center gap-2">
-                <input type="radio" name="closeRequest" value="on" defaultChecked />
+                <input
+                  type="radio"
+                  name="closeRequest"
+                  value="on"
+                  defaultChecked
+                />
                 Close request
               </label>
               <label className="flex items-center gap-2">
@@ -116,8 +140,8 @@ export function ClaimRow({ claim }: { claim: PendingClaim }) {
               </label>
             </div>
             <label className="flex items-center gap-2 text-sm text-ink-secondary">
-              <input type="checkbox" name="checkedBank" />
-              I have checked this in the bank account.
+              <input type="checkbox" name="checkedBank" />I have checked this in
+              the bank account.
             </label>
             <button
               type="submit"
@@ -126,7 +150,10 @@ export function ClaimRow({ claim }: { claim: PendingClaim }) {
             >
               {confirmPending ? "Confirming…" : "Confirm"}
             </button>
-            <FormError error={confirmState.fieldErrors?.checkedBank} className="w-full" />
+            <FormError
+              error={confirmState.fieldErrors?.checkedBank}
+              className="w-full"
+            />
           </form>
         ) : (
           <button
@@ -139,7 +166,11 @@ export function ClaimRow({ claim }: { claim: PendingClaim }) {
         )}
 
         {rejecting ? (
-          <form action={rejectAction} noValidate className="flex flex-wrap items-center gap-2">
+          <form
+            action={rejectAction}
+            noValidate
+            className="flex flex-wrap items-center gap-2"
+          >
             <input type="hidden" name="claimId" value={claim.id} />
             <input
               name="reason"
@@ -159,7 +190,7 @@ export function ClaimRow({ claim }: { claim: PendingClaim }) {
           <button
             type="button"
             onClick={() => setRejecting(true)}
-            className="h-8 rounded-md border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+            className="h-8 rounded-full border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
           >
             Reject
           </button>

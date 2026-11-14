@@ -24,6 +24,41 @@ const branches = [
 ];
 
 describe("resolveYearAndBranch", () => {
+  // The nightly job that moves the "current" flag has not run yet on the
+  // morning of 1 April: the flag still says 2026-27, but a 2027-28 row
+  // exists and today is inside it.
+  it("defaults to the year containing today even before the current flag has moved", () => {
+    const withNextYear = [
+      ...years,
+      {
+        id: "y2027",
+        label: "2027-28",
+        isCurrent: false,
+        startsOn: "2027-04-01",
+        endsOn: "2028-03-31",
+      },
+    ];
+    expect(
+      resolveYearAndBranch({}, withNextYear, branches, "2027-03-31").year.label,
+    ).toBe("2026-27");
+    expect(
+      resolveYearAndBranch({}, withNextYear, branches, "2027-04-01").year.label,
+    ).toBe("2027-28");
+  });
+
+  it("falls back to the flagged year when today is in no year on file", () => {
+    expect(
+      resolveYearAndBranch({}, years, branches, "2030-06-15").year.label,
+    ).toBe("2026-27");
+  });
+
+  it("still honours a year named in the URL over today", () => {
+    expect(
+      resolveYearAndBranch({ year: "2025-26" }, years, branches, "2026-11-14")
+        .year.label,
+    ).toBe("2025-26");
+  });
+
   it("selects the year matching a valid year param", () => {
     const result = resolveYearAndBranch({ year: "2025-26" }, years, branches);
     expect(result.year.label).toBe("2025-26");
@@ -39,7 +74,7 @@ describe("resolveYearAndBranch", () => {
     expect(result.year.label).toBe("2026-27");
   });
 
-  it("falls back to the first year when no year is marked current", () => {
+  it("falls back to the first year when no year is marked current or contains today", () => {
     const noCurrentYears = [
       {
         id: "y2025",
@@ -56,7 +91,14 @@ describe("resolveYearAndBranch", () => {
         endsOn: "2027-03-31",
       },
     ];
-    const result = resolveYearAndBranch({}, noCurrentYears, branches);
+    const result = resolveYearAndBranch(
+      {},
+      noCurrentYears,
+      branches,
+      // A date outside both years: with no year containing today and none
+      // flagged, the first in the list is all that is left to pick.
+      "2030-06-15",
+    );
     expect(result.year.label).toBe("2025-26");
   });
 

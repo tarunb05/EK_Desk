@@ -38,7 +38,9 @@ export async function getTeachersWithBranch(
   );
 
   return (profiles ?? []).map((profile) => {
-    const branch = profile.branch_id ? branchById.get(profile.branch_id) : undefined;
+    const branch = profile.branch_id
+      ? branchById.get(profile.branch_id)
+      : undefined;
     return {
       id: profile.id,
       fullName: profile.full_name,

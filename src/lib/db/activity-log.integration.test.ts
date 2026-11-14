@@ -1,5 +1,13 @@
 import type { Client } from "pg";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import { connect, impersonate, withRollback } from "./test-helpers";
 
 // Phase 12.1: the activity_log capture layer -- no page yet, so every test
@@ -156,7 +164,11 @@ describe("activity log (phase 12.1 -- capture, RLS)", () => {
       await impersonate(client, ADMIN_ID);
 
       const studentId = await insertStudent(client, "Cascade Test Student");
-      const transportId = await insertFeeAccount(client, studentId, "transport");
+      const transportId = await insertFeeAccount(
+        client,
+        studentId,
+        "transport",
+      );
       const daycareId = await insertFeeAccount(client, studentId, "daycare");
       const payment = await client.query<{ id: string }>(
         `insert into payment (fee_account_id, amount_paise, paid_on, method, recorded_by)
@@ -282,9 +294,7 @@ describe("activity log (phase 12.1 -- capture, RLS)", () => {
       await seedProfiles(client);
       await impersonate(client, ADMIN_ID);
 
-      await expect(
-        client.query("delete from activity_log"),
-      ).rejects.toThrow();
+      await expect(client.query("delete from activity_log")).rejects.toThrow();
       await expect(
         client.query("update activity_log set summary = 'tampered'"),
       ).rejects.toThrow();
@@ -339,10 +349,9 @@ describe("activity log (phase 12.1 -- capture, RLS)", () => {
       );
 
       await impersonate(client, ADMIN_ID);
-      const approved = await client.query<{ approve_student_submission: string }>(
-        "select approve_student_submission($1)",
-        [submission.rows[0]!.id],
-      );
+      const approved = await client.query<{
+        approve_student_submission: string;
+      }>("select approve_student_submission($1)", [submission.rows[0]!.id]);
       const newStudentId = approved.rows[0]!.approve_student_submission;
 
       const studentLog = await client.query<{ actor_id: string }>(
@@ -358,7 +367,10 @@ describe("activity log (phase 12.1 -- capture, RLS)", () => {
       expect(studentLog.rows[0]!.actor_id).toBe(ADMIN_ID);
       expect(studentLog.rows[0]!.actor_id).not.toBe(TEACHER_ID);
 
-      const submissionLog = await client.query<{ actor_id: string; summary: string }>(
+      const submissionLog = await client.query<{
+        actor_id: string;
+        summary: string;
+      }>(
         "select actor_id, summary from activity_log where entity = 'student_submission' and entity_id = $1 and action = 'update'",
         [submission.rows[0]!.id],
       );

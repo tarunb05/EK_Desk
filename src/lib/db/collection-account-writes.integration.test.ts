@@ -1,5 +1,13 @@
 import type { Client } from "pg";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import { connect, impersonate, withRollback } from "./test-helpers";
 
 const ADMIN_ID = "00000000-0000-4000-8000-000000000301";
@@ -100,7 +108,9 @@ describe("collection account writes (phase 15.2)", () => {
     await withRollback(client, async () => {
       await seedAdminWithPassword(client);
 
-      const result = await client.query<{ save_collection_account: { id: string } }>(
+      const result = await client.query<{
+        save_collection_account: { id: string };
+      }>(
         `select save_collection_account(
            p_id := null, p_branch_id := $1, p_label := 'Correct Password Test',
            p_payee_name := 'Payee', p_is_active := true,
@@ -112,7 +122,10 @@ describe("collection account writes (phase 15.2)", () => {
       const accountId = result.rows[0]!.save_collection_account.id;
       expect(accountId).toBeTruthy();
 
-      const log = await client.query<{ before: unknown; after: { label: string } }>(
+      const log = await client.query<{
+        before: unknown;
+        after: { label: string };
+      }>(
         "select before, after from collection_account_change_log where collection_account_id = $1",
         [accountId],
       );
@@ -127,7 +140,9 @@ describe("collection account writes (phase 15.2)", () => {
       await seedAdminWithPassword(client);
       const rawAccountNumber = "123456789012345678";
 
-      const result = await client.query<{ save_collection_account: { id: string } }>(
+      const result = await client.query<{
+        save_collection_account: { id: string };
+      }>(
         `select save_collection_account(
            p_id := null, p_branch_id := $1, p_label := 'Masking Test',
            p_payee_name := 'Payee', p_is_active := true,
@@ -234,10 +249,9 @@ describe("collection account writes (phase 15.2)", () => {
       const afterChange = await client.query<{
         status: string;
         closed_reason: string;
-      }>(
-        "select status, closed_reason from payment_request where id = $1",
-        [request.rows[0]!.id],
-      );
+      }>("select status, closed_reason from payment_request where id = $1", [
+        request.rows[0]!.id,
+      ]);
       expect(afterChange.rows[0]!.status).toBe("cancelled");
       expect(afterChange.rows[0]!.closed_reason).toBe("account_changed");
       expect(

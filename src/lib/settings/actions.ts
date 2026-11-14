@@ -80,7 +80,7 @@ export async function createAcademicYear(
   if (error) {
     return {
       error:
-        "Could not save the academic year — check the label isn't already used.",
+        "Could not save the academic year. Check the label isn't already used.",
     };
   }
 
@@ -133,7 +133,7 @@ export async function updateAcademicYear(
   if (error) {
     return {
       error:
-        "Could not save the academic year — check the label isn't already used.",
+        "Could not save the academic year. Check the label isn't already used.",
     };
   }
 
@@ -159,7 +159,7 @@ export async function createBranch(
 
   if (error) {
     return {
-      error: "Could not save the branch — check the code isn't already used.",
+      error: "Could not save the branch. Check the code isn't already used.",
     };
   }
 
@@ -189,7 +189,7 @@ export async function updateBranch(
 
   if (error) {
     return {
-      error: "Could not save the branch — check the code isn't already used.",
+      error: "Could not save the branch. Check the code isn't already used.",
     };
   }
 
@@ -236,7 +236,7 @@ export async function createTeacher(
   if (createError || !created.user) {
     return {
       error:
-        "Could not create this login — check the username isn't already used.",
+        "Could not create this login. Check the username isn't already used.",
     };
   }
 
@@ -289,7 +289,7 @@ export async function updateTeacher(
   if (authError) {
     return {
       error:
-        "Could not update this login — check the username isn't already used.",
+        "Could not update this login. Check the username isn't already used.",
     };
   }
 
@@ -524,7 +524,7 @@ export async function updateOwnCredentials(
   if (error) {
     return {
       error:
-        "Could not update your login — check the username isn't already used.",
+        "Could not update your login. Check the username isn't already used.",
     };
   }
 
@@ -732,7 +732,7 @@ export async function deleteExpenseCategory(
     if (error.code === "23503") {
       return {
         error:
-          "This category has expenses recorded against it — deactivate it instead.",
+          "This category has expenses recorded against it. Deactivate it instead.",
       };
     }
     return { error: "Could not delete this category." };

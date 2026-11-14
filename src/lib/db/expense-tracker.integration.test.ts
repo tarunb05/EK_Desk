@@ -1,6 +1,19 @@
 import type { Client } from "pg";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { connect, impersonate, impersonateAdmin, withRollback } from "./test-helpers";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
+import {
+  connect,
+  impersonate,
+  impersonateAdmin,
+  withRollback,
+} from "./test-helpers";
 
 const ADMIN_ID = "00000000-0000-4000-8000-000000000041";
 const TEACHER_A_ID = "00000000-0000-4000-8000-000000000042";
@@ -57,7 +70,14 @@ describe("expense tracker (phase 10.1 -- schema and authorization)", () => {
          ($2, 'teacher', $5, 'Test Teacher A'),
          ($3, 'teacher', $6, 'Test Teacher B'),
          ($4, 'teacher', $5, 'Test Teacher A2')`,
-      [ADMIN_ID, TEACHER_A_ID, TEACHER_B_ID, TEACHER_A2_ID, branchAId, branchBId],
+      [
+        ADMIN_ID,
+        TEACHER_A_ID,
+        TEACHER_B_ID,
+        TEACHER_A2_ID,
+        branchAId,
+        branchBId,
+      ],
     );
   }
 

@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
-import { defaultRouteFor, isRouteAllowed, ROUTE_ACCESS } from "./routes";
+import {
+  defaultRouteFor,
+  homeRouteFor,
+  isRouteAllowed,
+  ROUTE_ACCESS,
+} from "./routes";
 import { NAV_LINKS } from "@/components/shell/nav-links";
 
 const APP_DIR = path.join(process.cwd(), "src/app/(app)");
@@ -55,9 +60,7 @@ describe("ROUTE_ACCESS", () => {
     expect(isRouteAllowed("/settings/expense-categories", "teacher")).toBe(
       false,
     );
-    expect(isRouteAllowed("/settings/expense-categories", "admin")).toBe(
-      true,
-    );
+    expect(isRouteAllowed("/settings/expense-categories", "admin")).toBe(true);
     expect(isRouteAllowed("/logs", "teacher")).toBe(false);
     expect(isRouteAllowed("/logs", "admin")).toBe(true);
   });
@@ -69,6 +72,11 @@ describe("ROUTE_ACCESS", () => {
   it("sends each role to a route they can actually reach", () => {
     expect(isRouteAllowed(defaultRouteFor("admin"), "admin")).toBe(true);
     expect(isRouteAllowed(defaultRouteFor("teacher"), "teacher")).toBe(true);
+    // The screen each role lands on after logging in must be one of theirs
+    // too, or the first thing they would see is a redirect.
+    expect(isRouteAllowed(homeRouteFor("admin"), "admin")).toBe(true);
+    expect(isRouteAllowed(homeRouteFor("teacher"), "teacher")).toBe(true);
+    expect(homeRouteFor("teacher")).toBe("/expenses");
   });
 });
 

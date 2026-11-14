@@ -38,15 +38,11 @@ describe("canTransitionStudentStatus", () => {
 
 describe("canTransitionFeeAccountStatus", () => {
   it("allows active to discontinued", () => {
-    expect(canTransitionFeeAccountStatus("active", "discontinued")).toBe(
-      true,
-    );
+    expect(canTransitionFeeAccountStatus("active", "discontinued")).toBe(true);
   });
 
   it("allows discontinued back to active", () => {
-    expect(canTransitionFeeAccountStatus("discontinued", "active")).toBe(
-      true,
-    );
+    expect(canTransitionFeeAccountStatus("discontinued", "active")).toBe(true);
   });
 
   it("rejects a status transitioning to itself", () => {

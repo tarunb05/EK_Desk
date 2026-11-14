@@ -1,9 +1,20 @@
 import type { Client } from "pg";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import { connect, impersonateAdmin, withRollback } from "./test-helpers";
 
 function hash(label: string): Buffer {
-  return Buffer.from(`hash-${label}-${Math.random().toString(36).slice(2)}`, "utf8");
+  return Buffer.from(
+    `hash-${label}-${Math.random().toString(36).slice(2)}`,
+    "utf8",
+  );
 }
 
 describe("pay page: lookup, rate limits, claims (phase 15.4)", () => {
@@ -36,7 +47,11 @@ describe("pay page: lookup, rate limits, claims (phase 15.4)", () => {
 
   async function seedRequest(
     c: Client,
-    overrides: { status?: string; admissionNo?: string; tokenHash?: Buffer } = {},
+    overrides: {
+      status?: string;
+      admissionNo?: string;
+      tokenHash?: Buffer;
+    } = {},
   ) {
     // reset role first: impersonateAdmin's own auth.users insert needs the
     // raw postgres role, and a *previous* call (this test's own, or an
@@ -191,7 +206,9 @@ describe("pay page: lookup, rate limits, claims (phase 15.4)", () => {
 
       const extraFixture = await (async () => {
         await client.query("reset role");
-        const f = await seedRequest(client, { admissionNo: "PP-IPLIMIT-EXTRA" });
+        const f = await seedRequest(client, {
+          admissionNo: "PP-IPLIMIT-EXTRA",
+        });
         await client.query("set role anon");
         return f;
       })();
@@ -300,12 +317,18 @@ describe("pay page: lookup, rate limits, claims (phase 15.4)", () => {
       for (let i = 0; i < fixtures.length; i++) {
         await client.query(
           `select submit_payment_claim($1, $2, $3, 400000, current_date, 'parent_page')`,
-          [fixtures[i]!.tokenHash, ip, `UTR0000003${String(i).padStart(2, "0")}`],
+          [
+            fixtures[i]!.tokenHash,
+            ip,
+            `UTR0000003${String(i).padStart(2, "0")}`,
+          ],
         );
       }
 
       await client.query("reset role");
-      const extra = await seedRequest(client, { admissionNo: "PP-IPCLAIM-EXTRA" });
+      const extra = await seedRequest(client, {
+        admissionNo: "PP-IPCLAIM-EXTRA",
+      });
       await client.query("set role anon");
 
       await expect(

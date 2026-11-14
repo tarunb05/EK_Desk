@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { NavLinks } from "./nav-links";
-import { CloseIcon, CollapseIcon } from "./nav-icons";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { CloseIcon } from "./nav-icons";
 import { useSidebarContext } from "./sidebar-context";
+import { Wordmark } from "./brand";
 import type { Role } from "@/lib/auth/routes";
 
 const COLLAPSED_STORAGE_KEY = "sidebar-collapsed";
@@ -59,33 +61,39 @@ export function Sidebar({
       <aside
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col overflow-hidden border-r border-hairline bg-surface px-3 py-6 transition-[transform,width] duration-200 md:sticky md:top-0 md:z-0 md:h-screen md:translate-x-0 md:self-start ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col overflow-hidden border-r border-hairline bg-canvas px-3 py-5 transition-[transform,width] duration-200 md:sticky md:top-0 md:z-0 md:h-screen md:translate-x-0 md:self-start ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         } ${visuallyCollapsed ? "md:w-16" : "md:w-56"}`}
       >
-        <div className="mb-6 flex items-center justify-between px-3">
+        <div className="mb-6 flex h-8 items-center justify-between px-2">
           <span
-            className={`overflow-hidden whitespace-nowrap text-sm font-medium text-ink transition-[opacity,max-width] duration-200 ${
-              visuallyCollapsed ? "md:max-w-0 md:opacity-0" : "md:max-w-[140px] md:opacity-100"
+            className={`overflow-hidden transition-[opacity,max-width] duration-200 ${
+              visuallyCollapsed
+                ? "md:max-w-0 md:opacity-0"
+                : "md:max-w-[140px] md:opacity-100"
             }`}
           >
-            EK Desk
+            <Wordmark />
           </span>
 
           <button
             type="button"
             onClick={toggleCollapsed}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent md:flex"
+            className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-secondary transition-colors duration-150 hover:bg-sand hover:text-ink focus-visible:outline-2 focus-visible:outline-accent md:flex"
           >
-            <CollapseIcon direction={collapsed ? "right" : "left"} />
+            {collapsed ? (
+              <PanelLeftOpen size={18} strokeWidth={1.75} aria-hidden="true" />
+            ) : (
+              <PanelLeftClose size={18} strokeWidth={1.75} aria-hidden="true" />
+            )}
           </button>
 
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
             aria-label="Close menu"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent md:hidden"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-secondary transition-colors duration-150 hover:bg-sand hover:text-ink focus-visible:outline-2 focus-visible:outline-accent md:hidden"
           >
             <CloseIcon />
           </button>

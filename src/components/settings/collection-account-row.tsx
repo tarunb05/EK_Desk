@@ -46,12 +46,12 @@ export function CollectionAccountRow({
           <span className="flex items-center gap-2 text-ink">
             {account.label}
             {account.isDefault ? (
-              <span className="rounded-md bg-surface-accent px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-accent">
+              <span className="rounded-full bg-surface-accent px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-accent">
                 Default
               </span>
             ) : null}
             {account.isActive ? null : (
-              <span className="rounded-md bg-surface-accent px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-muted">
+              <span className="rounded-full bg-surface-accent px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-muted">
                 Inactive
               </span>
             )}
@@ -81,7 +81,7 @@ export function CollectionAccountRow({
               <button
                 type="submit"
                 disabled={defaultPending}
-                className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+                className="h-7 rounded-full border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
               >
                 {defaultPending ? "Setting…" : "Set as default"}
               </button>
@@ -90,7 +90,7 @@ export function CollectionAccountRow({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+            className="h-7 rounded-full border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
           >
             Edit
           </button>

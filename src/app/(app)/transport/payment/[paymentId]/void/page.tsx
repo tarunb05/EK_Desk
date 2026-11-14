@@ -6,7 +6,7 @@ import { VoidPaymentForm } from "@/components/records/void-payment-form";
 import { BackLink } from "@/components/shell/back-link";
 
 export const metadata: Metadata = {
-  title: "Void Payment",
+  title: "Void transport payment",
 };
 
 export default async function VoidPaymentPage({
@@ -29,7 +29,7 @@ export default async function VoidPaymentPage({
   return (
     <div className="max-w-xl">
       <BackLink href="/transport" />
-      <h1 className="mb-1 text-xl font-medium text-ink">Void payment</h1>
+      <h1 className="mb-1 text-2xl font-semibold text-ink">Void payment</h1>
       <p className="mb-4 text-sm text-ink-secondary">
         {formatPaise(BigInt(payment.amount_paise))} paid on {payment.paid_on}
       </p>

@@ -9,7 +9,7 @@ import { ExpenseForm } from "@/components/expenses/expense-form";
 import { BackLink } from "@/components/shell/back-link";
 
 export const metadata: Metadata = {
-  title: "Record Expense",
+  title: "Record expense",
 };
 
 export default async function NewExpensePage({
@@ -33,7 +33,7 @@ export default async function NewExpensePage({
   return (
     <div className="max-w-xl">
       <BackLink href="/expenses" />
-      <h1 className="mb-4 text-xl font-medium text-ink">Record expense</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-ink">Record expense</h1>
       <ExpenseForm
         mode="create"
         role={authed.role}

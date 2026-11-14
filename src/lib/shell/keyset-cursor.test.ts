@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { decodeActivityLogCursor, encodeActivityLogCursor } from "./keyset-cursor";
+import {
+  decodeActivityLogCursor,
+  encodeActivityLogCursor,
+} from "./keyset-cursor";
 
 describe("activity log keyset cursor", () => {
   it("round-trips through encode and decode", () => {

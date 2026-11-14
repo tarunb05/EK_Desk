@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth/require-role";
 import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
-import { formatPaise, paiseToRupeesInputString, parseRupeesToPaise } from "@/lib/domain/money";
+import {
+  formatPaise,
+  paiseToRupeesInputString,
+  parseRupeesToPaise,
+} from "@/lib/domain/money";
 import { formatLogDate } from "@/lib/domain/datetime";
 import { normalizeIndianMobile } from "@/lib/domain/phone";
 import { buildWhatsAppUrl } from "@/lib/domain/whatsapp";
@@ -115,7 +119,10 @@ export async function getPaymentRequestDialogData(
   // this is called directly as a Server Action, not gated by a route --
   // re-checked here the same way every other teacher-branch check in this
   // codebase is, rather than trusted from the caller's own UI state.
-  if (authed.role === "teacher" && feeAccount.student.branch.id !== authed.branchId) {
+  if (
+    authed.role === "teacher" &&
+    feeAccount.student.branch.id !== authed.branchId
+  ) {
     return null;
   }
 
@@ -290,7 +297,8 @@ export async function createPaymentRequest(
 
   if (!(await checkRateLimit(supabase, authed.userId))) {
     return {
-      error: "Too many links created in the last minute — wait a moment and try again.",
+      error:
+        "Too many links created in the last minute. Wait a moment and try again.",
     };
   }
 
@@ -313,7 +321,7 @@ export async function createPaymentRequest(
   });
 
   if (error || !data) {
-    return { error: "Could not create this payment link — try again." };
+    return { error: "Could not create this payment link. Try again." };
   }
 
   const paymentRequestId = (data as { id: string }).id;
@@ -506,7 +514,9 @@ export interface PayPageData {
 // unknown/rate-limited token -- the brief's own requirement that unknown,
 // expired, closed, cancelled, and (here) rate-limited all render
 // identically, enforced one layer further out as defense in depth.
-export async function getPayPageData(rawToken: string): Promise<PayPageData | null> {
+export async function getPayPageData(
+  rawToken: string,
+): Promise<PayPageData | null> {
   const tokenHash = createHash("sha256").update(rawToken).digest();
   const ipHash = await getClientIpHash();
   const supabase = await createClient();
@@ -601,7 +611,7 @@ export async function submitPaymentClaim(
   if (error) {
     return {
       error:
-        "We couldn't process this — please try again or contact the school office.",
+        "We couldn't process this. Please try again or contact the school office.",
     };
   }
 

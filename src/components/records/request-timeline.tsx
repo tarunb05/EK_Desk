@@ -50,13 +50,16 @@ function EnterClaimForm({ paymentRequestId }: { paymentRequestId: string }) {
     <form
       action={action}
       noValidate
-      className="mt-2 flex flex-wrap items-end gap-3 rounded-md border border-hairline bg-canvas p-3"
+      className="mt-2 flex flex-wrap items-end gap-3 rounded-lg border border-hairline bg-canvas p-3"
     >
       <input type="hidden" name="paymentRequestId" value={paymentRequestId} />
       <Field label="UTR / reference" error={state.fieldErrors?.utr}>
         <input name="utr" required className={`w-36 ${inputClassName}`} />
       </Field>
-      <Field label="Claimed amount (₹)" error={state.fieldErrors?.claimedAmount}>
+      <Field
+        label="Claimed amount (₹)"
+        error={state.fieldErrors?.claimedAmount}
+      >
         <input
           name="claimedAmount"
           inputMode="decimal"
@@ -105,8 +108,8 @@ function EnterClaimForm({ paymentRequestId }: { paymentRequestId: string }) {
         Keep open
       </label>
       <label className="flex items-center gap-2 text-sm text-ink-secondary">
-        <input type="checkbox" name="checkedBank" />
-        I have checked this in the bank account.
+        <input type="checkbox" name="checkedBank" />I have checked this in the
+        bank account.
       </label>
       <button
         type="submit"
@@ -139,11 +142,11 @@ export function RequestTimeline({
         {requests.map((request) => (
           <div
             key={request.id}
-            className="rounded-md border border-hairline bg-canvas p-3 text-sm"
+            className="rounded-lg border border-hairline bg-canvas p-3 text-sm"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-ink">
-                {request.referenceCode} — {formatPaise(request.amountPaise)}
+                {request.referenceCode} · {formatPaise(request.amountPaise)}
               </span>
               <span className="text-2xs uppercase tracking-wide text-ink-muted">
                 {request.status}
@@ -156,7 +159,9 @@ export function RequestTimeline({
               Created {formatLogDate(request.createdAt)}
               {request.sharedAt
                 ? ` · Shared via ${request.sharedVia ?? "unknown"}${
-                    request.sharedToLast4 ? ` (ending ${request.sharedToLast4})` : ""
+                    request.sharedToLast4
+                      ? ` (ending ${request.sharedToLast4})`
+                      : ""
                   } on ${formatLogDate(request.sharedAt)}`
                 : ""}
             </p>
@@ -165,9 +170,12 @@ export function RequestTimeline({
               <ul className="mt-2 flex flex-col gap-1 text-2xs text-ink-secondary">
                 {request.claims.map((claim) => (
                   <li key={claim.id}>
-                    {claim.status} — {formatPaise(claim.claimedAmountPaise)}, UTR{" "}
-                    {claim.utr} ({claim.claimedPaidOn}
-                    {claim.source === "admin_entered" ? ", entered by admin" : ""})
+                    {claim.status} · {formatPaise(claim.claimedAmountPaise)},
+                    UTR {claim.utr} ({claim.claimedPaidOn}
+                    {claim.source === "admin_entered"
+                      ? ", entered by admin"
+                      : ""}
+                    )
                   </li>
                 ))}
               </ul>

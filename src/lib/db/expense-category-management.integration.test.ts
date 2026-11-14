@@ -145,7 +145,12 @@ describe("expense category management (phase 10.2)", () => {
          values
            ($1, $2, $3, 30000, '2026-06-01', 'cash', $4),
            ($1, $2, $3, 20000, '2026-06-02', 'cash', $4)`,
-        [branch.rows[0]!.id, year.rows[0]!.id, category.rows[0]!.id, adminId.rows[0]!.id],
+        [
+          branch.rows[0]!.id,
+          year.rows[0]!.id,
+          category.rows[0]!.id,
+          adminId.rows[0]!.id,
+        ],
       );
 
       const summary = await client.query<{

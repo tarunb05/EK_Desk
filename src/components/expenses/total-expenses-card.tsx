@@ -21,20 +21,22 @@ export function TotalExpensesCard({
     <a
       href={exportHref}
       title="Download these expenses as Excel"
-      className="w-full max-w-xs rounded-md border border-hairline bg-surface p-4 transition-[border-color,transform] duration-150 hover:scale-[1.03] hover:border-accent active:scale-[0.98]"
+      // Same tile box as the dashboards' StatCards, on the slate block --
+      // this page has one headline figure, so it gets the heaviest colour.
+      className="flex min-h-28 w-full flex-col justify-between gap-4 rounded-lg bg-accent p-4 text-canvas transition-transform duration-150 hover:scale-[1.03] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
       <div className="flex items-center justify-between">
-        <span className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
+        <span className="text-2xs font-medium uppercase tracking-[0.06em]">
           Total expenses
         </span>
-        <span className="text-ink-muted">
-          <WalletIcon size={15} />
-        </span>
+        <WalletIcon size={15} />
       </div>
-      <div className="mt-2 text-xl font-medium tabular-nums text-ink">
-        {formatPaise(totalPaise)}
+      <div>
+        <div className="text-2xl font-semibold leading-none tracking-[-0.02em] tabular-nums">
+          {formatPaise(totalPaise)}
+        </div>
+        <div className="mt-2 text-xs">{caption}</div>
       </div>
-      <div className="mt-1 text-xs text-ink-secondary">{caption}</div>
     </a>
   );
 }

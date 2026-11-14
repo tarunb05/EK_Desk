@@ -74,7 +74,8 @@ export function SupportRequestRow({
 
       {!showAdminDetails && !isOpen ? (
         <p className="mt-2 text-2xs text-ink-muted">
-          Resolved{request.resolvedAt ? ` on ${request.resolvedAt.slice(0, 10)}` : ""}.
+          Resolved
+          {request.resolvedAt ? ` on ${request.resolvedAt.slice(0, 10)}` : ""}.
         </p>
       ) : null}
     </div>

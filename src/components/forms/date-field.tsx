@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { inputClassName } from "@/components/forms/field";
+import { usePopoverPlacement } from "./use-popover-placement";
 
 interface DateFieldProps {
   // Uncontrolled/form mode: renders a hidden input so this participates in
@@ -83,6 +84,16 @@ export function DateField({
   const [internalIso, setInternalIso] = useState(defaultValue ?? "");
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // 320 x ~350 is the calendar's own box. The hook slides it sideways and
+  // flips it above the field as needed so it never leaves the window --
+  // it used to be pinned below-left, which pushed it off the right edge
+  // from the second field of a From/To pair and off the bottom from any
+  // field low on the page.
+  const placement = usePopoverPlacement(containerRef, open, {
+    width: 320,
+    height: 350,
+  });
+
   const currentIso = isControlled ? value : internalIso;
   const selectedDate = currentIso ? fromIso(currentIso) : undefined;
 
@@ -156,7 +167,7 @@ export function DateField({
         // content's intrinsic size, which left the 7-column day grid
         // squeezed narrower than its own fixed-size day buttons (they
         // don't shrink, so they overlapped instead).
-        <div className="absolute left-0 z-20 mt-1 w-80">
+        <div style={placement} className="absolute z-30">
           <Calendar
             selected={selectedDate}
             onSelect={handleSelect}

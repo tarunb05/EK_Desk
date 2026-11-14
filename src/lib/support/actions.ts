@@ -43,7 +43,7 @@ export async function submitSupportRequest(
   });
 
   if (error) {
-    return { error: "Could not send this — try again in a moment." };
+    return { error: "Could not send this. Try again in a moment." };
   }
 
   revalidatePath("/support");
@@ -76,7 +76,7 @@ export async function resolveSupportRequest(
     .eq("status", "open");
 
   if (error) {
-    return { error: "Could not mark this resolved — try again in a moment." };
+    return { error: "Could not mark this resolved. Try again in a moment." };
   }
 
   revalidatePath("/support");

@@ -78,7 +78,7 @@ export function BranchRow({ branch }: { branch: BranchOption }) {
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="h-8 w-24 rounded-md border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+              className="h-8 w-24 rounded-full border border-border px-3 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
             >
               Cancel
             </button>
@@ -93,7 +93,7 @@ export function BranchRow({ branch }: { branch: BranchOption }) {
       <span className="text-ink">{branch.name}</span>
       <div className="flex items-center gap-2">
         {branch.isActive ? null : (
-          <span className="rounded-md bg-surface-accent px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-muted">
+          <span className="rounded-full bg-surface-accent px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-ink-muted">
             Inactive
           </span>
         )}
@@ -101,7 +101,7 @@ export function BranchRow({ branch }: { branch: BranchOption }) {
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="h-7 rounded-md border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+          className="h-7 rounded-full border border-border px-2 text-2xs text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
         >
           Edit
         </button>

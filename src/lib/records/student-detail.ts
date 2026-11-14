@@ -168,21 +168,32 @@ export async function getStudentDetail(
     new Set(
       (requests ?? []).flatMap((r) =>
         r.payment_claim
-          .filter((c) => c.status === "confirmed" && c.payment_id && c.reviewed_by)
+          .filter(
+            (c) => c.status === "confirmed" && c.payment_id && c.reviewed_by,
+          )
           .map((c) => c.reviewed_by as string),
       ),
     ),
   );
   const { data: reviewers } =
     reviewedByIds.length > 0
-      ? await supabase.from("profile").select("id, full_name").in("id", reviewedByIds)
+      ? await supabase
+          .from("profile")
+          .select("id, full_name")
+          .in("id", reviewedByIds)
       : { data: [] };
-  const reviewerName = new Map((reviewers ?? []).map((p) => [p.id, p.full_name]));
+  const reviewerName = new Map(
+    (reviewers ?? []).map((p) => [p.id, p.full_name]),
+  );
 
   const confirmedByLabelByPaymentId = new Map<string, string>();
   for (const request of requests ?? []) {
     for (const claim of request.payment_claim) {
-      if (claim.status === "confirmed" && claim.payment_id && claim.reviewed_by) {
+      if (
+        claim.status === "confirmed" &&
+        claim.payment_id &&
+        claim.reviewed_by
+      ) {
         confirmedByLabelByPaymentId.set(
           claim.payment_id,
           reviewerName.get(claim.reviewed_by) ?? "Admin",
@@ -238,7 +249,8 @@ export async function getStudentDetail(
           : null,
         voidReason: entry.payment.voidReason,
         runningPendingPaise: entry.runningPendingPaise,
-        confirmedByLabel: confirmedByLabelByPaymentId.get(entry.payment.id) ?? null,
+        confirmedByLabel:
+          confirmedByLabelByPaymentId.get(entry.payment.id) ?? null,
       }))
       .reverse();
 

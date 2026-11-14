@@ -53,11 +53,20 @@ export function StatCards({
     return `/api/export/fee-accounts?${params.toString()}`;
   }
 
+  // Each tile is a flat colour block from the palette rather than six
+  // identical white cards -- the block itself is what tells the figures
+  // apart at a glance. `block` is the fill, `label` the caption/icon colour
+  // and `figure` the number; every pairing below clears 4.5:1 (label) on
+  // its own fill, which is why the collected tile's figure is plain --ink
+  // rather than --positive (3:1 on periwinkle). Meaning never rides on the
+  // colour alone: each tile also has its label and its own icon.
   const cards: {
     testId: string;
     label: string;
     value: string;
-    tone?: "positive" | "attention";
+    block: string;
+    labelTone: string;
+    figure: string;
     Icon: ComponentType<{ size?: number }>;
     exportHref?: string;
   }[] = [
@@ -65,12 +74,18 @@ export function StatCards({
       testId: "students-enrolled",
       label: "Students enrolled",
       value: String(summary.studentCount),
+      block: "bg-surface",
+      labelTone: "text-ink-muted",
+      figure: "text-ink",
       Icon: StudentsIcon,
     },
     {
       testId: "total-receivable",
       label: "Total receivable",
       value: formatPaise(summary.totalReceivablePaise),
+      block: "bg-sand",
+      labelTone: "text-ink-secondary",
+      figure: "text-ink",
       Icon: WalletIcon,
       exportHref: exportHref("receivable"),
     },
@@ -80,7 +95,9 @@ export function StatCards({
       value: collectedFiguresUnavailable
         ? "No results found."
         : formatPaise(summary.totalCollectedPaise),
-      tone: "positive",
+      block: "bg-accent-fill",
+      labelTone: "text-ink",
+      figure: "text-ink",
       Icon: StatusIcon,
       exportHref: exportHref("collected"),
     },
@@ -88,7 +105,9 @@ export function StatCards({
       testId: "total-pending",
       label: "Total pending",
       value: formatPaise(summary.totalPendingPaise),
-      tone: "attention",
+      block: "bg-surface",
+      labelTone: "text-ink-muted",
+      figure: "text-attention",
       Icon: ClockIcon,
       exportHref: exportHref("pending"),
     },
@@ -96,7 +115,9 @@ export function StatCards({
       testId: "total-overdue",
       label: "Total overdue",
       value: formatPaise(summary.totalOverduePaise),
-      tone: "attention",
+      block: "bg-attention-fill",
+      labelTone: "text-attention",
+      figure: "text-attention",
       Icon: AlertIcon,
       exportHref: exportHref("overdue"),
     },
@@ -106,12 +127,15 @@ export function StatCards({
       value: collectedFiguresUnavailable
         ? "No results found."
         : `${rate.toFixed(1)}%`,
+      block: "bg-accent",
+      labelTone: "text-canvas",
+      figure: "text-canvas",
       Icon: TrendIcon,
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="stagger-in grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
       {cards.map((card) => {
         // Only the four export cards are actually clickable (they download
         // an Excel file) -- a hover effect on the plain divs would be a
@@ -119,40 +143,30 @@ export function StatCards({
         // little weight" idea as the category-breakdown bars' hover grow,
         // for the same reason -- these numbers aren't a dimension anything
         // else encodes, so growing them slightly can't misrepresent data.
-        const cardClassName = card.exportHref
-          ? "rounded-md border border-hairline bg-surface p-4 transition-[border-color,transform] duration-150 hover:scale-[1.03] hover:border-accent active:scale-[0.98]"
-          : "rounded-md border border-hairline bg-surface p-4";
+        const cardClassName = `flex min-h-28 flex-col justify-between gap-4 rounded-lg p-4 ${card.block} ${
+          card.exportHref
+            ? "transition-transform duration-150 hover:scale-[1.03] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            : ""
+        }`;
         const content = (
           <>
-            <div className="flex items-center justify-between gap-2">
-              <span className="min-w-0 flex-1 truncate text-2xs font-medium uppercase tracking-wide text-ink-muted">
+            <div
+              className={`flex items-start justify-between gap-2 ${card.labelTone}`}
+            >
+              {/* Wraps to a second line on a narrow tile rather than
+                  truncating -- "Total receivab…" hides the one word that
+                  tells this tile from its neighbours. */}
+              <span className="min-w-0 flex-1 text-2xs font-medium uppercase leading-tight tracking-[0.06em]">
                 {card.label}
               </span>
-              <span
-                className={
-                  "shrink-0 " +
-                  (card.tone === "positive"
-                    ? "text-positive-fill"
-                    : card.tone === "attention"
-                      ? "text-attention"
-                      : "text-ink-muted")
-                }
-              >
-                <card.Icon size={15} />
-              </span>
+              <card.Icon size={15} />
             </div>
             <div
               data-testid={card.testId}
               className={
                 card.value === "No results found."
-                  ? "mt-2 text-sm text-ink-muted"
-                  : `mt-2 text-xl font-medium tabular-nums ${
-                      card.tone === "positive"
-                        ? "text-positive"
-                        : card.tone === "attention"
-                          ? "text-attention"
-                          : "text-ink"
-                    }`
+                  ? `text-sm ${card.labelTone}`
+                  : `text-2xl font-semibold leading-none tracking-[-0.02em] tabular-nums ${card.figure}`
               }
             >
               {card.value}

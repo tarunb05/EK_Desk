@@ -26,7 +26,13 @@ export const metadata: Metadata = {
 export default async function SettingsPage() {
   await requireRole("admin");
   const supabase = await createClient();
-  const [years, branches, { data: { user } }] = await Promise.all([
+  const [
+    years,
+    branches,
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
     getAcademicYears(supabase),
     getBranches(supabase),
     supabase.auth.getUser(),
@@ -44,16 +50,15 @@ export default async function SettingsPage() {
     teachersUnavailable = true;
   }
 
-  const collectionAccounts = await getCollectionAccountsWithLatestChange(
-    supabase,
-  );
+  const collectionAccounts =
+    await getCollectionAccountsWithLatestChange(supabase);
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-medium text-ink">Settings</h1>
+      <h1 className="text-2xl font-semibold text-ink">Settings</h1>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="flex flex-col gap-4 rounded-md border border-border bg-surface p-5">
+        <section className="flex flex-col gap-4 hover-card scroll-reveal rounded-lg border border-hairline bg-surface p-5">
           <h2 className="text-sm font-medium text-ink">Academic years</h2>
 
           {years.length > 0 ? (
@@ -64,14 +69,14 @@ export default async function SettingsPage() {
             </ul>
           ) : (
             <p className="text-sm text-ink-secondary">
-              No academic years yet — add the first one below.
+              No academic years yet. Add the first one below.
             </p>
           )}
 
           <AddAcademicYearForm />
         </section>
 
-        <section className="flex flex-col gap-4 rounded-md border border-border bg-surface p-5">
+        <section className="flex flex-col gap-4 hover-card scroll-reveal rounded-lg border border-hairline bg-surface p-5">
           <h2 className="text-sm font-medium text-ink">Branches</h2>
 
           {branches.length > 0 ? (
@@ -82,7 +87,7 @@ export default async function SettingsPage() {
             </ul>
           ) : (
             <p className="text-sm text-ink-secondary">
-              No branches yet — add the first one below.
+              No branches yet. Add the first one below.
             </p>
           )}
 
@@ -90,39 +95,40 @@ export default async function SettingsPage() {
         </section>
       </div>
 
-      <section className="flex flex-col gap-4 rounded-md border border-border bg-surface p-5">
+      <section className="flex flex-col gap-4 hover-card scroll-reveal rounded-lg border border-hairline bg-surface p-5">
         <h2 className="text-sm font-medium text-ink">Teachers</h2>
 
         {teachersUnavailable ? (
           <p className="text-sm text-attention">
-            Could not load teacher logins — the server isn&apos;t configured
-            with a service-role key yet.
+            Could not load teacher logins. The server isn&apos;t configured with
+            a service-role key yet.
           </p>
         ) : teachers.length > 0 ? (
           <ul className="flex flex-col divide-y divide-hairline">
             {teachers.map((teacher) => (
-              <TeacherRow key={teacher.id} teacher={teacher} branches={branches} />
+              <TeacherRow
+                key={teacher.id}
+                teacher={teacher}
+                branches={branches}
+              />
             ))}
           </ul>
         ) : (
           <p className="text-sm text-ink-secondary">
-            No teacher logins yet — add the first one below.
+            No teacher logins yet. Add the first one below.
           </p>
         )}
 
         <AddTeacherForm branches={branches} />
       </section>
 
-      <section className="flex flex-col gap-4 rounded-md border border-border bg-surface p-5">
+      <section className="flex flex-col gap-4 hover-card scroll-reveal rounded-lg border border-hairline bg-surface p-5">
         <div>
-          <h2 className="text-sm font-medium text-ink">
-            Collection accounts
-          </h2>
+          <h2 className="text-sm font-medium text-ink">Collection accounts</h2>
           <p className="text-sm text-ink-secondary">
-            Where parents pay a fee request into. Changing an account&apos;s
-            UPI id or bank details cancels every open payment link against
-            it, so a parent is never holding a message whose details no
-            longer match.
+            Where parents pay a fee request into. Changing an account&apos;s UPI
+            id or bank details cancels every open payment link against it, so a
+            parent is never holding a message whose details no longer match.
           </p>
         </div>
 
@@ -138,14 +144,14 @@ export default async function SettingsPage() {
           </ul>
         ) : (
           <p className="text-sm text-ink-secondary">
-            No collection accounts yet — add the first one below.
+            No collection accounts yet. Add the first one below.
           </p>
         )}
 
         <CollectionAccountForm branches={branches} />
       </section>
 
-      <section className="flex max-w-md flex-col gap-3 rounded-md border border-border bg-surface p-5">
+      <section className="flex max-w-md flex-col gap-3 hover-card scroll-reveal rounded-lg border border-hairline bg-surface p-5">
         <h2 className="text-sm font-medium text-ink">Expense categories</h2>
         <p className="text-sm text-ink-secondary">
           Add, rename, reorder, and deactivate the categories expenses are
@@ -159,7 +165,7 @@ export default async function SettingsPage() {
         </Link>
       </section>
 
-      <section className="flex max-w-md flex-col gap-4 rounded-md border border-border bg-surface p-5">
+      <section className="flex max-w-md flex-col gap-4 hover-card scroll-reveal rounded-lg border border-hairline bg-surface p-5">
         <h2 className="text-sm font-medium text-ink">My login</h2>
         <MyCredentialsForm currentUsername={myUsername} />
       </section>

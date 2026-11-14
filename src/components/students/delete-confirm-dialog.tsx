@@ -42,7 +42,7 @@ export function DeleteConfirmDialog({
       ref={dialogRef}
       onClose={onClose}
       aria-labelledby={titleId}
-      className="w-full max-w-sm rounded-md border border-border bg-surface p-0 text-ink shadow-[0_1px_2px_rgba(0,0,0,.05)] backdrop:bg-ink/30"
+      className="w-full max-w-sm rounded-lg border border-border bg-surface p-0 text-ink shadow-[0_1px_2px_rgba(0,0,0,.05)] backdrop:bg-ink/30"
     >
       <div className="flex gap-3 p-5">
         <span
@@ -64,7 +64,7 @@ export function DeleteConfirmDialog({
             <button
               type="button"
               onClick={() => dialogRef.current?.close()}
-              className="h-9 rounded-md border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
+              className="h-9 rounded-full border border-border px-3 text-sm text-ink-secondary transition-colors duration-150 hover:bg-surface-accent hover:text-ink"
             >
               Cancel
             </button>

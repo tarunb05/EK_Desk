@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatMethod,
   formatPaise,
+  formatPaiseCompact,
   paiseToRupees,
   parseRupeesToPaise,
   rupeesToPaise,
@@ -111,5 +112,23 @@ describe("parseRupeesToPaise", () => {
 
   it("trims surrounding whitespace before parsing", () => {
     expect(parseRupeesToPaise("  42.00  ")).toBe(4_200n);
+  });
+});
+
+describe("formatPaiseCompact", () => {
+  it("leaves amounts under a thousand rupees whole", () => {
+    expect(formatPaiseCompact(0n)).toBe("₹0");
+    expect(formatPaiseCompact(99_900n)).toBe("₹999");
+  });
+
+  it("uses K, L and Cr with at most one decimal", () => {
+    expect(formatPaiseCompact(1_250_000n)).toBe("₹12.5K");
+    expect(formatPaiseCompact(5_000_000n)).toBe("₹50K");
+    expect(formatPaiseCompact(25_380_000n)).toBe("₹2.5L");
+    expect(formatPaiseCompact(1_000_000_000n)).toBe("₹1Cr");
+  });
+
+  it("keeps the sign on a negative amount", () => {
+    expect(formatPaiseCompact(-1_250_000n)).toBe("-₹12.5K");
   });
 });

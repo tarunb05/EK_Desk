@@ -35,7 +35,11 @@ export function SkeletonPage({ children }: { children: React.ReactNode }) {
 // Matches the [Search] [Filters] [Add/Record button] row every list page
 // ends up with (see FilterMenu/SearchField) -- `withSearch` omits the
 // search box for the two dashboards, which don't have one.
-export function ToolbarSkeleton({ withSearch = false }: { withSearch?: boolean }) {
+export function ToolbarSkeleton({
+  withSearch = false,
+}: {
+  withSearch?: boolean;
+}) {
   return (
     <div className="flex items-center justify-end gap-2">
       {withSearch ? <Skeleton className="h-9 w-56" /> : null}
@@ -45,22 +49,23 @@ export function ToolbarSkeleton({ withSearch = false }: { withSearch?: boolean }
   );
 }
 
-// Matches StatCards' own grid breakpoints exactly (grid-cols-2 / sm:3 /
-// lg:6) so the skeleton doesn't reflow differently from the real cards
-// when they arrive.
+// Matches StatCards' own grid breakpoints and tile box exactly (grid-cols-2
+// / sm:3 / xl:6, min-h-28, label top and figure bottom) so the skeleton
+// doesn't reflow differently from the real tiles when they arrive. All six
+// are plain surface blocks -- the real tiles' colours arrive with the data.
 export function StatCardsSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
       {Array.from({ length: 6 }, (_, i) => (
         <div
           key={i}
-          className="rounded-md border border-hairline bg-surface p-4"
+          className="flex min-h-28 flex-col justify-between gap-4 rounded-lg bg-surface p-4"
         >
           <div className="flex items-center justify-between">
             <Skeleton className="h-2.5 w-16" />
             <Skeleton className="h-4 w-4 rounded-full" />
           </div>
-          <Skeleton className="mt-3 h-5 w-20" />
+          <Skeleton className="h-7 w-24" />
         </div>
       ))}
     </div>
@@ -78,8 +83,8 @@ export function TableSkeleton({
   rows?: number;
 }) {
   return (
-    <div className="overflow-hidden rounded-md border border-hairline">
-      <div className="flex h-9 items-center gap-4 border-b border-hairline bg-canvas px-3">
+    <div className="overflow-hidden rounded-lg border border-hairline bg-surface">
+      <div className="flex h-9 items-center gap-4 border-b border-hairline bg-sand/50 px-3">
         {Array.from({ length: columns }, (_, i) => (
           <Skeleton key={i} className="h-2.5 w-12" />
         ))}
@@ -135,7 +140,7 @@ export function DetailSkeleton() {
       <div className="max-w-lg">
         <Skeleton className="mb-4 h-3.5 w-24" />
         <Skeleton className="mb-4 h-6 w-48" />
-        <div className="mb-4 flex flex-col gap-2 rounded-md border border-hairline bg-surface p-4">
+        <div className="mb-4 flex flex-col gap-2 rounded-lg border border-hairline bg-surface p-4">
           {Array.from({ length: 4 }, (_, i) => (
             <div key={i} className="flex items-center justify-between">
               <Skeleton className="h-2.5 w-20" />
@@ -146,5 +151,26 @@ export function DetailSkeleton() {
         <TableSkeleton columns={4} rows={4} />
       </div>
     </SkeletonPage>
+  );
+}
+
+// Stands in for a ChartCard (components/charts) while its data loads: the
+// same card box and label line, with one block where the plot will be.
+// `plot` is the height class of that block, sized by the caller to match
+// the chart it is waiting for so the page does not jump when it arrives.
+export function ChartCardSkeleton({
+  plot = "h-44",
+  className = "",
+}: {
+  plot?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`flex flex-col gap-4 rounded-lg border border-hairline bg-surface p-4 md:p-5 ${className}`}
+    >
+      <Skeleton className="h-2.5 w-32" />
+      <Skeleton className={`w-full ${plot}`} />
+    </div>
   );
 }

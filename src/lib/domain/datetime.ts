@@ -45,3 +45,30 @@ export function formatLogDate(iso: string): string {
 export function todayInIndia(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
+
+const MONTH_ABBREVIATIONS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+// "2026-09-24" -> "24 Sep 2026", for showing one of the app's plain `date`
+// columns in a table. Pure string work on purpose -- no Date object, so no
+// timezone can shift a calendar date by a day. Anything that isn't a
+// YYYY-MM-DD string comes back unchanged rather than as "undefined NaN".
+export function formatDisplayDate(isoDate: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  if (!match) return isoDate;
+  const month = MONTH_ABBREVIATIONS[Number(match[2]) - 1];
+  if (!month) return isoDate;
+  return `${Number(match[3])} ${month} ${match[1]}`;
+}

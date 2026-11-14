@@ -6,7 +6,7 @@ import { EditFeeAccountForm } from "@/components/records/edit-fee-account-form";
 import { BackLink } from "@/components/shell/back-link";
 
 export const metadata: Metadata = {
-  title: "Edit Student",
+  title: "Edit enrollment",
 };
 
 export default async function StudentsEditFeeAccountPage({
@@ -28,7 +28,7 @@ export default async function StudentsEditFeeAccountPage({
   return (
     <div className="max-w-xl">
       <BackLink href="/students" label="Return to student page" />
-      <h1 className="mb-1 text-xl font-medium text-ink">Edit student</h1>
+      <h1 className="mb-1 text-2xl font-semibold text-ink">Edit student</h1>
       <p className="mb-4 text-sm text-ink-secondary">
         {record.studentFullName}
       </p>

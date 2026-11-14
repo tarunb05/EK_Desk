@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Select } from "@/components/forms/select";
 import { DateField } from "@/components/forms/date-field";
+import { FilterGroup } from "@/components/shell/filter-menu";
 import { FilterIcon, UserIcon } from "@/components/shell/nav-icons";
 import type { ActivityLogActorOption } from "@/lib/records/activity-log";
 import {
@@ -43,7 +44,6 @@ export function ActivityLogFilters({
 
   const dateFrom = searchParams.get("dateFrom") ?? "";
   const dateTo = searchParams.get("dateTo") ?? "";
-  const branch = searchParams.get("branch") ?? "all";
   const actor = searchParams.get("actor") ?? "all";
   const action = searchParams.get("action") ?? "all";
   const entity = searchParams.get("entity") ?? "all";
@@ -70,87 +70,79 @@ export function ActivityLogFilters({
           date-field.tsx's placeholder prop for why each side says
           "Start date"/"End date" rather than the generic "Pick a date" a
           single date field uses. */}
-      <div className="flex gap-2">
-        <DateField
-          ariaLabel="Filter from date"
-          placeholder="Start date"
-          value={dateFrom}
-          onChange={(iso) => updateParam({ dateFrom: iso })}
-          className="min-w-0 flex-1"
-        />
-        <DateField
-          ariaLabel="Filter to date"
-          placeholder="End date"
-          value={dateTo}
-          onChange={(iso) => updateParam({ dateTo: iso })}
-          className="min-w-0 flex-1"
-        />
-      </div>
+      <FilterGroup label="Date range">
+        <div className="flex gap-2">
+          <DateField
+            ariaLabel="Filter from date"
+            placeholder="Start date"
+            value={dateFrom}
+            onChange={(iso) => updateParam({ dateFrom: iso })}
+            className="min-w-0 flex-1"
+          />
+          <DateField
+            ariaLabel="Filter to date"
+            placeholder="End date"
+            value={dateTo}
+            onChange={(iso) => updateParam({ dateTo: iso })}
+            className="min-w-0 flex-1"
+          />
+        </div>
+      </FilterGroup>
 
-      <Select
-        ariaLabel="Filter by who did it"
-        icon={<UserIcon size={14} />}
-        value={actor}
-        onChange={(next) => updateParam({ actor: next === "all" ? null : next })}
-        options={[
-          { value: "all", label: "Everyone" },
-          ...actors.map((option) => ({
-            value: option.id,
-            label: option.isActive
-              ? option.fullName
-              : `${option.fullName} (deactivated)`,
-          })),
-        ]}
-        className="w-full"
-      />
-
-      <Select
-        ariaLabel="Filter by action"
-        icon={<FilterIcon size={14} />}
-        value={action}
-        onChange={(next) => updateParam({ action: next === "all" ? null : next })}
-        options={(["all", ...ACTIVITY_LOG_ACTIONS] as const).map((value) => ({
-          value,
-          label: ACTION_OPTIONS[value],
-        }))}
-        className="w-full"
-      />
-
-      <Select
-        ariaLabel="Filter by type"
-        icon={<FilterIcon size={14} />}
-        value={entity}
-        onChange={(next) => updateParam({ entity: next === "all" ? null : next })}
-        options={(["all", ...ACTIVITY_LOG_ENTITIES] as const).map((value) => ({
-          value,
-          label: ENTITY_OPTIONS[value],
-        }))}
-        className="w-full"
-      />
-
-      {dateFrom ||
-      dateTo ||
-      branch !== "all" ||
-      actor !== "all" ||
-      action !== "all" ||
-      entity !== "all" ? (
-        <button
-          type="button"
-          onClick={() =>
-            updateParam({
-              dateFrom: null,
-              dateTo: null,
-              branch: null,
-              actor: null,
-              action: null,
-              entity: null,
-            })
+      <FilterGroup label="Who">
+        <Select
+          ariaLabel="Filter by who did it"
+          icon={<UserIcon size={14} />}
+          value={actor}
+          onChange={(next) =>
+            updateParam({ actor: next === "all" ? null : next })
           }
-          className="self-start text-xs text-accent hover:underline"
-        >
-          Clear all
-        </button>
-      ) : null}
+          options={[
+            { value: "all", label: "Everyone" },
+            ...actors.map((option) => ({
+              value: option.id,
+              label: option.isActive
+                ? option.fullName
+                : `${option.fullName} (deactivated)`,
+            })),
+          ]}
+          className="w-full"
+        />
+      </FilterGroup>
+
+      <FilterGroup label="Action">
+        <Select
+          ariaLabel="Filter by action"
+          icon={<FilterIcon size={14} />}
+          value={action}
+          onChange={(next) =>
+            updateParam({ action: next === "all" ? null : next })
+          }
+          options={(["all", ...ACTIVITY_LOG_ACTIONS] as const).map((value) => ({
+            value,
+            label: ACTION_OPTIONS[value],
+          }))}
+          className="w-full"
+        />
+      </FilterGroup>
+
+      <FilterGroup label="Record type">
+        <Select
+          ariaLabel="Filter by type"
+          icon={<FilterIcon size={14} />}
+          value={entity}
+          onChange={(next) =>
+            updateParam({ entity: next === "all" ? null : next })
+          }
+          options={(["all", ...ACTIVITY_LOG_ENTITIES] as const).map(
+            (value) => ({
+              value,
+              label: ENTITY_OPTIONS[value],
+            }),
+          )}
+          className="w-full"
+        />
+      </FilterGroup>
     </>
   );
 }

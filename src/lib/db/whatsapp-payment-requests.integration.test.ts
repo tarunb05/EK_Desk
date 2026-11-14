@@ -1,6 +1,19 @@
 import type { Client } from "pg";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { connect, impersonate, impersonateAdmin, withRollback } from "./test-helpers";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
+import {
+  connect,
+  impersonate,
+  impersonateAdmin,
+  withRollback,
+} from "./test-helpers";
 
 const ADMIN_ID = "00000000-0000-4000-8000-000000000101";
 const TEACHER_ID = "00000000-0000-4000-8000-000000000102";
@@ -169,13 +182,15 @@ describe("whatsapp payment requests (phase 15.1)", () => {
 
       await impersonate(client, TEACHER_ID);
 
-      const ownAccount = await client.query("select 1 from collection_account where id = $1", [
-        fixture.collectionAccountId,
-      ]);
+      const ownAccount = await client.query(
+        "select 1 from collection_account where id = $1",
+        [fixture.collectionAccountId],
+      );
       expect(ownAccount.rows).toHaveLength(1);
-      const ownRequest = await client.query("select 1 from payment_request where id = $1", [
-        fixture.paymentRequestId,
-      ]);
+      const ownRequest = await client.query(
+        "select 1 from payment_request where id = $1",
+        [fixture.paymentRequestId],
+      );
       expect(ownRequest.rows).toHaveLength(1);
       const ownClaim = await client.query(
         "select 1 from payment_claim where payment_request_id = $1",
@@ -425,9 +440,10 @@ describe("whatsapp payment requests (phase 15.1)", () => {
       // removal), so a delete has to bypass RLS/grants entirely rather than
       // go through them.
       await clientA.query("reset role");
-      await clientA.query("delete from payment_request where fee_account_id = $1", [
-        feeAccount.rows[0]!.id,
-      ]);
+      await clientA.query(
+        "delete from payment_request where fee_account_id = $1",
+        [feeAccount.rows[0]!.id],
+      );
       await clientA.query("delete from collection_account where id = $1", [
         collectionAccount.rows[0]!.id,
       ]);
@@ -497,7 +513,11 @@ describe("whatsapp payment requests (phase 15.1)", () => {
       await clientB.query("begin");
       await impersonateAdmin(clientB);
 
-      await clientA.query(insertSql, [raceBranchId, "Default A", "defaulta@upi"]);
+      await clientA.query(insertSql, [
+        raceBranchId,
+        "Default A",
+        "defaulta@upi",
+      ]);
       // The outcome is captured the moment the query is issued: B's insert
       // can reject as soon as A commits, before `await expect` below has
       // attached a handler, and an unhandled rejection fails the whole run.

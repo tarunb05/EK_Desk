@@ -240,7 +240,10 @@ export async function getActivityLogPage(
   const lastRow = pageRows[pageRows.length - 1];
   const nextCursor =
     hasMore && lastRow
-      ? encodeActivityLogCursor({ occurredAt: lastRow.occurred_at, id: lastRow.id })
+      ? encodeActivityLogCursor({
+          occurredAt: lastRow.occurred_at,
+          id: lastRow.id,
+        })
       : null;
 
   // The two empty states read as different sentences ("No activity

@@ -70,7 +70,10 @@ export async function getOpenRequests(
       )
       .eq("status", "open")
       .order("created_at", { ascending: true }),
-    supabase.from("payment_claim").select("payment_request_id").eq("status", "pending"),
+    supabase
+      .from("payment_claim")
+      .select("payment_request_id")
+      .eq("status", "pending"),
   ]);
 
   const alreadyClaimed = new Set(
@@ -88,7 +91,8 @@ export async function getOpenRequests(
         feeAccountId: request.fee_account_id,
         studentName: student.full_name,
         branchName: student.branch.name,
-        serviceLabel: SERVICE_LABEL[feeAccount.service_type] ?? feeAccount.service_type,
+        serviceLabel:
+          SERVICE_LABEL[feeAccount.service_type] ?? feeAccount.service_type,
         amountPaise,
         amountDisplay: formatPaise(amountPaise),
         referenceCode: request.reference_code,
@@ -129,7 +133,9 @@ export async function getPendingClaims(
   const now = new Date();
 
   return claims
-    .filter((claim) => claim.payment_request && claim.payment_request.fee_account)
+    .filter(
+      (claim) => claim.payment_request && claim.payment_request.fee_account,
+    )
     .map((claim) => {
       const request = claim.payment_request!;
       const feeAccount = request.fee_account!;
@@ -143,7 +149,8 @@ export async function getPendingClaims(
         feeAccountId: request.fee_account_id,
         studentName: student.full_name,
         branchName: student.branch.name,
-        serviceLabel: SERVICE_LABEL[feeAccount.service_type] ?? feeAccount.service_type,
+        serviceLabel:
+          SERVICE_LABEL[feeAccount.service_type] ?? feeAccount.service_type,
         requestedAmountPaise,
         claimedAmountPaise,
         utr: claim.utr,

@@ -18,6 +18,24 @@ export function formatPaise(paise: bigint): string {
   return inrFormatter.format(paiseToRupees(paise));
 }
 
+// Axis ticks and chart labels only -- a full figure (₹1,24,500) is too wide
+// for a tick or a label set inside a bar. Indian units (K / L / Cr), at
+// most one decimal and none when it would be ".0". Never use this where the
+// exact amount matters: tiles, tables and tooltips keep formatPaise.
+export function formatPaiseCompact(paise: bigint): string {
+  const rupees = paiseToRupees(paise);
+  const abs = Math.abs(rupees);
+  const sign = rupees < 0 ? "-" : "";
+  const scaled = (value: number, unit: string) => {
+    const rounded = Math.round(value * 10) / 10;
+    return `${sign}₹${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}${unit}`;
+  };
+  if (abs >= 10_000_000) return scaled(abs / 10_000_000, "Cr");
+  if (abs >= 100_000) return scaled(abs / 100_000, "L");
+  if (abs >= 1_000) return scaled(abs / 1_000, "K");
+  return `${sign}₹${Math.round(abs)}`;
+}
+
 // The inverse of parseRupeesToPaise, for prefilling an edit form's amount
 // field -- pure integer string manipulation (no division-as-float), so a
 // stored value round-trips through the form exactly, not "close enough".
@@ -29,7 +47,12 @@ export function paiseToRupeesInputString(paise: bigint): string {
 
 // Shared across every "how was this paid" field in the app (payment,
 // expense) -- same domain, same values, one type, never forked per field.
-export const MONEY_METHODS = ["cash", "upi", "cheque", "bank_transfer"] as const;
+export const MONEY_METHODS = [
+  "cash",
+  "upi",
+  "cheque",
+  "bank_transfer",
+] as const;
 export type MoneyMethod = (typeof MONEY_METHODS)[number];
 
 // payment only: 'card' means a parent paid at the office on a POS machine

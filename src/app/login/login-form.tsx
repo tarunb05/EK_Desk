@@ -18,17 +18,14 @@ export function LoginForm() {
     <form action={formAction} noValidate className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <div className="flex items-baseline justify-between gap-2">
-          {/* login-field-label: Phase 14's glass card bumps this to
-              --ink-secondary while its enhancement is active (see
-              globals.css) -- --ink-muted, the default here, measures
-              short of 4.5:1 against the wave background's darkest
-              extreme. Fallback/reduced-transparency/reduced-contrast
-              states keep this exact --ink-muted, unaffected. */}
-          <label htmlFor="username" className="login-field-label text-xs text-ink-muted">
+          <label htmlFor="username" className="text-sm text-ink-secondary">
             Username
           </label>
           {state.fieldErrors?.username ? (
-            <span className="animate-alert-in text-xs text-attention" role="alert">
+            <span
+              className="animate-alert-in text-xs text-attention"
+              role="alert"
+            >
               {state.fieldErrors.username}
             </span>
           ) : null}
@@ -39,17 +36,20 @@ export function LoginForm() {
           type="text"
           autoComplete="username"
           required
-          className={`h-10 ${inputClassName} rounded-field!`}
+          className={`${inputClassName} h-11! text-base!`}
         />
       </div>
 
       <div className="flex flex-col gap-1">
         <div className="flex items-baseline justify-between gap-2">
-          <label htmlFor="password" className="login-field-label text-xs text-ink-muted">
+          <label htmlFor="password" className="text-sm text-ink-secondary">
             Password
           </label>
           {state.fieldErrors?.password ? (
-            <span className="animate-alert-in text-xs text-attention" role="alert">
+            <span
+              className="animate-alert-in text-xs text-attention"
+              role="alert"
+            >
               {state.fieldErrors.password}
             </span>
           ) : null}
@@ -60,7 +60,7 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className={`h-10 ${inputClassName} rounded-field!`}
+          className={`${inputClassName} h-11! text-base!`}
         />
       </div>
 
@@ -76,7 +76,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isPending}
-        className={`${primaryButtonClassName} rounded-field! flex items-center justify-center gap-2`}
+        className={`${primaryButtonClassName} mt-2 flex h-11! items-center justify-center gap-2`}
       >
         {isPending ? (
           <>
@@ -90,10 +90,10 @@ export function LoginForm() {
               aria-hidden="true"
               className="animate-loading-ring h-4 w-4 rounded-full border-2 border-surface/30 border-t-surface"
             />
-            Signing in…
+            Logging in…
           </>
         ) : (
-          "Sign in"
+          "Log in"
         )}
       </button>
     </form>

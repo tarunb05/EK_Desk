@@ -9,6 +9,7 @@ import {
   getAllExpenseCategoryOptions,
   getExpenseCategoryBreakdown,
   getExpenseDirectory,
+  getExpenseMonthlyTotals,
   getExpenseYears,
 } from "@/lib/records/expense-directory";
 import { getBranches } from "@/lib/supabase/queries";
@@ -16,6 +17,8 @@ import { ExpenseTable } from "@/components/expenses/expense-table";
 import { ExpenseFilters } from "@/components/expenses/expense-filters";
 import { TotalExpensesCard } from "@/components/expenses/total-expenses-card";
 import { CategoryBreakdownChart } from "@/components/expenses/category-breakdown-chart";
+import { ChartCard } from "@/components/charts/chart-card";
+import { MonthColumns } from "@/components/charts/month-columns";
 import { ScopeSelectors } from "@/components/shell/scope-selectors";
 import { FilterMenu } from "@/components/shell/filter-menu";
 import { SearchField } from "@/components/shell/search-field";
@@ -68,7 +71,7 @@ export default async function ExpensesPage({
 
   // Table, card and chart all read the same filters, so the figures always
   // describe the rows below them.
-  const [{ rows, pagination }, breakdown] = await Promise.all([
+  const [{ rows, pagination }, breakdown, monthlyTotals] = await Promise.all([
     getExpenseDirectory(supabase, {
       branch: effectiveBranch,
       table,
@@ -79,7 +82,20 @@ export default async function ExpensesPage({
       branch: effectiveBranch,
       table,
     }),
+    getExpenseMonthlyTotals(supabase, {
+      branch: effectiveBranch,
+      year,
+      table,
+    }),
   ]);
+
+  // The chart always shows the whole year; a month picked in the filters is
+  // the one column left in slate, with the other eleven dimmed around it.
+  const monthColumns = monthlyTotals.map(({ month, totalPaise }) => ({
+    month,
+    paise: totalPaise,
+    dimmed: Boolean(table.month) && table.month !== month,
+  }));
 
   // "2026" alone means the whole year, so say so; anything more specific
   // (a month, a category...) is named in full.
@@ -121,48 +137,68 @@ export default async function ExpensesPage({
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-medium text-ink">Expenses</h1>
-
-      <div className="flex items-center justify-end gap-2">
-        <SearchField
-          ariaLabel="Search by category, reference, or note"
-          placeholder="Search"
-          className="w-56"
-        />
-        <FilterMenu>
-          {authed.role === "admin" ? (
-            <ScopeSelectors branches={branches} />
-          ) : null}
-          <ExpenseFilters
-            categories={categories}
-            years={years}
-            year={year}
-            month={table.month ?? ""}
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+        <h1 className="text-2xl font-semibold text-ink">Expenses</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <SearchField
+            ariaLabel="Search by category, reference, or note"
+            placeholder="Search"
+            className="w-56"
           />
-        </FilterMenu>
-        <Link
-          href="/expenses/new"
-          className="inline-block h-9 rounded-md bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
-        >
-          Record expense
-        </Link>
+          <FilterMenu>
+            {authed.role === "admin" ? (
+              <ScopeSelectors branches={branches} />
+            ) : null}
+            <ExpenseFilters
+              categories={categories}
+              years={years}
+              year={year}
+              month={table.month ?? ""}
+            />
+          </FilterMenu>
+          <Link
+            href="/expenses/new"
+            className="inline-block h-9 rounded-full bg-accent px-4 text-sm font-medium leading-9 text-surface transition-[background-color,transform] duration-150 hover:bg-accent/90 active:scale-[0.98]"
+          >
+            Record expense
+          </Link>
+        </div>
       </div>
 
-      <TotalExpensesCard
-        totalPaise={breakdown.totalPaise}
-        caption={cardCaption}
-        exportHref={`/api/export/expenses?${exportParams.toString()}`}
-      />
+      {/* Two equal columns: the headline figure over the year by month on
+          the left, the category list on the right. The list needs the
+          width -- in a narrow third its bars shrink to stubs. */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="flex flex-col gap-5">
+          <TotalExpensesCard
+            totalPaise={breakdown.totalPaise}
+            caption={cardCaption}
+            exportHref={`/api/export/expenses?${exportParams.toString()}`}
+          />
+          <ChartCard
+            title="Spent each month"
+            caption={
+              table.month
+                ? `${year}, filtered month in slate`
+                : `Calendar year ${year}`
+            }
+            className="flex-1"
+          >
+            <MonthColumns
+              columns={monthColumns}
+              valueLabel="Spent"
+              emptyText={`No expenses recorded in ${year} yet. Record one and it appears here under its month.`}
+            />
+          </ChartCard>
+        </div>
 
-      <div className="flex flex-col gap-2">
-        <h2 className="text-2xs font-medium uppercase tracking-wide text-ink-muted">
-          By category
-        </h2>
-        <CategoryBreakdownChart
-          rows={breakdown.rows}
-          totalPaise={breakdown.totalPaise}
-        />
+        <ChartCard title="By category" caption="Share of the total">
+          <CategoryBreakdownChart
+            rows={breakdown.rows}
+            totalPaise={breakdown.totalPaise}
+          />
+        </ChartCard>
       </div>
 
       <ExpenseTable

@@ -12,7 +12,7 @@ interface PaginationControlsProps {
 const disabledClassName =
   "rounded-md border border-border px-3 py-1 text-ink-muted opacity-40 max-md:py-2.5";
 const enabledClassName =
-  "rounded-md border border-border px-3 py-1 transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent max-md:py-2.5";
+  "rounded-full border border-border px-3 py-1 transition-colors duration-150 hover:bg-surface-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-accent max-md:py-2.5";
 const pageNumberClassName =
   "flex h-7 w-7 items-center justify-center rounded-md text-sm transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-accent max-md:h-10 max-md:w-10";
 
