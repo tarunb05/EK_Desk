@@ -184,6 +184,7 @@ export type Database = {
           bank_name: string | null;
           branch_id: string;
           created_at: string;
+          deleted_at: string | null;
           id: string;
           ifsc: string | null;
           is_active: boolean;
@@ -200,6 +201,7 @@ export type Database = {
           bank_name?: string | null;
           branch_id: string;
           created_at?: string;
+          deleted_at?: string | null;
           id?: string;
           ifsc?: string | null;
           is_active?: boolean;
@@ -216,6 +218,7 @@ export type Database = {
           bank_name?: string | null;
           branch_id?: string;
           created_at?: string;
+          deleted_at?: string | null;
           id?: string;
           ifsc?: string | null;
           is_active?: boolean;
@@ -1884,6 +1887,10 @@ export type Database = {
           total_pending_paise: number;
           total_receivable_paise: number;
         }[];
+      };
+      delete_collection_account: {
+        Args: { p_current_password: string; p_id: string };
+        Returns: Json;
       };
       enter_and_confirm_claim: {
         Args: {

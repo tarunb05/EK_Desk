@@ -82,6 +82,9 @@ export async function getCollectionAccountsWithLatestChange(
       supabase
         .from("collection_account")
         .select("*, branch:branch_id (name)")
+        // Deleted accounts that past payment requests still point at are
+        // kept for those requests (see delete_collection_account), not listed.
+        .is("deleted_at", null)
         .order("branch_id")
         .order("label"),
       supabase

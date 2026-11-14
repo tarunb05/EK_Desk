@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import { fieldErrorsFromZod } from "@/lib/forms/field-errors";
 import {
   createCollectionAccountSchema,
+  deleteCollectionAccountSchema,
   setDefaultCollectionAccountSchema,
   updateCollectionAccountSchema,
 } from "@/lib/settings/schemas";
@@ -25,6 +26,16 @@ export interface CollectionAccountActionState {
   // pay link a parent might still be holding. Re-sending is a 15.3 action;
   // this just surfaces who needs it.
   affected?: AffectedPaymentRequest[];
+}
+
+export interface DeleteCollectionAccountState {
+  error: string | null;
+  fieldErrors?: Record<string, string>;
+  // Set once the delete went through. removed: the account had never been
+  // used and is gone; otherwise it is kept, hidden, for the past payment
+  // requests that point at it. affected: students whose open request on it
+  // was cancelled, same as an edit that changes the bank details.
+  done?: { removed: boolean; affected: AffectedPaymentRequest[] };
 }
 
 function formEntries(formData: FormData): Record<string, string> {
@@ -118,6 +129,47 @@ export async function updateCollectionAccount(
   revalidatePath("/settings");
   const affected = (data as { affected?: AffectedPaymentRequest[] })?.affected;
   return { error: null, affected: affected?.length ? affected : undefined };
+}
+
+// No revalidatePath here on purpose: the row that asked shows what happened
+// (and who needs a new link) first, and refreshes the list itself when the
+// admin dismisses it -- revalidating now would unmount that row, and the
+// list of affected students with it, the moment it renders.
+export async function deleteCollectionAccount(
+  _prevState: DeleteCollectionAccountState,
+  formData: FormData,
+): Promise<DeleteCollectionAccountState> {
+  await requireRole("admin");
+  const parsed = deleteCollectionAccountSchema.safeParse(formEntries(formData));
+  if (!parsed.success) {
+    return { error: null, fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("delete_collection_account", {
+    p_id: parsed.data.accountId,
+    p_current_password: parsed.data.currentPassword,
+  });
+
+  if (error) {
+    return {
+      error: error.message.includes("incorrect password")
+        ? "Incorrect password."
+        : "Could not delete this collection account.",
+    };
+  }
+
+  const result = data as {
+    removed?: boolean;
+    affected?: AffectedPaymentRequest[];
+  } | null;
+  return {
+    error: null,
+    done: {
+      removed: Boolean(result?.removed),
+      affected: result?.affected ?? [],
+    },
+  };
 }
 
 export async function setDefaultCollectionAccount(
