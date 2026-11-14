@@ -24,6 +24,10 @@ import { FilterMenu } from "@/components/shell/filter-menu";
 import { SearchField } from "@/components/shell/search-field";
 import { todayInIndia } from "@/lib/domain/datetime";
 import { summarizeExpenseFilters } from "@/lib/domain/expense-filter-summary";
+import {
+  periodBounds,
+  resolveExpenseDateRange,
+} from "@/lib/domain/expense-month";
 
 const PAGE_SIZE = 20;
 
@@ -69,33 +73,65 @@ export default async function ExpensesPage({
   );
   const table = { ...tableParams, year };
 
-  // Table, card and chart all read the same filters, so the figures always
-  // describe the rows below them.
-  const [{ rows, pagination }, breakdown, monthlyTotals] = await Promise.all([
-    getExpenseDirectory(supabase, {
-      branch: effectiveBranch,
-      table,
-      page: tableParams.page,
-      pageSize: PAGE_SIZE,
-    }),
-    getExpenseCategoryBreakdown(supabase, {
-      branch: effectiveBranch,
-      table,
-    }),
-    getExpenseMonthlyTotals(supabase, {
-      branch: effectiveBranch,
-      year,
-      table,
-    }),
-  ]);
+  // Table, card and the selected part of each chart read the same filters,
+  // so the figures always describe the rows below them. The charts also
+  // keep the whole year in view (the same rule as the Transport and Daycare
+  // dashboards): the category chart gets the year's spend per category with
+  // only method and search applied, and the selection is drawn inside it.
+  const [{ rows, pagination }, breakdown, yearBreakdown, monthlyTotals] =
+    await Promise.all([
+      getExpenseDirectory(supabase, {
+        branch: effectiveBranch,
+        table,
+        page: tableParams.page,
+        pageSize: PAGE_SIZE,
+      }),
+      getExpenseCategoryBreakdown(supabase, {
+        branch: effectiveBranch,
+        table,
+      }),
+      getExpenseCategoryBreakdown(supabase, {
+        branch: effectiveBranch,
+        table: {
+          ...table,
+          month: undefined,
+          from: undefined,
+          to: undefined,
+          category: undefined,
+        },
+      }),
+      getExpenseMonthlyTotals(supabase, {
+        branch: effectiveBranch,
+        year,
+        table,
+      }),
+    ]);
 
-  // The chart always shows the whole year; a month picked in the filters is
-  // the one column left in slate, with the other eleven dimmed around it.
-  const monthColumns = monthlyTotals.map(({ month, totalPaise }) => ({
-    month,
-    paise: totalPaise,
-    dimmed: Boolean(table.month) && table.month !== month,
-  }));
+  // A month, a From/To range or a category narrows the selection; year,
+  // method and search shape the whole picture instead.
+  const periodNarrowed = Boolean(table.month || table.from || table.to);
+  const selectionNarrowed = periodNarrowed || Boolean(table.category);
+
+  // The month chart always shows the whole year; the months inside the
+  // filtered period stay slate and the rest go sand. Compared as ISO dates
+  // against the one resolved range every other consumer uses (the month
+  // filter is a bare number, "11", so it can't be matched to "2026-11"
+  // directly).
+  const period = resolveExpenseDateRange(table);
+  const monthColumns = monthlyTotals.map(({ month, totalPaise }) => {
+    const { from: monthStart, to: monthEnd } = periodBounds(
+      year,
+      String(Number(month.slice(5))),
+    );
+    const overlaps =
+      (!period.from || monthEnd >= period.from) &&
+      (!period.to || monthStart <= period.to);
+    return {
+      month,
+      paise: totalPaise,
+      dimmed: periodNarrowed && !overlaps,
+    };
+  });
 
   // "2026" alone means the whole year, so say so; anything more specific
   // (a month, a category...) is named in full.
@@ -179,8 +215,8 @@ export default async function ExpensesPage({
           <ChartCard
             title="Spent each month"
             caption={
-              table.month
-                ? `${year}, filtered month in slate`
+              periodNarrowed
+                ? `${year}, filtered months in slate`
                 : `Calendar year ${year}`
             }
             className="flex-1"
@@ -193,10 +229,26 @@ export default async function ExpensesPage({
           </ChartCard>
         </div>
 
-        <ChartCard title="By category" caption="Share of the total">
+        <ChartCard
+          title="By category"
+          caption={
+            selectionNarrowed
+              ? "Share of the selection, inside the year"
+              : "Share of the total"
+          }
+        >
           <CategoryBreakdownChart
-            rows={breakdown.rows}
-            totalPaise={breakdown.totalPaise}
+            yearRows={[...yearBreakdown.rows].sort((a, b) =>
+              a.amountPaise === b.amountPaise
+                ? a.categoryName.localeCompare(b.categoryName)
+                : a.amountPaise > b.amountPaise
+                  ? -1
+                  : 1,
+            )}
+            selectedRows={breakdown.rows}
+            selectedTotalPaise={breakdown.totalPaise}
+            filtered={selectionNarrowed}
+            year={year}
           />
         </ChartCard>
       </div>

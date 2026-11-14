@@ -213,3 +213,10 @@ export const updateCollectionAccountSchema = refineCollectionAccountFields(
 export const setDefaultCollectionAccountSchema = z.object({
   accountId: z.string().uuid(),
 });
+
+export const deleteCollectionAccountSchema = z.object({
+  accountId: z.string().uuid(),
+  currentPassword: z
+    .string()
+    .min(1, "Enter your password to confirm deleting this account."),
+});

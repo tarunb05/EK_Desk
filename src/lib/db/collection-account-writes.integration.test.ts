@@ -378,4 +378,155 @@ describe("collection account writes (phase 15.2)", () => {
       await clientB.end();
     }
   });
+
+  describe("delete_collection_account", () => {
+    async function createAccount(label: string) {
+      const created = await client.query<{
+        save_collection_account: { id: string };
+      }>(
+        `select save_collection_account(
+           p_id := null, p_branch_id := $1, p_label := $2,
+           p_payee_name := 'Payee', p_is_active := true,
+           p_current_password := $3, p_upi_id := 'delete@upi'
+         )`,
+        [branchId, label, ADMIN_PASSWORD],
+      );
+      return created.rows[0]!.save_collection_account.id;
+    }
+
+    it("a wrong password deletes nothing", async () => {
+      await withRollback(client, async () => {
+        await seedAdminWithPassword(client);
+        const accountId = await createAccount("Delete Wrong Password");
+
+        await expect(
+          client.query("select delete_collection_account($1, $2)", [
+            accountId,
+            "not-the-password",
+          ]),
+        ).rejects.toThrow(/incorrect password/);
+      });
+    });
+
+    it("an account no request has used is removed, and the change log keeps a row saying so", async () => {
+      await withRollback(client, async () => {
+        await seedAdminWithPassword(client);
+        const accountId = await createAccount("Delete Unused");
+
+        const result = await client.query<{
+          delete_collection_account: { removed: boolean; affected: unknown[] };
+        }>("select delete_collection_account($1, $2)", [
+          accountId,
+          ADMIN_PASSWORD,
+        ]);
+        expect(result.rows[0]!.delete_collection_account.removed).toBe(true);
+        expect(result.rows[0]!.delete_collection_account.affected).toEqual([]);
+
+        const row = await client.query(
+          "select 1 from collection_account where id = $1",
+          [accountId],
+        );
+        expect(row.rows).toHaveLength(0);
+
+        // The create and the delete share one transaction here, so their log
+        // rows share a created_at too: look for the delete's row directly
+        // rather than "the latest".
+        const log = await client.query<{ before: { label: string } }>(
+          `select before from collection_account_change_log
+           where collection_account_id = $1 and after = '{"deleted": true}'::jsonb`,
+          [accountId],
+        );
+        expect(log.rows).toHaveLength(1);
+        expect(log.rows[0]!.before.label).toBe("Delete Unused");
+      });
+    });
+
+    it("an account a request has used is kept (hidden, inactive), its open request is cancelled, and the request keeps its details", async () => {
+      await withRollback(client, async () => {
+        await seedAdminWithPassword(client);
+        const accountId = await createAccount("Delete Used");
+
+        const year = await client.query<{ id: string }>(
+          "select id from academic_year where is_current limit 1",
+        );
+        const student = await client.query<{ id: string }>(
+          `insert into student (branch_id, admission_no, full_name, guardian_name, phone, class_section)
+           values ($1, 'CA-DELETE-1', 'Delete Child', 'Guardian', '9000000302', 'Nursery-A')
+           returning id`,
+          [branchId],
+        );
+        const feeAccount = await client.query<{ id: string }>(
+          `insert into fee_account
+             (student_id, academic_year_id, service_type, total_receivable_paise, due_date, starts_on, ends_on, route_name, pickup_point)
+           values ($1, $2, 'transport', 1000000, '2026-06-01', '2026-04-01', '2027-03-31', 'Route 1', 'Gate')
+           returning id`,
+          [student.rows[0]!.id, year.rows[0]!.id],
+        );
+        const request = await client.query<{ id: string }>(
+          `insert into payment_request
+             (fee_account_id, collection_account_id, reference_code, amount_paise,
+              include_upi, include_bank, status, token_hash, expires_at, created_by)
+           values ($1, $2, 'EK-DELE1', 100000, true, false, 'open', $3, now() + interval '7 days', $4)
+           returning id`,
+          [
+            feeAccount.rows[0]!.id,
+            accountId,
+            Buffer.from("de1e7e01", "hex"),
+            ADMIN_ID,
+          ],
+        );
+
+        const result = await client.query<{
+          delete_collection_account: {
+            removed: boolean;
+            affected: Array<{ admissionNo: string }>;
+          };
+        }>("select delete_collection_account($1, $2)", [
+          accountId,
+          ADMIN_PASSWORD,
+        ]);
+        const outcome = result.rows[0]!.delete_collection_account;
+        expect(outcome.removed).toBe(false);
+        expect(outcome.affected.map((a) => a.admissionNo)).toEqual([
+          "CA-DELETE-1",
+        ]);
+
+        const account = await client.query<{
+          deleted_at: string | null;
+          is_active: boolean;
+          is_default: boolean;
+          upi_id: string;
+        }>(
+          "select deleted_at, is_active, is_default, upi_id from collection_account where id = $1",
+          [accountId],
+        );
+        expect(account.rows[0]!.deleted_at).not.toBeNull();
+        expect(account.rows[0]!.is_active).toBe(false);
+        expect(account.rows[0]!.is_default).toBe(false);
+
+        const req = await client.query<{
+          status: string;
+          closed_reason: string;
+          upi_id: string;
+        }>(
+          `select pr.status, pr.closed_reason, ca.upi_id
+           from payment_request pr
+           join collection_account ca on ca.id = pr.collection_account_id
+           where pr.id = $1`,
+          [request.rows[0]!.id],
+        );
+        expect(req.rows[0]!.status).toBe("cancelled");
+        expect(req.rows[0]!.closed_reason).toBe("account_changed");
+        expect(req.rows[0]!.upi_id).toBe("delete@upi");
+
+        // Deleting it again finds nothing to delete.
+        await expect(
+          client.query("select delete_collection_account($1, $2)", [
+            accountId,
+            ADMIN_PASSWORD,
+          ]),
+        ).rejects.toThrow(/not found/);
+      });
+    });
+  });
 });
