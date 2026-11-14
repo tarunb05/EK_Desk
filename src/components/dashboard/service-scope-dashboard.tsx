@@ -8,8 +8,10 @@ import {
   getAgeingBuckets,
   getBreakdownByClass,
   getBreakdownByGroup,
+  getCollectedInMonths,
   getCollectionByMonth,
   getDashboardSummary,
+  withCollectedInMonths,
 } from "@/lib/records/dashboard-queries";
 import type { ServiceType } from "@/lib/records/types";
 import { StatCards } from "@/components/dashboard/stat-cards";
@@ -31,14 +33,15 @@ interface ServiceScopeDashboardProps {
 
 // One dashboard, reused by /transport and /daycare with a different
 // service_type — the money and aggregation logic exists exactly once. The
-// per-student record listing lives on /students now (across both services,
-// with search/filter/sort) rather than duplicated here — this page stays
-// figures, the by-branch split, and "Add student". There are no charts on
-// this page any more (ageing/by-class/by-route/collection-by-month were
-// all removed) — the underlying SQL functions and their integration tests
-// are left in place since nothing about the schema itself changed, and
-// collection-by-month's data now drives the month filter instead of a
-// chart.
+// per-student record listing lives on /students (across both services, with
+// search/filter/sort); this page is the figures, the charts that explain
+// them, the by-branch split, and "Add student".
+//
+// Filters: year and branch scope every query on the page. The month filter
+// scopes everything that is a sum of payments (Total collected, Collection
+// rate, the monthly columns, and the collected part of By class / By route
+// / By slot). Receivable, pending, overdue and ageing are balances as of
+// today, so they stay whole-year whatever months are picked.
 export async function ServiceScopeDashboard({
   serviceType,
   title,
@@ -51,41 +54,6 @@ export async function ServiceScopeDashboard({
   const { year, branch } = await getCurrentScope(scopeParams);
 
   const scope = { serviceType, academicYearId: year.id, branch };
-  const [
-    summary,
-    collectionByMonth,
-    ageing,
-    byClass,
-    byGroup,
-    branches,
-    years,
-  ] = await Promise.all([
-    getDashboardSummary(supabase, scope),
-    getCollectionByMonth(supabase, scope),
-    getAgeingBuckets(supabase, scope),
-    getBreakdownByClass(supabase, scope),
-    getBreakdownByGroup(supabase, scope),
-    getBranches(supabase),
-    getAcademicYears(supabase),
-  ]);
-
-  // branch=all gets a per-branch split of the figures (called out by name
-  // in the phase plan).
-  const activeBranches = branches.filter((b) => b.isActive);
-  const isAllBranches = branch === "all";
-
-  const branchSplit = isAllBranches
-    ? await Promise.all(
-        activeBranches.map(async (b) => ({
-          branch: b,
-          summary: await getDashboardSummary(supabase, {
-            serviceType,
-            academicYearId: year.id,
-            branch: b.code,
-          }),
-        })),
-      )
-    : null;
 
   // Only Total collected / Collection rate scope to the selected month(s) —
   // Receivable/Pending/Overdue are point-in-time balances, not sums over a
@@ -94,6 +62,73 @@ export async function ServiceScopeDashboard({
   const selectedMonths = (typeof monthsParam === "string" ? monthsParam : "")
     .split(",")
     .filter(Boolean);
+
+  const [
+    summary,
+    collectionByMonth,
+    ageing,
+    byClass,
+    byGroup,
+    branches,
+    years,
+    collectedInMonths,
+  ] = await Promise.all([
+    getDashboardSummary(supabase, scope),
+    getCollectionByMonth(supabase, scope),
+    getAgeingBuckets(supabase, scope),
+    getBreakdownByClass(supabase, scope),
+    getBreakdownByGroup(supabase, scope),
+    getBranches(supabase),
+    getAcademicYears(supabase),
+    selectedMonths.length > 0
+      ? getCollectedInMonths(supabase, scope, selectedMonths)
+      : null,
+  ]);
+
+  // With months picked, the class and route/slot bars mark what was paid in
+  // those months, so they agree with the Total collected tile above them.
+  const byClassRows = collectedInMonths
+    ? withCollectedInMonths(byClass, collectedInMonths.byClass)
+    : byClass;
+  const byGroupRows = collectedInMonths
+    ? withCollectedInMonths(byGroup, collectedInMonths.byGroup)
+    : byGroup;
+
+  // branch=all gets a per-branch split of the figures (called out by name
+  // in the phase plan).
+  const activeBranches = branches.filter((b) => b.isActive);
+  const isAllBranches = branch === "all";
+
+  // With months picked, each branch's Collected (and so its Rate) is what it
+  // collected in those months, the same rule as the Total collected tile.
+  const branchSplit = isAllBranches
+    ? await Promise.all(
+        activeBranches.map(async (b) => {
+          const branchScope = {
+            serviceType,
+            academicYearId: year.id,
+            branch: b.code,
+          };
+          const [branchSummary, branchByMonth] = await Promise.all([
+            getDashboardSummary(supabase, branchScope),
+            selectedMonths.length > 0
+              ? getCollectionByMonth(supabase, branchScope)
+              : null,
+          ]);
+          return {
+            branch: b,
+            summary: branchByMonth
+              ? {
+                  ...branchSummary,
+                  totalCollectedPaise: branchByMonth
+                    .filter((row) => selectedMonths.includes(row.month))
+                    .reduce((sum, row) => sum + row.collectedPaise, 0n),
+                }
+              : branchSummary,
+          };
+        }),
+      )
+    : null;
 
   const matchingMonthRows = collectionByMonth.filter((row) =>
     selectedMonths.includes(row.month),
@@ -141,6 +176,10 @@ export async function ServiceScopeDashboard({
       : (branches.find((b) => b.code === branch)?.name ?? branch);
   const scopeCaption = `${year.label} · ${branchName}`;
   const groupNoun = serviceType === "transport" ? "route" : "slot";
+  const splitCaption =
+    selectedMonths.length > 0
+      ? "Collected in the selected months"
+      : "Share of fees collected";
 
   return (
     <div className="flex flex-col gap-5">
@@ -200,21 +239,34 @@ export async function ServiceScopeDashboard({
           />
         </ChartCard>
 
-        <ChartCard title="How old the pending is" caption="By due date">
-          <AgeingBars buckets={ageing} />
+        <ChartCard
+          title="How old the pending is"
+          caption="By due date · click a row to see the students"
+        >
+          <AgeingBars
+            buckets={ageing}
+            hrefFor={(bucket) =>
+              `/students?${new URLSearchParams({
+                service: serviceType,
+                academicYear: year.label,
+                branch,
+                ageing: bucket,
+              }).toString()}`
+            }
+          />
         </ChartCard>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <ChartCard title="By class" caption="Share of fees collected">
+        <ChartCard title="By class" caption={splitCaption}>
           <SplitBars
-            rows={byClass}
+            rows={byClassRows}
             emptyText="No students are enrolled in this scope yet. Classes appear here once they are."
           />
         </ChartCard>
-        <ChartCard title={`By ${groupNoun}`} caption="Share of fees collected">
+        <ChartCard title={`By ${groupNoun}`} caption={splitCaption}>
           <SplitBars
-            rows={byGroup}
+            rows={byGroupRows}
             emptyText={`No students are enrolled in this scope yet. Each ${groupNoun} appears here once they are.`}
           />
         </ChartCard>
@@ -224,6 +276,11 @@ export async function ServiceScopeDashboard({
         <div className="flex flex-col gap-2">
           <h2 className="text-2xs font-medium uppercase tracking-[0.06em] text-ink-muted">
             By branch
+            {selectedMonths.length > 0 ? (
+              <span className="ml-2 normal-case tracking-normal">
+                Collected and rate for the selected months
+              </span>
+            ) : null}
           </h2>
           <BranchSplitTable rows={branchSplit} />
         </div>

@@ -32,3 +32,22 @@ export type StudentStatusFilter = (typeof STUDENT_STATUS_FILTERS)[number];
 
 export const STUDENT_SERVICE_FILTERS = ["all", "transport", "daycare"] as const;
 export type StudentServiceFilter = (typeof STUDENT_SERVICE_FILTERS)[number];
+
+// ?ageing=… is set by clicking a row of a dashboard's "How old the pending
+// is" chart: students with an account in that bucket, for that service and
+// year. Only takes effect together with a single service; there is no
+// control for it in the filter menu, just a chip on the list to clear it.
+export const STUDENT_AGEING_FILTERS = [
+  "not_yet_due",
+  "1-30",
+  "31-60",
+  "60+",
+] as const;
+export type StudentAgeingFilter = (typeof STUDENT_AGEING_FILTERS)[number];
+
+export const AGEING_FILTER_LABELS: Record<StudentAgeingFilter, string> = {
+  not_yet_due: "Not yet due",
+  "1-30": "1–30 days late",
+  "31-60": "31–60 days late",
+  "60+": "Over 60 days late",
+};

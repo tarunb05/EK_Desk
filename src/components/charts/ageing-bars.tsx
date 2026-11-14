@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatPaise } from "@/lib/domain/money";
 import type {
   AgeingBucket,
@@ -21,7 +22,18 @@ const BUCKETS: Record<AgeingBucketKey, { label: string; bar: string }> = {
 // when a bucket is empty -- the order is the reading, and a row that
 // disappears when it hits zero makes the chart mean something different
 // from one week to the next.
-export function AgeingBars({ buckets }: { buckets: AgeingBucket[] }) {
+//
+// With hrefFor, each row that has accounts in it is a link to the list of
+// those accounts (the dashboard passes it; the landing page's sample does
+// not). An empty row stays plain text -- a link to an empty list is a dead
+// end.
+export function AgeingBars({
+  buckets,
+  hrefFor,
+}: {
+  buckets: AgeingBucket[];
+  hrefFor?: (bucket: AgeingBucketKey) => string;
+}) {
   const max = buckets.reduce(
     (m, b) => (b.pendingPaise > m ? b.pendingPaise : m),
     0n,
@@ -43,16 +55,22 @@ export function AgeingBars({ buckets }: { buckets: AgeingBucket[] }) {
           bucket.pendingPaise > 0n
             ? Math.max((Number(bucket.pendingPaise) / Number(max)) * 100, 2)
             : 0;
-        return (
-          <li key={bucket.bucket} className="flex flex-col gap-1.5">
+        const href =
+          hrefFor && bucket.accountCount > 0
+            ? hrefFor(bucket.bucket)
+            : undefined;
+        const accounts = `${bucket.accountCount} ${bucket.accountCount === 1 ? "account" : "accounts"}`;
+        const body = (
+          <>
             <div className="flex items-baseline justify-between gap-3">
-              <span className="text-sm text-ink">{config.label}</span>
+              <span
+                className={`text-sm text-ink ${href ? "underline decoration-hairline underline-offset-4 transition-colors group-hover:decoration-accent" : ""}`}
+              >
+                {config.label}
+              </span>
               <span className="whitespace-nowrap text-sm tabular-nums text-ink">
                 {formatPaise(bucket.pendingPaise)}
-                <span className="ml-2 text-xs text-ink-muted">
-                  {bucket.accountCount}{" "}
-                  {bucket.accountCount === 1 ? "account" : "accounts"}
-                </span>
+                <span className="ml-2 text-xs text-ink-muted">{accounts}</span>
               </span>
             </div>
             <div className="h-2.5 rounded-full bg-canvas">
@@ -63,6 +81,21 @@ export function AgeingBars({ buckets }: { buckets: AgeingBucket[] }) {
                 />
               ) : null}
             </div>
+          </>
+        );
+        return (
+          <li key={bucket.bucket}>
+            {href ? (
+              <Link
+                href={href}
+                aria-label={`${config.label}: ${formatPaise(bucket.pendingPaise)}, ${accounts}. Show these students`}
+                className="group -mx-2 -my-1.5 flex flex-col gap-1.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                {body}
+              </Link>
+            ) : (
+              <div className="flex flex-col gap-1.5">{body}</div>
+            )}
           </li>
         );
       })}

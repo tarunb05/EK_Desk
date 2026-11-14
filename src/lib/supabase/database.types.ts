@@ -1847,6 +1847,19 @@ export type Database = {
           student_count: number;
         }[];
       };
+      dashboard_collected_by_class_and_group: {
+        Args: {
+          p_academic_year_id: string;
+          p_branch_code?: string;
+          p_months?: string[];
+          p_service_type: string;
+        };
+        Returns: {
+          class_section: string;
+          collected_paise: number;
+          group_label: string;
+        }[];
+      };
       dashboard_collection_by_month: {
         Args: {
           p_academic_year_id: string;
@@ -1899,6 +1912,10 @@ export type Database = {
           category_id: string;
           category_name: string;
         }[];
+      };
+      fee_ageing_bucket: {
+        Args: { p_due_date: string; p_pending_paise: number };
+        Returns: string;
       };
       hard_delete_fee_account: {
         Args: { p_fee_account_id: string };
@@ -1965,6 +1982,39 @@ export type Database = {
       };
       show_limit: { Args: never; Returns: number };
       show_trgm: { Args: { "": string }; Returns: string[] };
+      students_in_ageing_bucket: {
+        Args: {
+          p_academic_year_id: string;
+          p_branch_code?: string;
+          p_bucket: string;
+          p_service_type: string;
+        };
+        Returns: {
+          academic_year_ids: string[] | null;
+          admission_no: string | null;
+          branch_code: string | null;
+          branch_name: string | null;
+          class_section: string | null;
+          created_at: string | null;
+          fee_account_count: number | null;
+          fee_accounts: Json | null;
+          full_name: string | null;
+          guardian_name: string | null;
+          has_daycare: boolean | null;
+          has_overdue: boolean | null;
+          has_transport: boolean | null;
+          id: string | null;
+          phone: string | null;
+          status: string | null;
+          total_pending_paise: number | null;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "student_directory";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       submit_payment_claim: {
         Args: {
           p_amount_paise: number;

@@ -209,4 +209,98 @@ describe("dashboard RPC functions", () => {
     );
     expect(sum).toBe(BigInt(summary.rows[0]!.total_receivable_paise));
   });
+
+  describe("dashboard_collected_by_class_and_group", () => {
+    it("with no months, sums per class to dashboard_breakdown_by_class's collected", async () => {
+      const inMonths = await client.query<{
+        class_section: string | null;
+        collected_paise: string;
+      }>(
+        "select * from dashboard_collected_by_class_and_group($1, $2, null, null)",
+        ["transport", currentYearId],
+      );
+      const byClass = await client.query<{
+        class_section: string | null;
+        collected_paise: string;
+      }>("select * from dashboard_breakdown_by_class($1, $2, null)", [
+        "transport",
+        currentYearId,
+      ]);
+
+      const summed = new Map<string | null, bigint>();
+      for (const row of inMonths.rows) {
+        summed.set(
+          row.class_section,
+          (summed.get(row.class_section) ?? 0n) + BigInt(row.collected_paise),
+        );
+      }
+      for (const row of byClass.rows) {
+        expect(summed.get(row.class_section) ?? 0n).toBe(
+          BigInt(row.collected_paise),
+        );
+      }
+    });
+
+    it("with months, totals what dashboard_collection_by_month reports for those months", async () => {
+      const byMonth = await client.query<{
+        month: string;
+        collected_paise: string;
+      }>("select * from dashboard_collection_by_month($1, $2, null)", [
+        "transport",
+        currentYearId,
+      ]);
+      expect(byMonth.rows.length).toBeGreaterThan(0);
+      const months = byMonth.rows.slice(0, 2).map((row) => row.month);
+      const expected = byMonth.rows
+        .slice(0, 2)
+        .reduce((total, row) => total + BigInt(row.collected_paise), 0n);
+
+      const inMonths = await client.query<{ collected_paise: string }>(
+        "select * from dashboard_collected_by_class_and_group($1, $2, null, $3)",
+        ["transport", currentYearId, months],
+      );
+      const total = inMonths.rows.reduce(
+        (sum, row) => sum + BigInt(row.collected_paise),
+        0n,
+      );
+      expect(total).toBe(expected);
+    });
+  });
+
+  describe("students_in_ageing_bucket", () => {
+    it.each(["not_yet_due", "1-30", "31-60", "60+"])(
+      "returns exactly the students behind the %s row of dashboard_ageing_buckets",
+      async (bucket) => {
+        const students = await client.query<{ id: string }>(
+          "select id from students_in_ageing_bucket($1, $2, $3, null)",
+          ["transport", currentYearId, bucket],
+        );
+        // The chart counts accounts; the list shows students. Same rule,
+        // so the students are the distinct owners of the chart's accounts.
+        const owners = await client.query<{ student_id: string }>(
+          `select distinct student_id from fee_account_record
+           where service_type = 'transport' and academic_year_id = $1
+             and student_status = 'active' and status = 'active'
+             and fee_ageing_bucket(pending_paise, due_date) = $2`,
+          [currentYearId, bucket],
+        );
+        const chart = await client.query<{ account_count: string }>(
+          "select account_count from dashboard_ageing_buckets($1, $2, null) where bucket = $3",
+          ["transport", currentYearId, bucket],
+        );
+        const accounts = await client.query<{ n: string }>(
+          `select count(*) as n from fee_account_record
+           where service_type = 'transport' and academic_year_id = $1
+             and student_status = 'active' and status = 'active'
+             and fee_ageing_bucket(pending_paise, due_date) = $2`,
+          [currentYearId, bucket],
+        );
+
+        expect(students.rows.map((r) => r.id).sort()).toEqual(
+          owners.rows.map((r) => r.student_id).sort(),
+        );
+        expect(chart.rows[0]?.account_count ?? "0").toBe(accounts.rows[0]!.n);
+      },
+    );
+  });
 });
