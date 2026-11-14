@@ -108,8 +108,28 @@ jobs:
       # Starts the full local stack (Postgres, GoTrue, PostgREST, Kong) and
       # applies every migration from empty — the same environment Playwright
       # runs against locally, so auth and RLS behave identically to dev.
+      #
+      # Only what the app and the tests touch: Postgres, GoTrue (sign-in),
+      # PostgREST and Kong in front of them. The rest (Studio, the mail
+      # catcher, storage, realtime, image proxy, edge functions, analytics,
+      # pooler) is never used here, and every extra container is one more
+      # image pull that can hit the registry's rate limit -- which is what
+      # failed this job on 2026-11-14 ("error from registry: Rate exceeded",
+      # then a half-started stack holding port 54324).
+      #
+      # So a failed start is cleaned up (stop, no backup: nothing to keep in
+      # CI) and retried after a pause, three attempts in all.
       - name: Start local Supabase
-        run: supabase start
+        run: |
+          for attempt in 1 2 3; do
+            if supabase start -x studio,mailpit,storage-api,realtime,imgproxy,edge-runtime,logflare,vector,supavisor,postgres-meta; then
+              exit 0
+            fi
+            echo "supabase start failed (attempt $attempt); cleaning up and retrying"
+            supabase stop --no-backup || true
+            sleep $((attempt * 20))
+          done
+          exit 1
 
       - name: Seed the database
         run: npm run db:seed
