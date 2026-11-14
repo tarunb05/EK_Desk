@@ -19,7 +19,9 @@ test.describe("role-based routing (phase 8.1)", () => {
     await expect(page).toHaveURL(/\/transport$/);
     await expect(page.getByRole("link", { name: "Transport" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Daycare" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Students" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Students", exact: true }),
+    ).toBeVisible();
     await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
 
     await page.goto("/daycare");
@@ -38,7 +40,9 @@ test.describe("role-based routing (phase 8.1)", () => {
 
     // A teacher lands on the Expenses dashboard after logging in.
     await expect(page).toHaveURL(/\/expenses$/);
-    await expect(page.getByRole("link", { name: "Students" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Students", exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole("link", { name: "Transport" }),
     ).not.toBeVisible();

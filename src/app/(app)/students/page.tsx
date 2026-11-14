@@ -7,7 +7,10 @@ import { shellSearchParamsSchema } from "@/lib/shell/search-params";
 import { requireAuth } from "@/lib/auth/require-role";
 import { defaultAcademicYear } from "@/lib/domain/academic-year";
 import { todayInIndia } from "@/lib/domain/datetime";
-import type { StudentSortKey } from "@/lib/shell/student-table-params";
+import {
+  AGEING_FILTER_LABELS,
+  type StudentSortKey,
+} from "@/lib/shell/student-table-params";
 import { studentDirectorySearchParamsSchema } from "@/lib/shell/student-search-params";
 import {
   getStudentClassSections,
@@ -75,6 +78,30 @@ export default async function StudentsPage({
     ]),
   );
 
+  // Arrived from a dashboard ageing row: say so, and offer the way back to
+  // the full list (same URL minus ageing, back to page 1). Mirrors when the
+  // query layer applies it -- one service and one year.
+  const ageingChip =
+    tableParams.ageing && tableParams.service !== "all" && academicYearId
+      ? {
+          label: [
+            tableParams.service === "transport" ? "Transport" : "Daycare",
+            AGEING_FILTER_LABELS[tableParams.ageing],
+            academicYears.find((year) => year.id === academicYearId)?.label,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+          clearHref: `/students?${new URLSearchParams(
+            Object.entries(flatSearchParams).filter(
+              (entry): entry is [string, string] =>
+                entry[0] !== "ageing" &&
+                entry[0] !== "page" &&
+                typeof entry[1] === "string",
+            ),
+          ).toString()}`,
+        }
+      : null;
+
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-semibold text-ink">Students</h1>
@@ -98,6 +125,32 @@ export default async function StudentsPage({
           Add student
         </Link>
       </div>
+
+      {ageingChip ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-ink-secondary">Pending accounts:</span>
+          <span className="inline-flex h-8 items-center gap-1 rounded-full bg-sand pl-3 pr-1 text-ink">
+            {ageingChip.label}
+            <Link
+              href={ageingChip.clearHref}
+              aria-label="Clear the pending-age filter"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-full text-ink-secondary transition-colors hover:bg-surface hover:text-ink"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 16 16"
+                className="h-3.5 w-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+              >
+                <path d="M4 4l8 8M12 4l-8 8" />
+              </svg>
+            </Link>
+          </span>
+        </div>
+      ) : null}
 
       <StudentDirectoryTable
         rows={rows}

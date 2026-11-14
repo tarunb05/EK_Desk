@@ -31,7 +31,9 @@ test.describe("auth", () => {
     await expect(page).toHaveURL(/\/transport$/);
     await expect(page.getByRole("link", { name: "Transport" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Daycare" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Students" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Students", exact: true }),
+    ).toBeVisible();
 
     // Sign out goes to the landing page, not /login -- but a protected
     // route still redirects an unauthenticated visitor to /login exactly

@@ -3,6 +3,7 @@ import {
   STUDENT_SORT_KEYS,
   STUDENT_STATUS_FILTERS,
   STUDENT_SERVICE_FILTERS,
+  STUDENT_AGEING_FILTERS,
 } from "@/lib/shell/student-table-params";
 
 // Split out of student-table-params.ts on purpose -- this is the only
@@ -23,6 +24,7 @@ export const studentDirectorySearchParamsSchema = z.object({
   page: pageParam,
   status: z.enum(STUDENT_STATUS_FILTERS).catch("active"),
   service: z.enum(STUDENT_SERVICE_FILTERS).catch("all"),
+  ageing: z.enum(STUDENT_AGEING_FILTERS).optional().catch(undefined),
   classSection: z.string().optional(),
   // The academic year's label, not id -- matches the URL-as-state
   // convention every other filter here uses. Absent/unmatched means "all

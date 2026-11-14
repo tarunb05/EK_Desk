@@ -76,9 +76,32 @@ function applyFilters(
   { branch, service, academicYearId, table }: StudentDirectoryParams,
   { head }: { head: boolean },
 ) {
-  let query = supabase
+  const directory = supabase
     .from("student_directory")
     .select("*", { count: "exact", head });
+
+  // From a dashboard ageing row: start from the students behind that bucket
+  // instead of the whole directory. The function returns student_directory
+  // rows, so every filter, sort and page below applies to it unchanged
+  // (hence the cast to the plain directory query's type). The bucket only
+  // means something for one service and one year, so without both it is
+  // ignored.
+  const ageingBucket =
+    table.ageing && service !== "all" && academicYearId
+      ? table.ageing
+      : undefined;
+  let query = ageingBucket
+    ? (supabase.rpc(
+        "students_in_ageing_bucket",
+        {
+          p_service_type: service,
+          p_academic_year_id: academicYearId!,
+          p_bucket: ageingBucket,
+          p_branch_code: branch === "all" ? undefined : branch,
+        },
+        { count: "exact", head },
+      ) as unknown as typeof directory)
+    : directory;
 
   if (branch !== "all") {
     query = query.eq("branch_code", branch);

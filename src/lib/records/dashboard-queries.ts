@@ -108,6 +108,51 @@ export interface CollectionBreakdownRow {
   receivablePaise: bigint;
   collectedPaise: bigint;
   pendingPaise: bigint;
+  // Set only while the dashboard's month filter is on: the part of
+  // collectedPaise that was paid in the selected months.
+  collectedInMonthsPaise?: bigint;
+}
+
+export interface CollectedInMonths {
+  byClass: Map<string, bigint>;
+  byGroup: Map<string, bigint>;
+}
+
+// What was collected in the given months, keyed the same way as
+// getBreakdownByClass / getBreakdownByGroup label their rows, so the two
+// can be joined by label. One RPC, summed twice here.
+export async function getCollectedInMonths(
+  supabase: SupabaseClient<Database>,
+  scope: DashboardScope,
+  months: string[],
+): Promise<CollectedInMonths> {
+  const { data, error } = await supabase.rpc(
+    "dashboard_collected_by_class_and_group",
+    { ...rpcArgs(scope), p_months: months },
+  );
+  if (error) {
+    throw new Error("Could not load collections for the selected months.");
+  }
+  const byClass = new Map<string, bigint>();
+  const byGroup = new Map<string, bigint>();
+  for (const row of data) {
+    const paise = BigInt(row.collected_paise);
+    const classLabel = row.class_section || "Unassigned";
+    const groupLabel = row.group_label || "Unassigned";
+    byClass.set(classLabel, (byClass.get(classLabel) ?? 0n) + paise);
+    byGroup.set(groupLabel, (byGroup.get(groupLabel) ?? 0n) + paise);
+  }
+  return { byClass, byGroup };
+}
+
+export function withCollectedInMonths(
+  rows: CollectionBreakdownRow[],
+  collected: Map<string, bigint>,
+): CollectionBreakdownRow[] {
+  return rows.map((row) => ({
+    ...row,
+    collectedInMonthsPaise: collected.get(row.label) ?? 0n,
+  }));
 }
 
 export async function getBreakdownByClass(
